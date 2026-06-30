@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 56" width="200" height="56" role="img" aria-label="Bora">
+  <title>Bora</title>
+
+  <!-- Simbolo: seta de entrega em movimento -->
+  <!-- Fundo arredondado roxo -->
+  <rect x="0" y="4" width="48" height="48" rx="12" ry="12" fill="#7c3aed"/>
+
+  <!-- Sacola de entrega estilizada em branco -->
+  <!-- Corpo da sacola -->
+  <rect x="11" y="22" width="26" height="20" rx="3" ry="3" fill="none" stroke="#ffffff" stroke-width="2.2"/>
+  <!-- Alça da sacola -->
+  <path d="M16 22 Q16 15 24 15 Q32 15 32 22" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Seta de movimento saindo para direita (velocidade) -->
+  <path d="M38 28 L46 28" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M43 24 L48 28 L43 32" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Wordmark "Bora" -->
+  <!-- Letra B -->
+  <text x="62" y="38" font-family="'Segoe UI', 'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="800" letter-spacing="-0.5" fill="#7c3aed">Bora</text>
+
+  <!-- Ponto verde de status ao lado — indica "em tempo real" -->
+  <circle cx="192" cy="14" r="5" fill="#22c55e"/>
+</svg>

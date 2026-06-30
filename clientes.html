@@ -1,0 +1,27 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Clientes</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"><a href="dashboard.html">Dashboard</a><a href="pedidos.html">Pedidos</a><a class="active" href="clientes.html">Clientes</a><a href="produtos.html">Produtos</a><a href="entregas.html">Entregas</a><a href="promocoes.html">Promoções</a><a href="relatorios.html">Relatórios</a><a href="configuracoes.html">Configurações</a><a class="" href="usuarios.html">Usuários</a><a href="planos.html">Planos</a></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Clientes</h1><p data-store>Sorveteria da Rosa</p></div>
+      <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></header>
+    <section class="row">
+      <div class="card"><h2>Novo cliente</h2>
+        <form id="form" class="form">
+          <div class="field full"><label>Nome</label><input id="nome" required></div>
+          <div class="field"><label>Telefone</label><input id="telefone" placeholder="(00) 00000-0000"></div>
+          <div class="field"><label>Bairro</label><input id="bairro"></div>
+          <div class="field full"><label>Endereço</label><input id="endereco"></div>
+          <div class="field full"><label>Referência</label><input id="referencia"></div>
+          <div class="field full"><button class="btn" type="submit">Salvar cliente</button> <span id="msg" style="color:var(--danger);margin-left:10px"></span></div>
+        </form>
+      </div>
+      <div class="card"><h2>Clientes da loja</h2>
+        <table class="table"><thead><tr><th>Nome</th><th>Telefone</th><th>Bairro</th><th></th></tr></thead><tbody id="lista"></tbody></table>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/clientes.js?v=20260623"></script>
+</body></html>

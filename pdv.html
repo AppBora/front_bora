@@ -1,0 +1,43 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Frente de Caixa</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Frente de Caixa</h1><p>Venda rápida no balcão — toque nos produtos e finalize</p></div>
+      <div style="display:flex;gap:10px"><a class="btn" href="caixa.html" style="background:#059669">💰 Fechar caixa</a>
+        <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></div></header>
+
+    <div class="pdv">
+      <div>
+        <div class="board-search" style="margin-bottom:12px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="busca" placeholder="Buscar produto…" autocomplete="off">
+        </div>
+        <div class="pdv-cats chips" id="cats"></div>
+        <div class="pdv-grid" id="grid"></div>
+      </div>
+
+      <div class="cart">
+        <h2>🛒 Comanda</h2>
+        <div class="cart-items" id="items"><div class="cart-empty">Toque em um produto para começar</div></div>
+        <div class="cart-foot">
+          <div class="ln"><span>Itens</span><span id="qtdItens">0</span></div>
+          <div class="tot"><span>Total</span><span id="total">R$ 0,00</span></div>
+          <select id="cliente"><option value="">Cliente avulso (balcão)</option></select>
+          <label id="cashbackBox" style="display:none;align-items:center;gap:8px;background:#ecfdf5;border-radius:10px;padding:10px;margin-bottom:12px;cursor:pointer;font-size:13px;font-weight:700;color:#166534">
+            <input type="checkbox" id="usarCashback" style="width:18px;height:18px"> Usar cashback disponível: <span id="cashbackVal"></span>
+          </label>
+          <div class="pays" id="pays">
+            <button class="pay-btn sel" data-p="Dinheiro">💵 Dinheiro</button>
+            <button class="pay-btn" data-p="Pix">⚡ Pix</button>
+            <button class="pay-btn" data-p="Cartão">💳 Cartão</button>
+          </div>
+          <button class="btn-finish" id="finish" disabled>Finalizar venda</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/pdv.js?v=20260623"></script>
+</body></html>

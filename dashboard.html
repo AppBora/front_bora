@@ -1,0 +1,30 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Dashboard Operacional</title><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body><div class="layout"><aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div><nav class="nav"><a class="active" href="dashboard.html">Dashboard</a><a class="" href="pedidos.html">Pedidos</a><a class="" href="clientes.html">Clientes</a><a class="" href="produtos.html">Produtos</a><a class="" href="entregas.html">Entregas</a><a class="" href="promocoes.html">Promoções</a><a class="" href="relatorios.html">Relatórios</a><a class="" href="configuracoes.html">Configurações</a><a class="" href="usuarios.html">Usuários</a><a class="" href="planos.html">Planos</a></nav></aside><main class="main"><header class="top"><div class="title"><h1>Dashboard Operacional</h1><p data-store>Sorveteria da Rosa</p></div><div style="display:flex;gap:10px;align-items:center"><a class="btn" href="novo-pedido.html">+ Novo pedido</a><a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></div></header>
+
+<section class="kpis">
+  <div class="statcard"><div class="ico money">💰</div><div class="v" id="kFat">—</div><div class="l">Faturamento hoje</div><span class="trend flat" id="kFatTrend">—</span></div>
+  <div class="statcard"><div class="ico cart">🧾</div><div class="v" id="kPed">—</div><div class="l">Pedidos hoje</div></div>
+  <div class="statcard"><div class="ico ticket">🎯</div><div class="v" id="kTicket">—</div><div class="l">Ticket médio</div></div>
+  <div class="statcard"><div class="ico cancel">⛔</div><div class="v" id="kCanc">—</div><div class="l">Cancelamento hoje</div></div>
+</section>
+
+<section class="oplive">
+  <div class="cell"><div class="badge-ic" style="background:#f59e0b">🍳</div><div><div class="n" id="opPreparo">—</div><div class="t">Na cozinha</div></div></div>
+  <div class="cell"><div class="badge-ic" style="background:#3b82f6">📦</div><div><div class="n" id="opAguard">—</div><div class="t">Aguardando</div></div></div>
+  <div class="cell"><div class="badge-ic" style="background:#8b5cf6">🛵</div><div><div class="n" id="opSaiu">—</div><div class="t">Saiu p/ entrega</div></div></div>
+  <div class="cell"><div class="badge-ic" style="background:#22c55e">✓</div><div><div class="n" id="opHora">—</div><div class="t">Entregues (1h)</div></div></div>
+</section>
+
+<section class="row" style="grid-template-columns:1.6fr 1fr">
+  <div class="panel"><h2>Vendas por hora <span style="font-weight:600;color:var(--muted);font-size:12px">· hoje</span></h2><div class="bars" id="bars"></div></div>
+  <div class="panel"><h2>Termômetro de Vendas</h2><div id="termometro"><p style="color:var(--muted)">Carregando…</p></div></div>
+</section>
+
+<section class="row" style="grid-template-columns:1fr 1fr">
+  <div class="panel"><h2>Faturamento por canal <span style="font-weight:600;color:var(--muted);font-size:12px">· hoje</span></h2><div class="chan" id="canais"></div></div>
+  <div class="panel"><h2>Mais vendidos <span style="font-weight:600;color:var(--muted);font-size:12px">· hoje</span></h2><div class="toplist" id="topprod"></div></div>
+</section>
+
+<section class="row" style="grid-template-columns:1fr">
+  <div class="panel"><h2>Pedidos recentes</h2><table class="table"><thead><tr><th>Código</th><th>Cliente</th><th>Status</th><th>Valor</th><th>Canal</th></tr></thead><tbody id="orders"></tbody></table></div>
+</section>
+</main></div><script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/dashboard.js?v=20260623"></script></body></html>

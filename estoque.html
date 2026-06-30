@@ -1,0 +1,26 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Estoque</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Controle de Estoque</h1><p>Baixa automática a cada venda · alertas de ruptura</p></div>
+      <div style="display:flex;gap:10px"><a class="btn" href="contagem.html" style="background:#059669">📋 Fazer contagem</a><a class="btn" href="produtos.html">+ Cadastrar produto</a></div></header>
+
+    <section class="kpis" style="grid-template-columns:repeat(3,1fr)">
+      <div class="statcard"><div class="ico money">💰</div><div class="v" id="kValor">—</div><div class="l">Valor em estoque (custo)</div></div>
+      <div class="statcard"><div class="ico ticket">⚠️</div><div class="v" id="kBaixo">—</div><div class="l">Abaixo do mínimo</div></div>
+      <div class="statcard"><div class="ico cancel">⛔</div><div class="v" id="kRuptura">—</div><div class="l">Em ruptura (zerado)</div></div>
+    </section>
+
+    <div class="panel">
+      <h2>Produtos com estoque controlado</h2>
+      <table class="table">
+        <thead><tr><th>Produto</th><th>Atual</th><th>Mínimo</th><th>Status</th><th>Ajustar</th></tr></thead>
+        <tbody id="lista"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/estoque.js?v=20260623"></script>
+</body></html>

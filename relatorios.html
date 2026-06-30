@@ -1,0 +1,34 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Relatórios</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"><a href="dashboard.html">Dashboard</a><a href="pedidos.html">Pedidos</a><a href="clientes.html">Clientes</a><a href="produtos.html">Produtos</a><a href="entregas.html">Entregas</a><a href="promocoes.html">Promoções</a><a class="active" href="relatorios.html">Relatórios</a><a href="configuracoes.html">Configurações</a><a href="usuarios.html">Usuários</a><a href="planos.html">Planos</a></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Relatórios Gerenciais</h1><p>Vendas, margem (CMV), canais, produtos e entregadores</p></div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="chips" id="periodo"><button class="chip" data-d="7">7 dias</button><button class="chip active" data-d="30">30 dias</button><button class="chip" data-d="90">90 dias</button></div>
+        <button class="btn" id="csv">Exportar CSV</button>
+        <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></div>
+    </header>
+    <section class="kpis">
+      <div class="statcard"><div class="ico money">💰</div><div class="v" id="kFat">—</div><div class="l">Faturamento</div></div>
+      <div class="statcard"><div class="ico cart">🧾</div><div class="v" id="kPed">—</div><div class="l">Pedidos · ticket <span id="kTicket">—</span></div></div>
+      <div class="statcard"><div class="ico ticket">📈</div><div class="v" id="kMargem">—</div><div class="l">Margem (após CMV <span id="kCmv">—</span>)</div></div>
+      <div class="statcard"><div class="ico cancel">⛔</div><div class="v" id="kCanc">—</div><div class="l">Cancelados</div></div>
+    </section>
+    <section class="row" style="grid-template-columns:1fr;margin-top:16px">
+      <div class="panel"><h2>Vendas por dia</h2><div class="bars" id="bars"></div></div>
+    </section>
+    <section class="row" style="grid-template-columns:1fr 1fr">
+      <div class="panel"><h2>Por canal</h2><div class="chan" id="porCanal"></div></div>
+      <div class="panel"><h2>Por entregador</h2><div class="toplist" id="porEntregador"></div></div>
+    </section>
+    <section class="row" style="grid-template-columns:1fr">
+      <div class="panel"><h2>Produtos mais vendidos <span style="font-weight:600;color:var(--muted);font-size:12px">· com margem</span></h2>
+        <table class="table"><thead><tr><th>#</th><th>Produto</th><th>Qtd</th><th>Faturamento</th><th>CMV</th><th>Margem</th></tr></thead><tbody id="porProduto"></tbody></table>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/relatorios.js?v=20260623"></script>
+</body></html>

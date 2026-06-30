@@ -1,0 +1,31 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Canais de Venda</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Canais de Venda</h1><p>iFood, 99Food, Rappi, WhatsApp… veja de onde vêm suas vendas</p></div>
+      <div class="chips" id="periodo">
+        <button class="chip active" data-d="hoje">Hoje</button>
+        <button class="chip" data-d="7">7 dias</button>
+        <button class="chip" data-d="tudo">Tudo</button>
+      </div>
+    </header>
+
+    <div class="champ" id="champ" style="display:none">
+      <div class="big" id="champIc">🏆</div>
+      <div><div class="l">Canal campeão</div><div class="n" id="champNm">—</div></div>
+      <div class="r"><div class="l">Faturamento</div><div class="n" id="champVl">—</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>Ranking de canais</h2>
+      <table class="table">
+        <thead><tr><th>Canal</th><th>Pedidos</th><th>Faturamento</th><th>Ticket médio</th><th>Participação</th></tr></thead>
+        <tbody id="rank"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/canais.js?v=20260623"></script>
+</body></html>

@@ -1,0 +1,59 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Ajustes da Operação</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Ajustes da Operação</h1><p>Taxas de entrega, formas de pagamento, horário e motivos de cancelamento</p></div>
+      <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></header>
+
+    <div class="chips" id="tabs" style="margin-bottom:16px">
+      <button class="chip active" data-t="taxas">🛵 Taxas de entrega</button>
+      <button class="chip" data-t="formas">💳 Formas de pagamento</button>
+      <button class="chip" data-t="horario">🕒 Horário</button>
+      <button class="chip" data-t="motivos">🚫 Motivos de cancelamento</button>
+    </div>
+
+    <section class="panel sec" data-sec="taxas">
+      <h2>Taxas de entrega por bairro</h2>
+      <p class="sub" style="color:var(--muted);font-size:13px;margin-top:-8px">O frete é somado ao pedido automaticamente conforme o bairro do cliente (pedidos de balcão não cobram).</p>
+      <table class="table"><thead><tr><th>Bairro</th><th>Taxa</th><th>Tempo (min)</th><th>Ativo</th><th></th></tr></thead><tbody id="taxasBody"></tbody></table>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
+        <input id="tBairro" placeholder="Bairro" style="flex:1;min-width:140px;padding:10px;border:1px solid #e5e7eb;border-radius:10px">
+        <input id="tTaxa" type="number" step="0.01" min="0" placeholder="Taxa R$" style="width:120px;padding:10px;border:1px solid #e5e7eb;border-radius:10px">
+        <input id="tTempo" type="number" min="0" placeholder="min" style="width:90px;padding:10px;border:1px solid #e5e7eb;border-radius:10px">
+        <button class="btn" id="addTaxa">+ Adicionar</button>
+      </div>
+    </section>
+
+    <section class="panel sec" data-sec="formas" style="display:none">
+      <h2>Formas de pagamento</h2>
+      <table class="table"><thead><tr><th>Descrição</th><th>Com troco</th><th>Pgto online</th><th>Ativa</th><th></th></tr></thead><tbody id="formasBody"></tbody></table>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
+        <input id="fDesc" placeholder="Ex.: Vale-refeição" style="flex:1;min-width:160px;padding:10px;border:1px solid #e5e7eb;border-radius:10px">
+        <label style="font-size:13px"><input type="checkbox" id="fTroco"> com troco</label>
+        <label style="font-size:13px"><input type="checkbox" id="fOnline"> online</label>
+        <button class="btn" id="addForma">+ Adicionar</button>
+      </div>
+    </section>
+
+    <section class="panel sec" data-sec="horario" style="display:none">
+      <h2>Horário de funcionamento</h2>
+      <p class="sub" style="color:var(--muted);font-size:13px;margin-top:-8px">Fora do horário, o cardápio digital mostra a loja como fechada.</p>
+      <div id="horarioBody"></div>
+      <button class="btn" id="salvarHorario" style="margin-top:12px">Salvar horários</button> <span id="hMsg" style="margin-left:10px;color:#059669"></span>
+    </section>
+
+    <section class="panel sec" data-sec="motivos" style="display:none">
+      <h2>Motivos de cancelamento</h2>
+      <p class="sub" style="color:var(--muted);font-size:13px;margin-top:-8px">Aparecem como opções ao cancelar/recusar um pedido (padroniza os relatórios).</p>
+      <table class="table"><thead><tr><th>Motivo</th><th>Ativo</th><th></th></tr></thead><tbody id="motivosBody"></tbody></table>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <input id="mDesc" placeholder="Novo motivo" style="flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:10px">
+        <button class="btn" id="addMotivo">+ Adicionar</button>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/ajustes.js?v=20260623"></script>
+</body></html>

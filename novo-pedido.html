@@ -1,0 +1,42 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Novo Pedido</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"><a href="dashboard.html">Dashboard</a><a class="active" href="pedidos.html">Pedidos</a><a href="clientes.html">Clientes</a><a href="produtos.html">Produtos</a><a href="entregas.html">Entregas</a><a href="promocoes.html">Promoções</a><a href="relatorios.html">Relatórios</a><a href="configuracoes.html">Configurações</a><a class="" href="usuarios.html">Usuários</a><a href="planos.html">Planos</a></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Novo Pedido</h1><p data-store>Sorveteria da Rosa</p></div>
+      <a class="btn" href="pedidos.html" style="background:#64748b">← Pedidos</a>
+    </header>
+    <div class="card">
+      <form id="form" class="form">
+        <div class="field"><label>Cliente</label><select id="cliente"></select>
+          <label id="cashbackBox" style="display:none;align-items:center;gap:8px;margin-top:8px;background:#ecfdf5;border-radius:10px;padding:9px;cursor:pointer;font-size:13px;font-weight:700;color:#166534">
+            <input type="checkbox" id="usarCashback" style="width:16px;height:16px"> Usar cashback (<span id="cashbackVal"></span>)</label>
+        </div>
+        <div class="field"><label>Canal de venda</label><select id="origem"></select></div>
+
+        <div class="field full"><label>Adicionar produto</label>
+          <div class="itens-linha">
+            <select id="produto" class="nome"></select>
+            <input id="qtd" type="number" min="1" value="1" style="width:80px">
+            <button type="button" class="btn" id="add">Adicionar</button>
+          </div>
+        </div>
+
+        <div class="field full"><label>Itens do pedido</label>
+          <table class="table"><tbody id="itens"></tbody></table>
+          <p style="text-align:right;font-size:20px;font-weight:900;margin-top:8px">Total: <span id="total">R$ 0,00</span></p>
+        </div>
+
+        <div class="field"><label>Forma de pagamento</label><select id="pagamento"><option>Pix</option><option>Cartão</option><option>Dinheiro</option></select></div>
+        <div class="field full"><label>Observação</label><textarea id="obs"></textarea></div>
+        <div class="field full"><button class="btn" type="submit">Salvar pedido</button> <span id="msg" style="color:var(--danger);margin-left:10px"></span></div>
+      </form>
+    </div>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script>
+<script src="assets/js/app.js?v=20260623"></script>
+<script src="assets/js/whitelabel.js?v=20260623"></script>
+<script src="assets/js/novo-pedido.js?v=20260623"></script>
+</body></html>

@@ -1,0 +1,30 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Entregadores</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Entregadores</h1><p>Cadastre seus motoboys e acompanhe o desempenho</p></div>
+      <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></header>
+
+    <section class="row" style="grid-template-columns:1fr 1.4fr">
+      <div class="panel">
+        <h2 id="formTitulo">Novo entregador</h2>
+        <form id="form" class="form" style="grid-template-columns:1fr">
+          <input type="hidden" id="id">
+          <div class="field"><label>Nome</label><input id="nome" required></div>
+          <div class="field"><label>Telefone / WhatsApp</label><input id="telefone" placeholder="(11) 99999-9999"></div>
+          <div class="field"><label>Veículo</label><select id="veiculo"><option>Moto</option><option>Bike</option><option>Carro</option><option>A pé</option></select></div>
+          <div class="field"><button class="btn" type="submit">Salvar</button> <button type="button" class="btn secondary" id="cancelar" style="display:none">Cancelar</button>
+            <span id="msg" style="color:var(--danger);margin-left:8px"></span></div>
+        </form>
+      </div>
+      <div class="panel">
+        <h2>Equipe & desempenho <span style="font-weight:600;color:var(--muted);font-size:12px">· entregas de hoje</span></h2>
+        <div id="lista"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/entregadores.js?v=20260623"></script>
+</body></html>

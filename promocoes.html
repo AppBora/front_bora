@@ -1,0 +1,54 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Promoções</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side">
+    <div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="pedidos.html">Pedidos</a>
+      <a href="clientes.html">Clientes</a>
+      <a href="produtos.html">Produtos</a>
+      <a href="entregas.html">Entregas</a>
+      <a class="active" href="promocoes.html">Promoções</a>
+      <a href="relatorios.html">Relatórios</a>
+      <a href="configuracoes.html">Configurações</a><a class="" href="usuarios.html">Usuários</a>
+      <a href="planos.html">Planos</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <header class="top">
+      <div class="title"><h1>Promoções</h1><p>Reaja a quedas de venda com ofertas rápidas</p></div>
+      <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a>
+    </header>
+
+    <section class="row">
+      <div class="card">
+        <h2>Nova promoção</h2>
+        <form id="form" class="form">
+          <div class="field"><label>Tipo</label>
+            <select id="tipo"><option value="RELAMPAGO">Cupom relâmpago</option><option value="COMBO">Combo do dia</option><option value="FRETE_GRATIS">Frete grátis</option><option value="ULTIMA_HORA">Última hora</option></select></div>
+          <div class="field"><label>Código</label><input id="codigo" placeholder="BORA15"></div>
+          <div class="field"><label>Desconto (%)</label><input id="desconto" type="number" min="0" max="100" value="15"></div>
+          <div class="field"><label>Validade (horas)</label><input id="horas" type="number" min="1" value="3"></div>
+          <div class="field full"><label>Descrição</label><input id="descricao" placeholder="Ex.: 15% de desconto por 3 horas"></div>
+          <div class="field full"><button class="btn" type="submit">Criar promoção</button> <span id="msg" style="color:var(--danger);margin-left:10px"></span></div>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Termômetro</h2>
+        <div id="termometro"><p style="color:var(--muted)">Carregando…</p></div>
+      </div>
+    </section>
+
+    <section class="row" style="grid-template-columns:1fr">
+      <div class="card">
+        <h2>Promoções da loja</h2>
+        <table class="table"><thead><tr><th>Código</th><th>Tipo</th><th>Desconto</th><th>Validade</th><th>Usos</th><th>Origem</th><th>Status</th></tr></thead><tbody id="lista"></tbody></table>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script>
+<script src="assets/js/app.js?v=20260623"></script>
+<script src="assets/js/whitelabel.js?v=20260623"></script>
+<script src="assets/js/promocoes.js?v=20260623"></script>
+</body></html>

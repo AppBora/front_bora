@@ -1,0 +1,29 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Cardápio Digital (QR)</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Cardápio Digital</h1><p>Compartilhe o QR Code — clientes pedem pelo próprio celular</p></div>
+      <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></header>
+
+    <div class="panel">
+      <div class="field" style="max-width:320px;margin-bottom:18px">
+        <label>WhatsApp para receber pedidos (opcional)</label>
+        <input id="wa" placeholder="(11) 99999-9999" autocomplete="off">
+        <small style="color:var(--muted)">Os pedidos do cardápio chegam nesse número.</small>
+      </div>
+      <div class="qrbox">
+        <img id="qr" alt="QR Code do cardápio">
+        <div>
+          <h2 style="margin-top:0">Seu cardápio está no ar 🎉</h2>
+          <p style="color:var(--muted)">Imprima o QR e cole na mesa, na vitrine ou no balcão. Quem apontar a câmera abre o cardápio e monta o pedido.</p>
+          <div class="linkrow"><input id="link" readonly><button class="btn" onclick="__copiar()">Copiar</button></div>
+          <a class="btn secondary" id="abrir" target="_blank">👁 Pré-visualizar cardápio</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/cardapio-qr.js?v=20260623"></script>
+</body></html>

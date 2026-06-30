@@ -1,0 +1,26 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - CRM & Fidelidade</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>CRM & Fidelidade</h1><p>Quem são seus melhores clientes — e quem está sumindo</p></div>
+      <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></header>
+
+    <section class="seg">
+      <div class="segcard" style="--c:#3b82f6"><div class="sv" id="segNovos">—</div><div class="sl">🆕 Novos (1º pedido)</div></div>
+      <div class="segcard" style="--c:#22c55e"><div class="sv" id="segRec">—</div><div class="sl">💚 Recorrentes ativos</div></div>
+      <div class="segcard" style="--c:#ef4444"><div class="sv" id="segSumidos">—</div><div class="sl">⚠️ Sumidos (+30 dias)</div></div>
+    </section>
+
+    <div class="panel">
+      <h2>Ranking de clientes <span style="font-weight:600;color:var(--muted);font-size:12px">· por valor gasto</span></h2>
+      <table class="table">
+        <thead><tr><th>#</th><th>Cliente</th><th>Pedidos</th><th>Total gasto</th><th>Cashback</th><th>Último pedido</th><th></th></tr></thead>
+        <tbody id="rank"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/crm.js?v=20260623"></script>
+</body></html>

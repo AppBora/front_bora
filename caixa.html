@@ -1,0 +1,26 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Fechamento de Caixa</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Fechamento de Caixa</h1><p id="sub">Resumo do dia</p></div>
+      <div style="display:flex;gap:10px"><button class="btn" id="imprimir">🖨 Imprimir fechamento</button>
+        <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></div>
+    </header>
+
+    <section class="kpis">
+      <div class="statcard"><div class="ico money">💰</div><div class="v" id="kFat">—</div><div class="l">Faturamento do dia</div></div>
+      <div class="statcard"><div class="ico cart">🧾</div><div class="v" id="kPed">—</div><div class="l">Pedidos</div></div>
+      <div class="statcard"><div class="ico ticket">🎯</div><div class="v" id="kTicket">—</div><div class="l">Ticket médio</div></div>
+      <div class="statcard"><div class="ico cancel">⛔</div><div class="v" id="kCanc">—</div><div class="l">Cancelados</div></div>
+    </section>
+
+    <section class="row" style="grid-template-columns:1fr 1fr">
+      <div class="panel"><h2>Por forma de pagamento</h2><div class="chan" id="pagamentos"></div></div>
+      <div class="panel"><h2>Por canal de venda</h2><div class="chan" id="canais"></div></div>
+    </section>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/caixa.js?v=20260623"></script>
+</body></html>

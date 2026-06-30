@@ -1,0 +1,18 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Entregas</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"><a href="dashboard.html">Dashboard</a><a href="pedidos.html">Pedidos</a><a href="clientes.html">Clientes</a><a href="produtos.html">Produtos</a><a class="active" href="entregas.html">Entregas</a><a href="promocoes.html">Promoções</a><a href="relatorios.html">Relatórios</a><a href="configuracoes.html">Configurações</a><a class="" href="usuarios.html">Usuários</a><a href="planos.html">Planos</a></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Entregas & Roteirização</h1><p>Agrupe pedidos por bairro e atribua entregadores</p></div>
+      <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></header>
+    <section class="kpis" style="grid-template-columns:repeat(3,1fr)">
+      <div class="statcard"><div class="ico cart">📦</div><div class="v" id="kpiProntos">—</div><div class="l">Prontos p/ rota</div></div>
+      <div class="statcard"><div class="ico ticket">🛵</div><div class="v" id="kpiSaiu">—</div><div class="l">Em rota agora</div></div>
+      <div class="statcard"><div class="ico money">✓</div><div class="v" id="kpiHora">—</div><div class="l">Entregues (última hora)</div></div>
+    </section>
+    <div id="rotas" style="margin-top:18px"></div>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/entregas.js?v=20260623"></script>
+</body></html>

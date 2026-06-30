@@ -1,0 +1,28 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bora - Insumos</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>Bora</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Insumos (Ingredientes)</h1><p>Matéria-prima dos produtos — a ficha técnica baixa o estoque e calcula o CMV real</p></div>
+      <a class="btn" href="produtos.html">Produtos →</a></header>
+    <section class="row">
+      <div class="card"><h2 id="formTitulo">Novo insumo</h2>
+        <form id="form" class="form" style="grid-template-columns:1fr 1fr">
+          <input type="hidden" id="id">
+          <div class="field full"><label>Nome</label><input id="nome" required></div>
+          <div class="field"><label>Unidade</label><select id="unidade"><option>un</option><option>kg</option><option>g</option><option>L</option><option>ml</option></select></div>
+          <div class="field"><label>Custo por unidade (R$)</label><input id="custo" type="number" step="0.0001" min="0"></div>
+          <div class="field"><label>Estoque <small style="color:#94a3b8">vazio = não controla</small></label><input id="estoque" type="number" step="0.001"></div>
+          <div class="field"><label>Estoque mínimo</label><input id="estoqueMinimo" type="number" step="0.001"></div>
+          <div class="field full"><button class="btn" type="submit" id="btnSalvar">Salvar insumo</button> <button type="button" class="btn secondary" id="cancelar" style="display:none">Cancelar</button> <span id="msg" style="color:var(--danger);margin-left:10px"></span></div>
+        </form>
+      </div>
+      <div class="card"><h2>Insumos cadastrados</h2>
+        <table class="table"><thead><tr><th>Insumo</th><th>Custo</th><th>Estoque</th><th></th></tr></thead><tbody id="lista"></tbody></table>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/insumos.js?v=20260623"></script>
+</body></html>
