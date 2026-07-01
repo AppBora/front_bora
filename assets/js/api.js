@@ -53,6 +53,8 @@ const Bora = {
   promocoes() { return this.api('/api/promocoes'); },
   criarPromocao(body) { return this.api('/api/promocoes', { method: 'POST', body: JSON.stringify(body) }); },
   plano() { return this.api('/api/plano'); },
+  assinatura() { return this.api('/api/assinatura'); },
+  assinar(cpfCnpj) { return this.api('/api/assinatura', { method: 'POST', body: JSON.stringify({ cpfCnpj }) }); },
   taxas() { return this.api('/api/taxas'); },
   salvarTaxa(b) { return this.api('/api/taxas' + (b.id ? '/' + b.id : ''), { method: b.id ? 'PUT' : 'POST', body: JSON.stringify(b) }); },
   excluirTaxa(id) { return this.api('/api/taxas/' + id, { method: 'DELETE' }); },
