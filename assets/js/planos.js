@@ -60,5 +60,24 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => { carregar(); carregarAssinatura(); });
+  function wireCards() {
+    ['START', 'PRO', 'PREMIUM'].forEach(pl => {
+      const card = document.getElementById('card-' + pl);
+      if (!card) return;
+      card.style.cursor = 'pointer';
+      card.title = 'Clique para mudar para o plano ' + (NOME[pl] || pl);
+      card.addEventListener('click', async () => {
+        if (!confirm('Deseja mudar para o plano ' + (NOME[pl] || pl) + '?')) return;
+        try {
+          await Bora.trocarPlano(pl);
+          alert('Plano alterado para ' + (NOME[pl] || pl) + '!');
+          location.reload();
+        } catch (e) {
+          alert('Erro: ' + (e.message || 'falha ao trocar de plano'));
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => { carregar(); carregarAssinatura(); wireCards(); });
 })();

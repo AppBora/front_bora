@@ -55,6 +55,7 @@ const Bora = {
   plano() { return this.api('/api/plano'); },
   assinatura() { return this.api('/api/assinatura'); },
   assinar(cpfCnpj) { return this.api('/api/assinatura', { method: 'POST', body: JSON.stringify({ cpfCnpj }) }); },
+  trocarPlano(plano) { return this.api('/api/plano', { method: 'PUT', body: JSON.stringify({ plano }) }); },
   taxas() { return this.api('/api/taxas'); },
   salvarTaxa(b) { return this.api('/api/taxas' + (b.id ? '/' + b.id : ''), { method: b.id ? 'PUT' : 'POST', body: JSON.stringify(b) }); },
   excluirTaxa(id) { return this.api('/api/taxas/' + id, { method: 'DELETE' }); },
