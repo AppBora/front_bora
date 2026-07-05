@@ -1,7 +1,7 @@
 // Cliente de API do Bora — auth via JWT (Bearer), multi-tenant pelo token.
 // Permite apontar a API por ?api=<url> (uso em link de teste/túnel); fica salvo p/ as próximas telas.
 (function () { try { const p = new URLSearchParams(location.search).get('api'); if (p) localStorage.setItem('boraApiUrl', p.replace(/\/+$/, '')); } catch (e) {} })();
-const BORA_API = localStorage.getItem('boraApiUrl') || 'https://bora-api.onrender.com';
+const BORA_API = localStorage.getItem('boraApiUrl') || window.location.origin;
 
 const Bora = {
   token() { return localStorage.getItem('boraToken'); },
