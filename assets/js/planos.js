@@ -1,7 +1,7 @@
 // Mostra o plano atual da loja + uso (pedidos do mês / usuários) e destaca o card.
 (function () {
   if (!Bora.requireAuth()) return;
-  const NOME = { START: 'Start', PRO: 'Pro', PREMIUM: 'Premium' };
+  const NOME = { UNICO: 'Bora', START: 'Bora', PRO: 'Bora', PREMIUM: 'Bora' };
 
   function barra(usado, max) {
     const pct = max ? Math.min(100, Math.round((usado / max) * 100)) : 0;
@@ -14,11 +14,14 @@
     const el = document.getElementById('meuPlano');
     try {
       const p = await Bora.plano();
+      const pedidos = p.maxPedidosMes
+        ? `<p style="margin:0"><b>Pedidos no mês:</b> ${p.pedidosMesUsados} de ${p.maxPedidosMes}</p>${barra(p.pedidosMesUsados, p.maxPedidosMes)}`
+        : `<p style="margin:0 0 10px"><b>Pedidos no mês:</b> ${p.pedidosMesUsados} — ilimitados ∞</p>`;
       el.innerHTML =
         `<p style="font-size:18px;margin:0 0 12px"><b>${NOME[p.plano] || p.plano}</b></p>
-         <p style="margin:0"><b>Pedidos no mês:</b> ${p.pedidosMesUsados} de ${p.maxPedidosMes}</p>${barra(p.pedidosMesUsados, p.maxPedidosMes)}
+         ${pedidos}
          <p style="margin:0"><b>Usuários:</b> ${p.usuariosUsados} de ${p.maxUsuarios}</p>${barra(p.usuariosUsados, p.maxUsuarios)}`;
-      const card = document.getElementById('card-' + p.plano);
+      const card = document.getElementById('card-UNICO');
       if (card) { card.style.outline = '3px solid var(--primary)'; card.insertAdjacentHTML('afterbegin', '<div class="badge b-entregue" style="margin-bottom:8px">Seu plano</div>'); }
     } catch (e) { el.innerHTML = `<p style="color:var(--danger)">${e.message}</p>`; }
   }
@@ -60,24 +63,5 @@
     }
   }
 
-  function wireCards() {
-    ['START', 'PRO', 'PREMIUM'].forEach(pl => {
-      const card = document.getElementById('card-' + pl);
-      if (!card) return;
-      card.style.cursor = 'pointer';
-      card.title = 'Clique para mudar para o plano ' + (NOME[pl] || pl);
-      card.addEventListener('click', async () => {
-        if (!confirm('Deseja mudar para o plano ' + (NOME[pl] || pl) + '?')) return;
-        try {
-          await Bora.trocarPlano(pl);
-          alert('Plano alterado para ' + (NOME[pl] || pl) + '!');
-          location.reload();
-        } catch (e) {
-          alert('Erro: ' + (e.message || 'falha ao trocar de plano'));
-        }
-      });
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', () => { carregar(); carregarAssinatura(); wireCards(); });
+  document.addEventListener('DOMContentLoaded', () => { carregar(); carregarAssinatura(); });
 })();
