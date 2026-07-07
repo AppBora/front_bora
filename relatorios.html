@@ -28,7 +28,22 @@
         <table class="table"><thead><tr><th>#</th><th>Produto</th><th>Qtd</th><th>Faturamento</th><th>CMV</th><th>Margem</th></tr></thead><tbody id="porProduto"></tbody></table>
       </div>
     </section>
+    <section class="row" style="grid-template-columns:1fr" id="secBalancete" hidden>
+      <div class="panel"><h2>🏪 Balancete da rede <span style="font-weight:600;color:var(--muted);font-size:12px">· todas as suas lojas, separadas e consolidadas</span></h2>
+        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:8px 0 14px">
+          <label style="font-size:13px">Início<br><input type="date" id="balIni" style="padding:8px;border:1px solid #e2e8f0;border-radius:6px"></label>
+          <label style="font-size:13px">Fim<br><input type="date" id="balFim" style="padding:8px;border:1px solid #e2e8f0;border-radius:6px"></label>
+          <button class="btn" id="balAtualizar">Atualizar</button>
+          <button class="btn" id="balCsv" style="background:#64748b">Exportar CSV</button>
+        </div>
+        <table class="table">
+          <thead><tr><th>Loja</th><th>Pedidos</th><th>Cancelados</th><th>Ticket médio</th><th>Faturamento</th></tr></thead>
+          <tbody id="balCorpo"></tbody>
+          <tfoot id="balTotal"></tfoot>
+        </table>
+      </div>
+    </section>
   </main>
 </div>
-<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/relatorios.js?v=20260623"></script>
+<script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/relatorios.js?v=20260623"></script><script src="assets/js/balancete.js?v=20260707"></script>
 </body></html>

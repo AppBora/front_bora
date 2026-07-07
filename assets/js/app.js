@@ -104,4 +104,33 @@ function boraPrintComanda(p){
   w.document.close();w.focus();setTimeout(()=>{w.print();},250);
 }
 
-document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();});
+// ---- Rede multi-loja: seletor de loja no menu (aparece só para quem tem 2+ lojas vinculadas) ----
+async function renderLojaSwitcher(){
+  if(typeof Bora==='undefined' || !Bora.token()) return;
+  try{
+    const lojas = await Bora.minhasLojas();
+    if(!Array.isArray(lojas) || lojas.length < 2) return;
+    const brand = document.querySelector('.side .brand') || document.querySelector('.brand');
+    if(!brand || document.getElementById('lojaSwitch')) return;
+    const sel = document.createElement('select');
+    sel.id = 'lojaSwitch';
+    sel.title = 'Trocar de loja';
+    sel.style.cssText = 'display:block;margin:8px 12px 4px;width:calc(100% - 24px);padding:7px 8px;border-radius:8px;border:1px solid #cbd5e1;background:#fff;color:#111;font-weight:600;font-size:13px;cursor:pointer';
+    sel.innerHTML = lojas.map(l => `<option value="${l.id}" ${l.atual ? 'selected' : ''}>🏪 ${l.nome}${l.ativo === false ? ' (inativa)' : ''}</option>`).join('');
+    sel.onchange = async () => {
+      try{
+        const r = await Bora.trocarLoja(Number(sel.value));
+        Bora.setSession(r);
+        localStorage.removeItem('boraTheme');
+        boraToast('Agora você está na loja <b>' + (r.lojaNome || '') + '</b>');
+        setTimeout(() => location.reload(), 400);
+      }catch(e){
+        alert('Erro ao trocar de loja: ' + (e.message || 'falha'));
+        const atual = lojas.find(l => l.atual); if (atual) sel.value = atual.id;
+      }
+    };
+    brand.insertAdjacentElement('afterend', sel);
+  }catch(e){ /* sem rede ou sem permissão: segue sem seletor */ }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();renderLojaSwitcher();});
