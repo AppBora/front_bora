@@ -80,7 +80,7 @@ function boraToast(msg,tipo){
 // ---- Impressão de comanda/cupom (cozinha ou cliente) ----
 function boraPrintComanda(p){
   const money=v=>'R$ '+Number(v||0).toFixed(2).replace('.',',');
-  const loja=(JSON.parse(localStorage.getItem('boraTheme')||'{}').name)||'Bora';
+  const loja=(JSON.parse(localStorage.getItem('boraTheme')||'{}').name)||'BoraHapp';
   const itens=(p.itens||[]).map(i=>`<tr><td>${i.quantidade||1}x</td><td>${i.descricao||''}</td></tr>`).join('')||'<tr><td colspan="2">—</td></tr>';
   const end=[p.clienteEndereco,p.clienteBairro].filter(Boolean).join(' - ');
   const w=window.open('','_print','width=320,height=600');
@@ -99,7 +99,7 @@ function boraPrintComanda(p){
     ${p.observacao?`<div>OBS: ${p.observacao}</div><hr>`:''}
     <table><tr><td class="b">TOTAL</td><td class="r big">${money(p.valorTotal)}</td></tr>
     <tr><td>Pagamento</td><td class="r">${p.formaPagamento||'-'}</td></tr></table>
-    <hr><div class="c">Bora • ${p.origem||''}</div>
+    <hr><div class="c">BoraHapp • ${p.origem||''}</div>
     </body></html>`);
   w.document.close();w.focus();setTimeout(()=>{w.print();},250);
 }

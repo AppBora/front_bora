@@ -3,7 +3,7 @@
   if (!Bora.requireAuth()) return;
   const $ = id => document.getElementById(id);
 
-  const PAPEL = { OPERADOR: 'Operador', GERENTE: 'Gerente', ADMINISTRADOR_LOJA: 'Admin da loja', ADMINISTRADOR_BORA: 'Admin Bora' };
+  const PAPEL = { OPERADOR: 'Operador', GERENTE: 'Gerente', ADMINISTRADOR_LOJA: 'Admin da loja', ADMINISTRADOR_BORA: 'Admin BoraHapp' };
 
   window.__ativo = async (id, ativo) => { try { await Bora.api(`/api/usuarios/${id}/ativo?ativo=${ativo}`, { method: 'PUT' }); lista(); } catch (e) { alert(e.message); } };
 

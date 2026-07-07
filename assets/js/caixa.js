@@ -33,7 +33,7 @@
       <tr><td>Cancelados</td><td class="r">${resumo.canc}</td></tr></table>
       <hr><div class="b">POR PAGAMENTO</div><table>${Object.entries(resumo.pag).map(([k, v]) => linha(k, v)).join('')}</table>
       <hr><div class="b">POR CANAL</div><table>${Object.entries(resumo.can).map(([k, v]) => linha(k, v)).join('')}</table>
-      <hr><div class="c">Bora • caixa do dia</div></body></html>`);
+      <hr><div class="c">BoraHapp • caixa do dia</div></body></html>`);
     w.document.close(); w.focus(); setTimeout(() => w.print(), 250);
   };
 

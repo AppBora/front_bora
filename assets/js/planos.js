@@ -1,7 +1,7 @@
 // Mostra o plano atual da loja + uso (pedidos do mês / usuários) e destaca o card.
 (function () {
   if (!Bora.requireAuth()) return;
-  const NOME = { UNICO: 'Bora', START: 'Bora', PRO: 'Bora', PREMIUM: 'Bora' };
+  const NOME = { UNICO: 'BoraHapp', START: 'BoraHapp', PRO: 'BoraHapp', PREMIUM: 'BoraHapp' };
 
   function barra(usado, max) {
     const pct = max ? Math.min(100, Math.round((usado / max) * 100)) : 0;
