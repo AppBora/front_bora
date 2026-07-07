@@ -19,7 +19,49 @@
       </form>
       <div class="theme-preview" id="preview"></div>
     </div>
+    <!-- Plataforma (visível SOMENTE para o ADMINISTRADOR_BORA — nenhuma conta de loja vê) -->
+    <div class="card" id="cardPlataforma" hidden style="margin-top:16px;border:2px dashed var(--primary)">
+      <h2>🔧 Plataforma BoraHapp <span style="font-weight:600;color:var(--muted);font-size:12px">· só o administrador da plataforma vê isto</span></h2>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:10px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700">
+          <input type="checkbox" id="fiscalToggle" style="width:22px;height:22px;cursor:pointer">
+          Emissão de Nota Fiscal (NFC-e)
+        </label>
+        <span id="fiscalStatus" class="badge">—</span>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin-top:8px">
+        Combinamos ligar somente quando o faturamento da plataforma atingir <b>R$ 5 mil/mês livres</b>
+        (custo da API fiscal: ~R$ 109/mês + R$ 0,65/nota — repassar como módulo pago por loja emissora).
+      </p>
+      <span id="fiscalMsg" style="font-size:13px"></span>
+    </div>
   </main>
 </div>
 <script src="assets/js/api.js?v=20260623"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/configuracoes.js?v=20260623"></script>
+<script>
+// Chave do módulo fiscal — o card só aparece para ADMINISTRADOR_BORA (a API também bloqueia com 403).
+(function () {
+  const u = Bora.user();
+  if (!u || u.papel !== 'ADMINISTRADOR_BORA') return;
+  const card = document.getElementById('cardPlataforma');
+  card.hidden = false;
+  const t = document.getElementById('fiscalToggle'), st = document.getElementById('fiscalStatus'), msg = document.getElementById('fiscalMsg');
+  function render(on) {
+    t.checked = on;
+    st.textContent = on ? 'LIGADA' : 'DESLIGADA';
+    st.style.cssText = 'padding:3px 10px;border-radius:999px;font-weight:700;font-size:12px;' +
+      (on ? 'background:#dcfce7;color:#166534' : 'background:#fee2e2;color:#991b1b');
+  }
+  Bora.api('/admin-bora/config').then(c => render(c['fiscal.habilitado'] === 'true')).catch(e => { msg.textContent = e.message; });
+  t.onchange = async () => {
+    const alvo = t.checked;
+    if (!confirm('Tem certeza que deseja ' + (alvo ? 'LIGAR' : 'DESLIGAR') + ' a emissão de NFC-e para toda a plataforma?')) { t.checked = !alvo; return; }
+    try {
+      const r = await Bora.api('/admin-bora/config/fiscal', { method: 'PUT', body: JSON.stringify({ habilitado: alvo }) });
+      render(r['fiscal.habilitado'] === 'true');
+      msg.textContent = 'Salvo ✓'; setTimeout(() => msg.textContent = '', 3000);
+    } catch (e) { t.checked = !alvo; msg.textContent = 'Erro: ' + e.message; }
+  };
+})();
+</script>
 </body></html>
