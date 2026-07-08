@@ -34,6 +34,33 @@
         (custo da API fiscal: ~R$ 109/mês + R$ 0,65/nota — repassar como módulo pago por loja emissora).
       </p>
       <span id="fiscalMsg" style="font-size:13px"></span>
+      <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
+      <h3 style="margin:0 0 6px">🧠 Módulo IA por loja <span style="font-weight:600;color:var(--muted);font-size:12px">· libere quando o cliente contratar o add-on</span></h3>
+      <div id="iaLojas" style="font-size:14px">Carregando lojas…</div>
+    </div>
+    <!-- Módulo IA (aparece apenas para lojas com o add-on liberado) -->
+    <div class="card" id="cardIA" hidden style="margin-top:16px">
+      <h2>🧠 Módulo IA <span class="badge b-entregue" style="font-size:11px">contratado</span></h2>
+      <div style="display:grid;gap:14px;margin-top:10px">
+        <div>
+          <b>🤖 Gerente Virtual</b> — resumo diário no seu WhatsApp às 8h.<br>
+          <input id="iaZapDono" placeholder="Seu WhatsApp (ex.: 5511999998888)" style="padding:9px;border:1px solid #e2e8f0;border-radius:6px;min-width:240px;margin-top:6px">
+          <button class="btn" id="iaSalvarZap" style="margin-left:6px">Salvar</button>
+          <button class="btn" id="iaVerResumo" style="margin-left:6px;background:#64748b">Ver resumo de hoje</button>
+          <pre id="iaResumo" style="white-space:pre-wrap;background:#f8fafc;border-radius:8px;padding:10px;margin-top:8px;display:none;font-size:13px"></pre>
+        </div>
+        <div>
+          <b>💚 Recuperador de clientes</b> — contata sozinho quem sumiu há 21+ dias (roda todo dia).<br>
+          <button class="btn" id="iaRecuperar" style="margin-top:6px">Disparar agora</button>
+          <span id="iaRoi" style="margin-left:10px;color:var(--muted);font-size:13px"></span>
+        </div>
+        <div>
+          <b>📸 Migração por foto</b> — envie a foto/print do seu cardápio e a IA cadastra os produtos.<br>
+          <input type="file" id="iaFoto" accept="image/*" style="margin-top:6px">
+          <button class="btn" id="iaImportar">Importar produtos</button>
+          <span id="iaImpMsg" style="margin-left:8px;font-size:13px"></span>
+        </div>
+      </div>
     </div>
   </main>
 </div>
@@ -62,6 +89,70 @@
       msg.textContent = 'Salvo ✓'; setTimeout(() => msg.textContent = '', 3000);
     } catch (e) { t.checked = !alvo; msg.textContent = 'Erro: ' + e.message; }
   };
+  // Liberação do Módulo IA por loja (add-on pago)
+  const wrap = document.getElementById('iaLojas');
+  async function carregarLojas() {
+    try {
+      const lojas = await Bora.api('/admin-bora/lojas');
+      wrap.innerHTML = lojas.map(l =>
+        `<label style="display:flex;gap:8px;align-items:center;padding:6px 0;cursor:pointer">
+          <input type="checkbox" data-ia="${l.id}" ${l.moduloIa ? 'checked' : ''} style="width:18px;height:18px">
+          #${l.id} · ${l.nome || 'Loja'} ${l.ativo === false ? '<span style="color:#991b1b">(inativa)</span>' : ''}
+        </label>`).join('') || 'Nenhuma loja.';
+      wrap.querySelectorAll('input[data-ia]').forEach(cb => cb.onchange = async () => {
+        try { await Bora.api('/admin-bora/lojas/' + cb.dataset.ia + '/modulo-ia',
+          { method: 'PUT', body: JSON.stringify({ habilitado: cb.checked }) }); }
+        catch (e) { cb.checked = !cb.checked; alert('Erro: ' + e.message); }
+      });
+    } catch (e) { wrap.textContent = 'Erro: ' + e.message; }
+  }
+  carregarLojas();
+})();
+
+// Card Módulo IA da loja — só aparece quando o adm liberou (o backend valida tudo de novo).
+(function () {
+  const u = Bora.user();
+  if (!u || u.papel === 'ADMINISTRADOR_BORA') return;
+  Bora.api('/api/ia/status').then(st => {
+    if (!st.contratado) return;
+    const card = document.getElementById('cardIA');
+    card.hidden = false;
+    const $ = id => document.getElementById(id);
+    $('iaZapDono').value = st.whatsappDono || '';
+    $('iaSalvarZap').onclick = async () => {
+      try { await Bora.api('/api/ia/whatsapp-dono', { method: 'PUT', body: JSON.stringify({ numero: $('iaZapDono').value.trim() }) }); alert('Salvo!'); }
+      catch (e) { alert('Erro: ' + e.message); }
+    };
+    $('iaVerResumo').onclick = async () => {
+      try { const r = await Bora.api('/api/ia/gerente', { method: 'POST' }); $('iaResumo').style.display = 'block'; $('iaResumo').textContent = r.resumo; }
+      catch (e) { alert('Erro: ' + e.message); }
+    };
+    $('iaRecuperar').onclick = async () => {
+      try { const r = await Bora.api('/api/ia/recuperar', { method: 'POST' });
+        alert('Clientes sumidos: ' + r.clientesSumidos + '\nMensagens enviadas: ' + r.mensagensEnviadas + (r.aviso ? '\n' + r.aviso : '')); roi(); }
+      catch (e) { alert('Erro: ' + e.message); }
+    };
+    async function roi() {
+      try { const r = await Bora.api('/api/ia/recuperacao/resumo');
+        $('iaRoi').textContent = r.contatados30d + ' contatados · ' + r.clientesRecuperados + ' recuperados · R$ ' + Number(r.valorRecuperado || 0).toFixed(2).replace('.', ',') + ' em 30 dias'; }
+      catch (e) {}
+    }
+    roi();
+    $('iaImportar').onclick = () => {
+      const f = $('iaFoto').files[0];
+      if (!f) { alert('Escolha a foto do cardápio primeiro'); return; }
+      const rd = new FileReader();
+      rd.onload = async () => {
+        $('iaImpMsg').textContent = 'Lendo o cardápio com IA…';
+        try {
+          const r = await Bora.api('/api/ia/importar-cardapio', { method: 'POST', body: JSON.stringify({
+            imagemBase64: String(rd.result).split(',')[1], mediaType: f.type || 'image/jpeg' }) });
+          $('iaImpMsg').textContent = '✅ ' + r.produtosCriados + ' produtos criados! Veja em Produtos.';
+        } catch (e) { $('iaImpMsg').textContent = '❌ ' + e.message; }
+      };
+      rd.readAsDataURL(f);
+    };
+  }).catch(() => {});
 })();
 </script>
 </body></html>
