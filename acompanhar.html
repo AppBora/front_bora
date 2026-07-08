@@ -1,0 +1,71 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Acompanhar pedido</title><link rel="icon" href="assets/img/icone-bora.svg">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+  body{background:#f6f7fb;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:#fff;border-radius:20px;box-shadow:0 10px 30px rgba(15,23,42,.08);max-width:420px;width:100%;padding:28px;text-align:center}
+  h1{font-size:20px;margin-bottom:2px}
+  .cod{color:#64748b;font-size:14px;margin-bottom:22px}
+  .passo{display:flex;gap:14px;text-align:left;position:relative;padding-bottom:26px}
+  .passo:last-child{padding-bottom:0}
+  .bola{width:34px;height:34px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;z-index:1}
+  .passo::before{content:"";position:absolute;left:16px;top:34px;bottom:0;width:2px;background:#e2e8f0}
+  .passo:last-child::before{display:none}
+  .passo.ok .bola{background:#dcfce7}
+  .passo.atual .bola{background:#7c3aed;color:#fff;animation:pulsa 1.6s infinite}
+  .passo.ok::before{background:#86efac}
+  .t{font-weight:700;font-size:15px}.s{color:#94a3b8;font-size:13px}
+  .passo.atual .t{color:#7c3aed}
+  @keyframes pulsa{0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,.35)}50%{box-shadow:0 0 0 10px rgba(124,58,237,0)}}
+  .cancel{background:#fef2f2;color:#991b1b;border-radius:12px;padding:14px;font-weight:700;margin-top:6px}
+  .rodape{margin-top:22px;color:#cbd5e1;font-size:12px}
+</style></head><body>
+<div class="card">
+  <h1 id="loja">Carregando…</h1>
+  <div class="cod" id="cod"></div>
+  <div id="timeline"></div>
+  <div class="rodape">Atualiza sozinho · BoraHapp</div>
+</div>
+<script>
+(function(){
+  const q = new URLSearchParams(location.search);
+  const lojaId = q.get('loja'), pedidoId = q.get('pedido');
+  const FASES = [
+    { st:['RECEBIDO'],            ic:'📨', t:'Pedido recebido',    s:'Chegou na loja' },
+    { st:['CONFIRMADO'],          ic:'✅', t:'Confirmado',         s:'A loja aceitou seu pedido' },
+    { st:['EM_PREPARO'],          ic:'👨‍🍳', t:'Em preparo',         s:'Capricho em andamento' },
+    { st:['PRONTO'],              ic:'📦', t:'Pronto',             s:'Embalado e esperando' },
+    { st:['SAIU_PARA_ENTREGA'],   ic:'🛵', t:'Saiu para entrega',  s:'A caminho de você' },
+    { st:['ENTREGUE'],            ic:'🎉', t:'Entregue',           s:'Bom apetite!' }
+  ];
+  const ORDEM = ['RECEBIDO','CONFIRMADO','EM_PREPARO','PRONTO','SAIU_PARA_ENTREGA','ENTREGUE'];
+  async function tick(){
+    try{
+      const r = await fetch(location.origin + '/public/loja/' + lojaId + '/pedido/' + pedidoId + '/status');
+      if(!r.ok) throw new Error('Pedido não encontrado');
+      const d = await r.json();
+      document.getElementById('loja').textContent = d.loja || 'Seu pedido';
+      document.title = (d.loja || 'Pedido') + ' · ' + d.codigo;
+      document.getElementById('cod').textContent = 'Pedido ' + d.codigo + (d.pago ? ' · PIX pago ✔' : '');
+      if(d.status === 'CANCELADO'){
+        document.getElementById('timeline').innerHTML =
+          '<div class="cancel">😔 Pedido cancelado' + (d.motivoCancelamento ? '<br><small style="font-weight:400">' + d.motivoCancelamento + '</small>' : '') + '</div>';
+        return;
+      }
+      const atual = ORDEM.indexOf(d.status);
+      document.getElementById('timeline').innerHTML = FASES.map((f,i)=>{
+        const cls = i < atual ? 'ok' : (i === atual ? (d.status==='ENTREGUE'?'ok':'atual') : '');
+        return '<div class="passo '+cls+'"><div class="bola">'+(i<atual||d.status==='ENTREGUE'&&i===atual?'✓':f.ic)+'</div>'+
+               '<div><div class="t">'+f.t+'</div><div class="s">'+f.s+'</div></div></div>';
+      }).join('');
+      if(d.status === 'ENTREGUE') clearInterval(timer);
+    }catch(e){
+      document.getElementById('loja').textContent = 'Ops!';
+      document.getElementById('timeline').innerHTML = '<div class="cancel">'+e.message+'</div>';
+      clearInterval(timer);
+    }
+  }
+  const timer = setInterval(tick, 5000);
+  tick();
+})();
+</script>
+</body></html>

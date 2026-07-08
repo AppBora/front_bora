@@ -129,7 +129,8 @@
         acompanharPagamento(r.pedidoId);
       } else {
         $('ckForm').hidden = true; $('ckOk').hidden = false;
-        $('okMsg').textContent = 'Seu pedido ' + r.codigo + ' (' + money(r.valorTotal) + ') já está na cozinha. Pagamento na entrega/retirada.';
+        $('okMsg').innerHTML = 'Seu pedido ' + r.codigo + ' (' + money(r.valorTotal) + ') já está na cozinha. Pagamento na entrega/retirada.<br><br>' +
+          '<a href="acompanhar.html?loja=' + lojaId + '&pedido=' + r.pedidoId + '" style="color:#7c3aed;font-weight:800">📍 Acompanhar meu pedido ao vivo</a>';
       }
     } catch (e) { err.textContent = e.message || 'Falha ao enviar o pedido'; }
     btn.disabled = false; btn.textContent = 'Confirmar pedido';
@@ -142,7 +143,10 @@
         const s = await Bora.api('/public/loja/' + lojaId + '/pedido/' + pedidoId + '/status');
         if (s.pago) {
           clearInterval(pollTimer);
-          const st = $('pxStatus'); st.textContent = '✅ Pagamento confirmado! Pedido na cozinha.'; st.style.color = '#15803d';
+          const st = $('pxStatus');
+          st.innerHTML = '✅ Pagamento confirmado! Pedido na cozinha.<br><br>' +
+            '<a href="acompanhar.html?loja=' + lojaId + '&pedido=' + pedidoId + '" style="color:#7c3aed;font-weight:800">📍 Acompanhar meu pedido ao vivo</a>';
+          st.style.color = '#15803d';
         }
       } catch (e) { /* segue tentando */ }
     }, 5000);
