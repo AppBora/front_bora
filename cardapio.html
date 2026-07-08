@@ -3,13 +3,56 @@
   <div class="menu-hero">
     <div class="lg">🍦</div>
     <h1 id="lojaNome">Carregando…</h1>
-    <p>Cardápio digital · peça pelo WhatsApp</p>
+    <p>Cardápio digital · peça online e pague com PIX</p>
   </div>
   <div id="menu"></div>
 </div>
 <div class="menu-bar hidden" id="bar">
   <div class="info"><div class="ct" id="barTotal">R$ 0,00</div><div class="cs" id="barQtd">0 itens</div></div>
-  <button class="send" id="send">Enviar pedido 📲</button>
+  <button class="send" id="send">Finalizar pedido 🛒</button>
+</div>
+<div id="checkout" hidden style="position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:16px;max-width:420px;width:100%;max-height:92vh;overflow:auto;padding:22px">
+    <div id="ckForm">
+      <h2 style="margin:0 0 4px">Finalizar pedido</h2>
+      <p style="margin:0 0 14px;color:#64748b;font-size:14px" id="ckResumo"></p>
+      <label style="display:block;font-size:13px;margin:10px 0 4px">Seu nome *</label>
+      <input id="ckNome" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px">
+      <label style="display:block;font-size:13px;margin:10px 0 4px">Telefone/WhatsApp</label>
+      <input id="ckTel" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="(11) 99999-9999">
+      <label style="display:block;font-size:13px;margin:10px 0 4px">Endereço de entrega</label>
+      <input id="ckEnd" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="Rua, número, bairro">
+      <label style="display:block;font-size:13px;margin:10px 0 4px">Observação</label>
+      <input id="ckObs" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="Ex.: sem cebola">
+      <div style="margin:14px 0 4px;font-size:13px;font-weight:700">Pagamento</div>
+      <label id="ckOpPix" style="display:flex;gap:8px;align-items:center;padding:8px 0;cursor:pointer" hidden>
+        <input type="radio" name="ckForma" value="PIX" checked> 💠 PIX agora (aprovação na hora)
+      </label>
+      <label style="display:flex;gap:8px;align-items:center;padding:8px 0;cursor:pointer">
+        <input type="radio" name="ckForma" value="ENTREGA"> 💵 Pagar na entrega/retirada
+      </label>
+      <div id="ckCpfWrap" hidden>
+        <label style="display:block;font-size:13px;margin:6px 0 4px">CPF (necessário para o PIX) *</label>
+        <input id="ckCpf" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="Somente números">
+      </div>
+      <div id="ckErr" style="color:#dc2626;font-size:13px;margin-top:10px"></div>
+      <button id="ckEnviar" style="width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:var(--primary,#7c3aed);color:#fff;font-weight:800;font-size:16px;cursor:pointer">Confirmar pedido</button>
+      <button id="ckFechar" style="width:100%;margin-top:8px;padding:10px;border:none;border-radius:10px;background:#f1f5f9;color:#334155;font-weight:600;cursor:pointer">Voltar</button>
+    </div>
+    <div id="ckPix" hidden style="text-align:center">
+      <h2 style="margin:0 0 6px">Pague com PIX 💠</h2>
+      <p style="color:#64748b;font-size:14px;margin:0 0 10px">Pedido <b id="pxCodigo"></b> · <span id="pxValor"></span></p>
+      <img id="pxQr" alt="QR Code PIX" style="width:230px;height:230px;border:1px solid #e2e8f0;border-radius:12px">
+      <textarea id="pxPayload" readonly style="width:100%;margin-top:10px;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:11px;height:64px"></textarea>
+      <button id="pxCopiar" style="width:100%;margin-top:8px;padding:12px;border:none;border-radius:10px;background:var(--primary,#7c3aed);color:#fff;font-weight:700;cursor:pointer">Copiar código PIX</button>
+      <div id="pxStatus" style="margin-top:14px;font-weight:800;color:#b45309">⏳ Aguardando pagamento…</div>
+    </div>
+    <div id="ckOk" hidden style="text-align:center;padding:20px 0">
+      <div style="font-size:52px">✅</div>
+      <h2>Pedido enviado!</h2>
+      <p style="color:#64748b" id="okMsg"></p>
+    </div>
+  </div>
 </div>
 <script src="assets/js/api.js?v=20260623"></script><script src="assets/js/cardapio.js?v=20260623"></script>
 </body></html>

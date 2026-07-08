@@ -33,22 +33,85 @@
   window.__add = id => { cart[id] = (cart[id] || 0) + 1; atualizarBarra();
     const b = document.getElementById('bar'); b.style.transform = 'scale(1.02)'; setTimeout(() => b.style.transform = '', 120); };
 
-  function enviarWhatsapp() {
-    const linhas = [], nome = document.getElementById('lojaNome').textContent;
-    let total = 0;
-    Object.entries(cart).forEach(([id, q]) => { const p = produtos.find(x => x.id == id);
-      if (p) { linhas.push(`• ${q}x ${p.nome} — ${money(Number(p.preco) * q)}`); total += Number(p.preco) * q; } });
-    const msg = `*Pedido — ${nome}*\n\n${linhas.join('\n')}\n\n*Total: ${money(total)}*\n\nMeu nome: \nEndereço: \nForma de pagamento: `;
-    const base = wa ? `https://wa.me/${wa}?text=` : `https://wa.me/?text=`;
-    window.open(base + encodeURIComponent(msg), '_blank');
+  // ---- Checkout online: pedido criado no sistema; PIX na conta Asaas do lojista ----
+  let pixDisponivel = false, pollTimer = null;
+  const $ = id => document.getElementById(id);
+
+  function itensCarrinho() {
+    return Object.entries(cart).filter(([, q]) => q > 0)
+      .map(([produtoId, quantidade]) => ({ produtoId: Number(produtoId), quantidade }));
+  }
+  function totalCarrinho() {
+    return Object.entries(cart).reduce((t, [id, q]) => { const p = produtos.find(x => x.id == id); return t + (p ? Number(p.preco || 0) * q : 0); }, 0);
+  }
+
+  function abrirCheckout() {
+    if (!itensCarrinho().length) return;
+    $('ckForm').hidden = false; $('ckPix').hidden = true; $('ckOk').hidden = true; $('ckErr').textContent = '';
+    $('ckResumo').textContent = itensCarrinho().reduce((n, i) => n + i.quantidade, 0) + ' itens · ' + money(totalCarrinho());
+    $('ckOpPix').hidden = !pixDisponivel;
+    if (!pixDisponivel) document.querySelector('input[name="ckForma"][value="ENTREGA"]').checked = true;
+    atualizarCpf();
+    $('checkout').hidden = false;
+  }
+  function atualizarCpf() {
+    const pix = document.querySelector('input[name="ckForma"]:checked')?.value === 'PIX';
+    $('ckCpfWrap').hidden = !pix || !pixDisponivel;
+  }
+
+  async function confirmarPedido() {
+    const btn = $('ckEnviar'), err = $('ckErr');
+    const forma = document.querySelector('input[name="ckForma"]:checked')?.value === 'PIX' && pixDisponivel ? 'PIX' : 'ENTREGA';
+    err.textContent = ''; btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      const r = await Bora.api('/public/loja/' + lojaId + '/pedido', { method: 'POST', body: JSON.stringify({
+        itens: itensCarrinho(),
+        clienteNome: $('ckNome').value.trim(),
+        telefone: $('ckTel').value.trim(),
+        endereco: $('ckEnd').value.trim(),
+        observacao: $('ckObs').value.trim(),
+        formaPagamento: forma,
+        cpf: $('ckCpf').value.trim()
+      })});
+      cart = {}; atualizarBarra();
+      if (r.pix && r.pix.payload) {
+        $('ckForm').hidden = true; $('ckPix').hidden = false;
+        $('pxCodigo').textContent = r.codigo; $('pxValor').textContent = money(r.valorTotal);
+        if (r.pix.encodedImage) $('pxQr').src = 'data:image/png;base64,' + r.pix.encodedImage;
+        $('pxPayload').value = r.pix.payload;
+        acompanharPagamento(r.pedidoId);
+      } else {
+        $('ckForm').hidden = true; $('ckOk').hidden = false;
+        $('okMsg').textContent = 'Seu pedido ' + r.codigo + ' (' + money(r.valorTotal) + ') já está na cozinha. Pagamento na entrega/retirada.';
+      }
+    } catch (e) { err.textContent = e.message || 'Falha ao enviar o pedido'; }
+    btn.disabled = false; btn.textContent = 'Confirmar pedido';
+  }
+
+  function acompanharPagamento(pedidoId) {
+    clearInterval(pollTimer);
+    pollTimer = setInterval(async () => {
+      try {
+        const s = await Bora.api('/public/loja/' + lojaId + '/pedido/' + pedidoId + '/status');
+        if (s.pago) {
+          clearInterval(pollTimer);
+          const st = $('pxStatus'); st.textContent = '✅ Pagamento confirmado! Pedido na cozinha.'; st.style.color = '#15803d';
+        }
+      } catch (e) { /* segue tentando */ }
+    }, 5000);
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
-    document.getElementById('send').addEventListener('click', enviarWhatsapp);
+    $('send').addEventListener('click', abrirCheckout);
+    $('ckFechar').addEventListener('click', () => { clearInterval(pollTimer); $('checkout').hidden = true; });
+    $('ckEnviar').addEventListener('click', confirmarPedido);
+    document.querySelectorAll('input[name="ckForma"]').forEach(r => r.addEventListener('change', atualizarCpf));
+    $('pxCopiar').addEventListener('click', () => { $('pxPayload').select(); document.execCommand('copy'); $('pxCopiar').textContent = 'Copiado ✓'; setTimeout(() => $('pxCopiar').textContent = 'Copiar código PIX', 2000); });
     try {
       const data = await Bora.cardapioPublico(lojaId);
       document.getElementById('lojaNome').textContent = (data.loja && data.loja.nome) || 'Cardápio';
       document.title = (data.loja && data.loja.nome) || 'Cardápio Digital';
+      pixDisponivel = !!data.pixDisponivel;
       produtos = data.produtos || [];
       if (!produtos.length) { document.getElementById('menu').innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px">Cardápio em montagem.</p>'; return; }
       render();
