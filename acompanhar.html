@@ -29,6 +29,12 @@
 (function(){
   const q = new URLSearchParams(location.search);
   const lojaId = q.get('loja'), pedidoId = q.get('pedido');
+  if (!lojaId || !pedidoId || !/^https?:/.test(location.protocol)) {
+    document.getElementById('loja').textContent = 'Link incompleto';
+    document.getElementById('timeline').innerHTML =
+      '<div class="cancel" style="font-weight:400">Este link de acompanhamento não é válido. Use o link que você recebeu no WhatsApp ou na tela do pedido. 😉</div>';
+    return;
+  }
   const FASES = [
     { st:['RECEBIDO'],            ic:'📨', t:'Pedido recebido',    s:'Chegou na loja' },
     { st:['CONFIRMADO'],          ic:'✅', t:'Confirmado',         s:'A loja aceitou seu pedido' },
