@@ -5,7 +5,8 @@
   </aside>
   <main class="main">
     <header class="top"><div class="title"><h1>Pedidos</h1><p>Quadro em tempo real · acompanhe da cozinha à entrega</p></div>
-      <div style="display:flex;gap:10px"><a class="btn" href="novo-pedido.html">+ Novo pedido</a><a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></div>
+      <div style="display:flex;gap:10px"><button class="btn" id="autoPrint" title="Imprimir comanda automaticamente ao chegar pedido novo" style="background:#64748b" onclick="const on=localStorage.getItem('boraAutoPrint')!=='1';localStorage.setItem('boraAutoPrint',on?'1':'0');this.style.background=on?'#059669':'#64748b';this.textContent=on?'🖨️ Auto ON':'🖨️ Auto OFF'">🖨️ Auto OFF</button><a class="btn" href="novo-pedido.html">+ Novo pedido</a><a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></div>
+      <script>document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('autoPrint');if(localStorage.getItem('boraAutoPrint')==='1'){b.style.background='#059669';b.textContent='🖨️ Auto ON';}});</script>
     </header>
 
     <div class="board-toolbar">

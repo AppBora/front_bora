@@ -46,7 +46,8 @@ const BORA_NAV = [
   { href:'configuracoes.html', label:'Configurações',   ic:'⚙️' },
   { href:'ajustes.html',       label:'Ajustes Operação',ic:'🛠️' },
   { href:'usuarios.html',      label:'Usuários',        ic:'🔑' },
-  { href:'planos.html',        label:'Planos',          ic:'🏷️' }
+  { href:'planos.html',        label:'Planos',          ic:'🏷️' },
+  { href:'ajuda.html',         label:'Ajuda',           ic:'🆘' }
 ];
 
 function renderNav(){

@@ -48,6 +48,10 @@
         const canal = boraCanal(p.origem);
         if (typeof boraToast === 'function')
           boraToast(`${canal.ic} Novo pedido ${p.codigo ? '#' + p.codigo : ''}<small>${p.clienteNome || 'Cliente'} · ${money(p.valorTotal)} · ${canal.key}</small>`, 'novo');
+        // impressão automática da comanda (liga/desliga no botão 🖨️ do topo)
+        if (localStorage.getItem('boraAutoPrint') === '1' && typeof boraPrintComanda === 'function') {
+          setTimeout(() => boraPrintComanda(p), 400);
+        }
       }
     });
     conhecidos = new Set(idsRecebidos);
