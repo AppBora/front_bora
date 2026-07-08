@@ -80,7 +80,7 @@
   }
 
   // ---- Checkout online: pedido criado no sistema; PIX na conta Asaas do lojista ----
-  let pixDisponivel = false, pollTimer = null;
+  let pixDisponivel = false, pollTimer = null, cupomOk = false;
   const $ = id => document.getElementById(id);
 
   function itensCarrinho() {
@@ -116,6 +116,7 @@
         telefone: $('ckTel').value.trim(),
         endereco: $('ckEnd').value.trim(),
         observacao: $('ckObs').value.trim(),
+        cupom: cupomOk ? $('ckCupom').value.trim() : '',
         formaPagamento: forma,
         cpf: $('ckCpf').value.trim()
       })});
@@ -151,6 +152,15 @@
     $('send').addEventListener('click', abrirCheckout);
     $('ckFechar').addEventListener('click', () => { clearInterval(pollTimer); $('checkout').hidden = true; });
     $('ckEnviar').addEventListener('click', confirmarPedido);
+    $('ckAplicarCupom').addEventListener('click', async () => {
+      const cod = $('ckCupom').value.trim(), msg = $('ckCupomMsg');
+      cupomOk = false; if (!cod) { msg.textContent = ''; return; }
+      try {
+        const c = await Bora.api('/public/loja/' + lojaId + '/cupom/' + encodeURIComponent(cod));
+        const d = c.tipo === 'VALOR' ? money(c.valor) : Number(c.valor) + '%';
+        cupomOk = true; msg.textContent = '✅ Cupom aplicado: ' + d + ' de desconto'; msg.style.color = '#15803d';
+      } catch (e) { msg.textContent = '❌ ' + (e.message || 'Cupom inválido'); msg.style.color = '#dc2626'; }
+    });
     document.querySelectorAll('input[name="ckForma"]').forEach(r => r.addEventListener('change', atualizarCpf));
     $('pxCopiar').addEventListener('click', () => { $('pxPayload').select(); document.execCommand('copy'); $('pxCopiar').textContent = 'Copiado ✓'; setTimeout(() => $('pxCopiar').textContent = 'Copiar código PIX', 2000); });
     try {

@@ -33,6 +33,12 @@
       <input id="ckEnd" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="Rua, número, bairro">
       <label style="display:block;font-size:13px;margin:10px 0 4px">Observação</label>
       <input id="ckObs" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="Ex.: sem cebola">
+      <label style="display:block;font-size:13px;margin:10px 0 4px">Cupom de desconto</label>
+      <div style="display:flex;gap:6px">
+        <input id="ckCupom" style="flex:1;padding:10px;border:1px solid #e2e8f0;border-radius:8px;text-transform:uppercase" placeholder="Ex.: BEMVINDO10">
+        <button type="button" id="ckAplicarCupom" style="padding:0 14px;border:none;border-radius:8px;background:#f1f5f9;font-weight:700;cursor:pointer">Aplicar</button>
+      </div>
+      <div id="ckCupomMsg" style="font-size:13px;margin-top:4px"></div>
       <div style="margin:14px 0 4px;font-size:13px;font-weight:700">Pagamento</div>
       <label id="ckOpPix" style="display:flex;gap:8px;align-items:center;padding:8px 0;cursor:pointer" hidden>
         <input type="radio" name="ckForma" value="PIX" checked> 💠 PIX agora (aprovação na hora)
