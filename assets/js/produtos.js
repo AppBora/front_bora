@@ -28,7 +28,8 @@
       tb.innerHTML = produtos.map(p =>
         `<tr><td><b>${esc(p.nome) || '—'}</b><br><small style="color:#94a3b8">${esc(p.categoria || '')}</small></td>` +
         `<td>${money(p.preco)}</td><td>${margem(p)}</td><td>${estoqueCel(p)}</td>` +
-        `<td style="text-align:right"><button onclick="__ficha(${p.id})" title="Ficha técnica" style="border:0;background:#f5f3ff;color:#7c3aed;border-radius:8px;padding:5px 9px;cursor:pointer">🧪</button> ` +
+        `<td style="text-align:right"><button onclick="__comp(${p.id})" title="Complementos (tamanho, borda, extras)" style="border:0;background:#ecfdf5;color:#059669;border-radius:8px;padding:5px 9px;cursor:pointer">🧩</button> ` +
+        `<button onclick="__ficha(${p.id})" title="Ficha técnica" style="border:0;background:#f5f3ff;color:#7c3aed;border-radius:8px;padding:5px 9px;cursor:pointer">🧪</button> ` +
         `<button onclick="__edit(${p.id})" style="border:0;background:#f1f5f9;border-radius:8px;padding:5px 9px;cursor:pointer">✏</button> ` +
         `<button onclick="__del(${p.id})" style="border:0;background:#fef2f2;color:#dc2626;border-radius:8px;padding:5px 9px;cursor:pointer">✕</button></td></tr>`
       ).join('') || '<tr><td colspan="5" style="color:#94a3b8">Nenhum produto ainda.</td></tr>';

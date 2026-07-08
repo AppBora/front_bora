@@ -6,7 +6,7 @@
   const lojaId = params.get('loja') || '1';
   const wa = (params.get('wa') || '').replace(/\D/g, '');
 
-  let produtos = [], cart = {};
+  let produtos = [], cart = []; // cart = linhas {produtoId, quantidade, complementos:[ids], rotulo, unit}
 
   function render() {
     const grupos = {};
@@ -23,26 +23,71 @@
 
   function atualizarBarra() {
     const bar = document.getElementById('bar');
-    let qtd = 0, total = 0;
-    Object.entries(cart).forEach(([id, q]) => { const p = produtos.find(x => x.id == id); if (p) { qtd += q; total += Number(p.preco || 0) * q; } });
+    const qtd = cart.reduce((n, l) => n + l.quantidade, 0);
+    const total = cart.reduce((t, l) => t + l.unit * l.quantidade, 0);
     if (qtd > 0) { bar.classList.remove('hidden'); document.getElementById('barTotal').textContent = money(total);
       document.getElementById('barQtd').textContent = qtd + (qtd === 1 ? ' item' : ' itens'); }
     else bar.classList.add('hidden');
   }
 
-  window.__add = id => { cart[id] = (cart[id] || 0) + 1; atualizarBarra();
-    const b = document.getElementById('bar'); b.style.transform = 'scale(1.02)'; setTimeout(() => b.style.transform = '', 120); };
+  function addLinha(p, complementos, extra, rotulo) {
+    const chave = p.id + ':' + complementos.slice().sort().join(',');
+    const ex = cart.find(l => l.chave === chave);
+    if (ex) ex.quantidade++;
+    else cart.push({ chave, produtoId: p.id, quantidade: 1, complementos, rotulo, unit: Number(p.preco || 0) + extra });
+    atualizarBarra();
+    const b = document.getElementById('bar'); b.style.transform = 'scale(1.02)'; setTimeout(() => b.style.transform = '', 120);
+  }
+
+  window.__add = id => {
+    const p = produtos.find(x => x.id == id); if (!p) return;
+    if (p.complementos && p.complementos.length) abrirComplementos(p);
+    else addLinha(p, [], 0, p.nome);
+  };
+
+  // ---- Modal de complementos (tamanho, borda, extras) ----
+  function abrirComplementos(p) {
+    const wrap = document.getElementById('comp');
+    document.getElementById('compTitulo').textContent = p.nome;
+    document.getElementById('compGrupos').innerHTML = p.complementos.map(g => {
+      const tipo = g.maximo === 1 ? 'radio' : 'checkbox';
+      const regra = g.minimo > 0 ? `escolha ${g.minimo === g.maximo ? g.minimo : g.minimo + ' a ' + g.maximo}` : `até ${g.maximo} (opcional)`;
+      return `<div style="margin:12px 0" data-grupo="${g.id}" data-min="${g.minimo}" data-max="${g.maximo}" data-nome="${esc(g.nome)}">
+        <div style="font-weight:800">${esc(g.nome)} <small style="color:#94a3b8;font-weight:600">· ${regra}</small></div>
+        ${g.itens.map(i => `<label style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed #e2e8f0;cursor:pointer">
+          <span><input type="${tipo}" name="g${g.id}" value="${i.id}" data-preco="${i.preco || 0}" data-nome="${esc(i.nome)}" style="margin-right:8px">${esc(i.nome)}</span>
+          <small style="color:#64748b">${Number(i.preco) > 0 ? '+ ' + money(i.preco) : ''}</small>
+        </label>`).join('')}
+      </div>`;
+    }).join('');
+    document.getElementById('compErr').textContent = '';
+    wrap.hidden = false;
+    document.getElementById('compOk').onclick = () => {
+      const escolhidos = [], nomes = []; let extra = 0;
+      for (const gDiv of document.querySelectorAll('#compGrupos [data-grupo]')) {
+        const sel = gDiv.querySelectorAll('input:checked');
+        if (sel.length < Number(gDiv.dataset.min) || sel.length > Number(gDiv.dataset.max)) {
+          document.getElementById('compErr').textContent = 'Confira as escolhas de "' + gDiv.dataset.nome + '"';
+          return;
+        }
+        sel.forEach(i => { escolhidos.push(Number(i.value)); nomes.push(i.dataset.nome); extra += Number(i.dataset.preco || 0); });
+      }
+      wrap.hidden = true;
+      addLinha(p, escolhidos, extra, p.nome + (nomes.length ? ' (' + nomes.join(', ') + ')' : ''));
+    };
+    document.getElementById('compCancelar').onclick = () => { wrap.hidden = true; };
+  }
 
   // ---- Checkout online: pedido criado no sistema; PIX na conta Asaas do lojista ----
   let pixDisponivel = false, pollTimer = null;
   const $ = id => document.getElementById(id);
 
   function itensCarrinho() {
-    return Object.entries(cart).filter(([, q]) => q > 0)
-      .map(([produtoId, quantidade]) => ({ produtoId: Number(produtoId), quantidade }));
+    return cart.filter(l => l.quantidade > 0)
+      .map(l => ({ produtoId: l.produtoId, quantidade: l.quantidade, complementos: l.complementos }));
   }
   function totalCarrinho() {
-    return Object.entries(cart).reduce((t, [id, q]) => { const p = produtos.find(x => x.id == id); return t + (p ? Number(p.preco || 0) * q : 0); }, 0);
+    return cart.reduce((t, l) => t + l.unit * l.quantidade, 0);
   }
 
   function abrirCheckout() {
@@ -73,7 +118,7 @@
         formaPagamento: forma,
         cpf: $('ckCpf').value.trim()
       })});
-      cart = {}; atualizarBarra();
+      cart = []; atualizarBarra();
       if (r.pix && r.pix.payload) {
         $('ckForm').hidden = true; $('ckPix').hidden = false;
         $('pxCodigo').textContent = r.codigo; $('pxValor').textContent = money(r.valorTotal);
