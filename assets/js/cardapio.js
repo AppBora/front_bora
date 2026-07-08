@@ -14,6 +14,7 @@
     document.getElementById('menu').innerHTML = Object.entries(grupos).map(([cat, itens]) =>
       `<div class="menu-cat"><h3>${esc(cat)}</h3></div>` +
       itens.map(p => `<div class="menu-item">
+        ${p.imagem ? `<img src="${p.imagem}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:10px;margin-right:10px;flex-shrink:0">` : ''}
         <div class="mi"><div class="mn">${esc(p.nome)}</div><div class="mp">${money(p.preco)}</div></div>
         <button class="madd" onclick="__add(${p.id})">+</button>
       </div>`).join('')

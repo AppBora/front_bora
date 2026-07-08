@@ -26,7 +26,7 @@
     try {
       produtos = await Bora.produtos();
       tb.innerHTML = produtos.map(p =>
-        `<tr><td><b>${esc(p.nome) || '—'}</b><br><small style="color:#94a3b8">${esc(p.categoria || '')}</small></td>` +
+        `<tr><td>${p.imagemUrl ? `<img src="${p.imagemUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">` : ''}<b>${esc(p.nome) || '—'}</b><br><small style="color:#94a3b8">${esc(p.categoria || '')}</small></td>` +
         `<td>${money(p.preco)}</td><td>${margem(p)}</td><td>${estoqueCel(p)}</td>` +
         `<td style="text-align:right"><button onclick="__comp(${p.id})" title="Complementos (tamanho, borda, extras)" style="border:0;background:#ecfdf5;color:#059669;border-radius:8px;padding:5px 9px;cursor:pointer">🧩</button> ` +
         `<button onclick="__ficha(${p.id})" title="Ficha técnica" style="border:0;background:#f5f3ff;color:#7c3aed;border-radius:8px;padding:5px 9px;cursor:pointer">🧪</button> ` +
@@ -37,14 +37,39 @@
   }
 
   const num = v => v === '' || v == null ? null : Number(v);
+  let fotoAtual = null; // data URL comprimida da foto escolhida (null = manter a existente)
   function payload() {
-    return { nome: $('nome').value.trim(), categoria: $('categoria').value.trim(),
+    const p = { nome: $('nome').value.trim(), categoria: $('categoria').value.trim(),
       preco: Number($('preco').value || 0), custo: num($('custo').value),
       estoque: num($('estoque').value), estoqueMinimo: num($('estoqueMinimo').value), ativo: true };
+    if (fotoAtual !== null) p.imagemUrl = fotoAtual;
+    return p;
   }
-  function reset() { $('form').reset(); $('id').value = ''; $('btnSalvar').textContent = 'Salvar produto'; $('cancelar').style.display = 'none'; $('msg').textContent = ''; }
+  function reset() { $('form').reset(); $('id').value = ''; fotoAtual = null; $('fotoPrev').hidden = true;
+    $('btnSalvar').textContent = 'Salvar produto'; $('cancelar').style.display = 'none'; $('msg').textContent = ''; }
+
+  // Comprime a foto no navegador (máx. 640px, JPEG 80%) para caber no banco sem pesar o cardápio.
+  document.addEventListener('DOMContentLoaded', () => {
+    const inp = $('fotoProduto'); if (!inp) return;
+    inp.addEventListener('change', () => {
+      const f = inp.files[0]; if (!f) { fotoAtual = null; return; }
+      const img = new Image();
+      img.onload = () => {
+        const esc = Math.min(1, 640 / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * esc); cv.height = Math.round(img.height * esc);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        fotoAtual = cv.toDataURL('image/jpeg', 0.8);
+        $('fotoPrev').src = fotoAtual; $('fotoPrev').hidden = false;
+        URL.revokeObjectURL(img.src);
+      };
+      img.src = URL.createObjectURL(f);
+    });
+  });
 
   window.__edit = id => { const p = produtos.find(x => x.id === id); if (!p) return;
+    fotoAtual = null; $('fotoProduto').value = '';
+    if (p.imagemUrl) { $('fotoPrev').src = p.imagemUrl; $('fotoPrev').hidden = false; } else $('fotoPrev').hidden = true;
     $('id').value = p.id; $('nome').value = p.nome || ''; $('categoria').value = p.categoria || '';
     $('preco').value = p.preco ?? ''; $('custo').value = p.custo ?? ''; $('estoque').value = p.estoque ?? ''; $('estoqueMinimo').value = p.estoqueMinimo ?? '';
     $('btnSalvar').textContent = 'Atualizar produto'; $('cancelar').style.display = 'inline-block'; window.scrollTo(0, 0); };
