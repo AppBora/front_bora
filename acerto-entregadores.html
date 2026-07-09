@@ -1,0 +1,81 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoraHapp - Acerto de Entregadores</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260709"></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>BoraHapp</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Acerto de Entregadores</h1><p>Feche as contas com seus motoboys: taxas a pagar e valores recebidos por período</p></div>
+      <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></header>
+
+    <section class="panel">
+      <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+        <label style="font-size:13px">De<br><input type="date" id="inicio" style="padding:8px;border:1px solid #e2e8f0;border-radius:8px"></label>
+        <label style="font-size:13px">Até<br><input type="date" id="fim" style="padding:8px;border:1px solid #e2e8f0;border-radius:8px"></label>
+        <label style="font-size:13px">Entregador<br>
+          <select id="filtroEntregador" style="padding:8px;border:1px solid #e2e8f0;border-radius:8px;min-width:180px"><option value="">Todos</option></select>
+        </label>
+        <button class="btn" id="buscar">🔎 Buscar</button>
+        <button class="btn" id="imprimir" style="background:#64748b">🖨️ Imprimir</button>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:16px">
+      <h2>Entregas em aberto <span style="font-weight:600;color:var(--muted);font-size:12px">· ainda não acertadas no período</span></h2>
+      <div style="overflow-x:auto">
+      <table class="table" id="tabela">
+        <thead><tr>
+          <th>Entregador</th>
+          <th style="text-align:right">Entregas</th>
+          <th style="text-align:right">Taxas (a pagar)</th>
+          <th style="text-align:right">Recebeu dinheiro</th>
+          <th style="text-align:right">Recebeu outras</th>
+          <th style="text-align:right">Total entregue</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="corpo"><tr><td colspan="7" style="color:var(--muted)">Escolha o período e clique em Buscar.</td></tr></tbody>
+        <tfoot id="rodape"></tfoot>
+      </table>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:16px">
+      <h2>Histórico de acertos <span style="font-weight:600;color:var(--muted);font-size:12px">· pagamentos já realizados</span></h2>
+      <div style="overflow-x:auto">
+      <table class="table">
+        <thead><tr>
+          <th>Data</th><th>Entregador</th><th>Período</th>
+          <th style="text-align:right">Entregas</th>
+          <th style="text-align:right">A pagar</th>
+          <th style="text-align:right">Pago</th>
+          <th style="text-align:right">Descontos</th>
+          <th style="text-align:right">Saldo</th>
+        </tr></thead>
+        <tbody id="historico"><tr><td colspan="8" style="color:var(--muted)">Sem acertos ainda.</td></tr></tbody>
+      </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal: Fazer acerto -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:50;align-items:center;justify-content:center">
+  <div class="panel" style="max-width:440px;width:92%;max-height:90vh;overflow:auto">
+    <h2 style="margin-top:0">💵 Fazer acerto</h2>
+    <p style="color:var(--muted);font-size:13px;margin:2px 0 14px" id="mResumo"></p>
+    <div class="field"><label>Valor a pagar (taxas)</label><input id="mAPagar" readonly style="background:#f1f5f9;font-weight:700"></div>
+    <div class="field"><label>Valor pago ao motoboy</label><input id="mPago" type="number" step="0.01" min="0"></div>
+    <div class="field"><label>Descontos (adiantamentos, avarias...)</label><input id="mDesc" type="number" step="0.01" min="0" value="0"></div>
+    <div class="field"><label>Observação (opcional)</label><textarea id="mObs" rows="2" placeholder="ex.: pago em dinheiro no fim do turno"></textarea></div>
+    <div style="background:#f8fafc;border-radius:10px;padding:10px 12px;margin:6px 0 14px;display:flex;justify-content:space-between;font-weight:700">
+      <span>Saldo a pagar</span><span id="mSaldo">R$ 0,00</span>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn secondary" id="mCancelar" style="background:#64748b">Cancelar</button>
+      <button class="btn" id="mConfirmar">✓ Confirmar acerto</button>
+    </div>
+    <div id="mErro" style="color:var(--danger);margin-top:10px;font-size:13px"></div>
+  </div>
+</div>
+
+<script src="assets/js/api.js?v=20260709"></script><script src="assets/js/app.js?v=20260709"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/acerto-entregadores.js?v=20260709"></script>
+</body></html>

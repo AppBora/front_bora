@@ -35,6 +35,7 @@ const BORA_NAV = [
   { href:'integracoes.html',   label:'Integrações',     ic:'🔌' },
   { href:'entregas.html',      label:'Entregas',        ic:'🛵' },
   { href:'entregadores.html',  label:'Entregadores',    ic:'🏍️' },
+  { href:'acerto-entregadores.html', label:'Acerto Motoboy', ic:'💵', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'crm.html',           label:'CRM',             ic:'⭐' },
   { href:'clientes.html',      label:'Clientes',        ic:'👥' },
   { href:'produtos.html',      label:'Produtos',        ic:'📦' },
@@ -53,7 +54,9 @@ const BORA_NAV = [
 function renderNav(){
   const nav = document.querySelector('.nav'); if(!nav) return;
   const atual = (location.pathname.split('/').pop() || 'dashboard.html').toLowerCase();
-  nav.innerHTML = BORA_NAV.map(i =>
+  const papel = (typeof Bora!=='undefined' && Bora.user() && Bora.user().papel) || '';
+  const pode = i => !i.roles || papel==='ADMINISTRADOR_BORA' || i.roles.includes(papel);
+  nav.innerHTML = BORA_NAV.filter(pode).map(i =>
     `<a href="${i.href}" class="${i.href===atual?'active':''}"><span class="navic">${i.ic}</span><span class="navtx">${i.label}</span></a>`
   ).join('');
 }
