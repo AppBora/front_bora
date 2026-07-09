@@ -134,4 +134,13 @@ async function renderLojaSwitcher(){
   }catch(e){ /* sem rede ou sem permissão: segue sem seletor */ }
 }
 
+// ---- PWA do painel: manifesto + service worker (instalável na tela inicial) ----
+(function(){
+  if(!document.querySelector('link[rel="manifest"]')){
+    const l=document.createElement('link');l.rel='manifest';l.href='/manifest.webmanifest';document.head.appendChild(l);
+    const m=document.createElement('meta');m.name='theme-color';m.content='#7c3aed';document.head.appendChild(m);
+  }
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
+})();
+
 document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();renderLojaSwitcher();});

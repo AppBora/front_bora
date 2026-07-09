@@ -1,4 +1,13 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cardápio Digital</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"></head><body style="background:#f6f7fb">
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cardápio Digital</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260623"><meta name="theme-color" content="#7c3aed">
+<script>
+// PWA por loja: o cliente instala o "app" com o nome da loja (manifesto dinâmico do backend)
+(function(){
+  const loja = new URLSearchParams(location.search).get('loja') || '1';
+  const l = document.createElement('link'); l.rel = 'manifest'; l.href = '/public/loja/' + loja + '/manifest';
+  document.head.appendChild(l);
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function(){});
+})();
+</script></head><body style="background:#f6f7fb">
 <div class="menu-wrap">
   <div class="menu-hero">
     <div class="lg">🍦</div>

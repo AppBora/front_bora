@@ -1,0 +1,12 @@
+{
+  "name": "BoraHapp — Painel da Loja",
+  "short_name": "BoraHapp",
+  "start_url": "/login.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#7c3aed",
+  "icons": [
+    { "src": "/assets/img/icone-bora.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
