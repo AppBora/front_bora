@@ -1,0 +1,130 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoraHapp - Rede &amp; Análise</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260709">
+<style>
+.subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.subnav .chip{cursor:pointer}
+.view{display:none}.view.active{display:block}
+.rep{position:relative;background:#eef2ff;border-radius:999px;height:22px;min-width:110px;overflow:hidden}
+.rep i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:999px}
+.rep span{position:relative;z-index:2;font-size:12px;font-weight:800;color:#312e81;line-height:22px;padding-left:9px}
+.bars{display:flex;align-items:flex-end;gap:16px;height:210px;padding:22px 6px 0;border-bottom:2px solid #e5e7eb}
+.bars .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end}
+.bars .fill{width:70%;max-width:74px;background:linear-gradient(180deg,#8b5cf6,#7c3aed);border-radius:10px 10px 0 0;position:relative;min-height:2px;transition:height .4s}
+.bars .fill b{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;color:#0f172a;white-space:nowrap}
+.bars .lbl{font-size:12px;color:#475569;text-align:center;font-weight:600;line-height:1.15}
+.rankrow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f1f5f9}
+.rankrow .pos{width:26px;height:26px;border-radius:8px;background:#f1f5f9;display:grid;place-items:center;font-weight:800;font-size:13px;color:#475569;flex:0 0 26px}
+.rankrow .pos.gold{background:#fef3c7;color:#92400e}
+.rankrow .nm{flex:1;font-weight:600;font-size:14px}
+.rankrow .vv{flex:0 0 90px;text-align:right;font-weight:800;font-size:14px}
+.channel{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:14px;color:#fff;margin-bottom:9px}
+.channel .pct{font-size:19px;font-weight:900;min-width:52px}
+.channel .nm{flex:1;font-weight:700}
+.channel .vl{font-weight:800}
+.compare{background:linear-gradient(135deg,#faf5ff,#eff6ff);border:2px solid #ddd6fe;border-radius:16px;padding:20px;margin-top:16px}
+.compare h2{color:#5b21b6;margin:0 0 6px}
+.compare .big{font-size:30px;font-weight:900;letter-spacing:-.02em}
+.compare .muted{color:#6b7280;font-size:13px}
+.heat{display:grid;grid-template-columns:52px repeat(13,1fr);gap:4px;font-size:11px;overflow-x:auto}
+.heat .hh{color:#94a3b8;text-align:center;font-weight:700;padding-bottom:2px}
+.heat .day{display:flex;align-items:center;font-weight:700;color:#475569;font-size:12px}
+.heat .cell{height:30px;border-radius:6px;display:grid;place-items:center;font-size:10px;font-weight:700}
+.legend{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:#64748b}
+.legend .sw{width:20px;height:12px;border-radius:4px}
+.sflow{display:flex;flex-direction:column;gap:10px}
+.sflow .st{display:flex;align-items:center;gap:14px}
+.sflow .nm{flex:0 0 190px;font-weight:700;font-size:14px}
+.sflow .track{flex:1;height:26px;background:#f1f5f9;border-radius:8px;overflow:hidden;position:relative}
+.sflow .track i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;min-width:2px;transition:width .4s}
+.sflow .tm{flex:0 0 84px;text-align:right;font-weight:800;font-size:14px}
+.note{border-left:4px solid var(--secondary);background:#f0fdf4;border-radius:8px;padding:10px 14px;font-size:13px;color:#166534;margin-top:14px}
+.note.warn{border-color:var(--warn);background:#fffbeb;color:#92400e}
+.note.pro{border-color:var(--primary);background:#faf5ff;color:#5b21b6}
+.empty{color:var(--muted);padding:26px;text-align:center}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:900px){.two{grid-template-columns:1fr}.sflow .nm{flex:0 0 130px}}
+</style></head><body>
+<div class="layout">
+  <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>BoraHapp</b><br><small>Delivery em tempo real</small></div></div>
+    <nav class="nav"><a href="dashboard.html">Dashboard</a><a href="pedidos.html">Pedidos</a><a href="pdv.html">Frente de Caixa</a><a href="kds.html">KDS</a><a href="canais.html">Canais</a><a href="entregas.html">Entregas</a><a href="clientes.html">Clientes</a><a href="produtos.html">Produtos</a><a href="estoque.html">Estoque</a><a href="promocoes.html">Promoções</a><a href="relatorios.html">Relatórios</a><a class="active" href="rede.html">Rede &amp; Análise</a><a href="configuracoes.html">Configurações</a><a href="usuarios.html">Usuários</a><a href="planos.html">Planos</a></nav>
+  </aside>
+  <main class="main">
+    <header class="top"><div class="title"><h1>Rede &amp; Análise</h1><p>Consolidado das suas lojas, canais, horários de pico e operação</p></div>
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+        <div class="field" style="margin:0"><label>Início</label><input type="date" id="dtIni"></div>
+        <div class="field" style="margin:0"><label>Fim</label><input type="date" id="dtFim"></div>
+        <button class="btn" id="btnBuscar">Buscar</button>
+        <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a>
+      </div>
+    </header>
+
+    <div class="subnav">
+      <button class="chip active" data-v="faturamento">🏪 Faturamento da rede</button>
+      <button class="chip" data-v="canais">📡 Canais &amp; produtos</button>
+      <button class="chip" data-v="horario">⏰ Vendas por horário</button>
+      <button class="chip" data-v="tempos">⏱️ Tempo &amp; cancelamentos</button>
+    </div>
+
+    <!-- FATURAMENTO -->
+    <section class="view active" id="v-faturamento">
+      <section class="kpis">
+        <div class="statcard"><div class="ico money">💰</div><div class="v" id="kFat">—</div><div class="l">Faturamento da rede</div></div>
+        <div class="statcard"><div class="ico cart">🧾</div><div class="v" id="kPed">—</div><div class="l">Pedidos</div></div>
+        <div class="statcard"><div class="ico ticket">📈</div><div class="v" id="kTicket">—</div><div class="l">Ticket médio</div></div>
+        <div class="statcard"><div class="ico cancel">⛔</div><div class="v" id="kCanc">—</div><div class="l">Cancelados</div></div>
+      </section>
+      <div class="panel">
+        <h2>Desempenho por loja · representatividade</h2>
+        <p class="sub" style="color:var(--muted);font-size:13px;margin:2px 0 12px">Quanto cada loja pesa no faturamento da rede.</p>
+        <table class="table"><thead><tr><th>Loja</th><th style="text-align:right">Pedidos</th><th style="text-align:right">Ticket médio</th><th style="text-align:right">Faturamento</th><th>Representatividade</th></tr></thead>
+          <tbody id="balCorpo"></tbody><tfoot id="balTotal"></tfoot></table>
+      </div>
+      <div class="panel"><h2>Faturamento por loja</h2><div class="bars" id="balBars"></div></div>
+    </section>
+
+    <!-- CANAIS -->
+    <section class="view" id="v-canais">
+      <div class="two" style="grid-template-columns:1.3fr 1fr;margin-top:0">
+        <div class="panel" style="margin-top:0"><h2>Faturamento por canal</h2><p class="sub" style="color:var(--muted);font-size:13px" id="canalTotal">—</p><div id="canalLista"></div></div>
+        <div class="panel" style="margin-top:0"><h2>Ranking de canais</h2><div id="canalRank"></div></div>
+      </div>
+      <div class="compare" id="compare">
+        <h2>💡 Comparador de custo de canal <span style="font-size:11px;background:var(--secondary);color:#fff;padding:2px 7px;border-radius:999px;vertical-align:middle">exclusivo</span></h2>
+        <p class="muted">Quanto os marketplaces custaram de comissão no período — e o que sobraria no canal próprio (estimativa por taxa média de cada canal).</p>
+        <div class="two" style="grid-template-columns:1fr 1fr 1fr;margin-top:12px">
+          <div><div class="muted">Comissão estimada paga</div><div class="big" style="color:#dc2626" id="cmpComissao">—</div></div>
+          <div><div class="muted">Faturamento líquido</div><div class="big" style="color:#059669" id="cmpLiquido">—</div></div>
+          <div><div class="muted">% do faturamento em taxa</div><div class="big" id="cmpPct">—</div></div>
+        </div>
+        <div class="note pro" id="cmpNota" style="margin-top:14px"></div>
+      </div>
+      <div class="panel"><h2>Ranking de produtos</h2>
+        <div class="two" style="margin-top:0">
+          <div><h3 style="font-size:14px;color:#16a34a;margin:0 0 6px">🔥 Mais vendidos</h3><div id="prodMais"></div></div>
+          <div><h3 style="font-size:14px;color:#dc2626;margin:0 0 6px">🐢 Menos vendidos</h3><div id="prodMenos"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HORÁRIO -->
+    <section class="view" id="v-horario">
+      <div class="panel" style="margin-top:0"><h2>Vendas por horário · dias úteis</h2><p class="sub" style="color:var(--muted);font-size:13px">Concentração de pedidos por faixa (seg–sex).</p><div class="heat" id="heatUteis"></div>
+        <div class="legend"><span>Menos</span><span class="sw" style="background:#ede9fe"></span><span class="sw" style="background:#c4b5fd"></span><span class="sw" style="background:#a78bfa"></span><span class="sw" style="background:#7c3aed"></span><span class="sw" style="background:#5b21b6"></span><span>Mais</span></div></div>
+      <div class="panel"><h2>Vendas por horário · fim de semana</h2><p class="sub" style="color:var(--muted);font-size:13px">Concentração de pedidos por faixa (sáb–dom).</p><div class="heat" id="heatFds"></div>
+        <div class="legend"><span>Menos</span><span class="sw" style="background:#dcfce7"></span><span class="sw" style="background:#86efac"></span><span class="sw" style="background:#4ade80"></span><span class="sw" style="background:#22c55e"></span><span class="sw" style="background:#15803d"></span><span>Mais</span></div></div>
+      <div class="note" id="picoNota"></div>
+    </section>
+
+    <!-- TEMPOS -->
+    <section class="view" id="v-tempos">
+      <div class="panel" style="margin-top:0"><h2>Tempo médio por status</h2><p class="sub" style="color:var(--muted);font-size:13px">Do recebimento à saída para entrega — onde o pedido fica parado (base: log de status).</p>
+        <div class="sflow" id="sflow"></div><div class="note warn" id="gargalo" hidden></div></div>
+      <div class="two">
+        <div class="panel" style="margin-top:0"><h2>Motivos de cancelamento</h2><p class="sub" style="color:var(--muted);font-size:13px" id="cancResumo">—</p><div id="cancMotivos"></div></div>
+        <div class="panel" style="margin-top:0"><h2>Cancelamentos por loja</h2><table class="table"><thead><tr><th>Loja</th><th style="text-align:right">Cancel.</th><th style="text-align:right">% s/ pedidos</th></tr></thead><tbody id="cancLojas"></tbody></table></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+<script src="assets/js/api.js?v=20260828"></script><script src="assets/js/app.js?v=20260709"></script><script src="assets/js/whitelabel.js?v=20260709"></script><script src="assets/js/rede-analise.js?v=20260709"></script>
+</body></html>
