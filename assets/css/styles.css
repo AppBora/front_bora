@@ -291,3 +291,15 @@ body.kds-mode{background:#0b1220;color:#e2e8f0}
 .kacts .ok{background:#22c55e;color:#fff}.kacts .no{background:#fef2f2;color:#dc2626;flex:0 0 auto;padding:9px 11px}
 .kacts .prt{background:#f1f5f9;color:#475569;flex:0 0 auto;padding:9px 11px}
 .kcard .canaltag{position:absolute;top:10px;right:10px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;background:#f1f5f9;color:#475569}
+
+/* Conexao oficial com marketplace (iFood, 99Food): o app e da plataforma e o lojista so autoriza. */
+.oficial-box{border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:14px;line-height:1.55}
+.oficial-box b{display:block;margin-bottom:4px}
+.oficial-box p{margin:4px 0}
+.oficial-box.passo{background:#f5f3ff;border:1px solid #ddd6fe;color:#4c1d95}
+.oficial-box.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+.oficial-box.aviso{background:#fef3c7;border:1px solid #fde68a;color:#92400e}
+.oficial-box .err{color:#b91c1c;font-size:13px}
+.oficial-box .usercode{font-family:ui-monospace,monospace;font-size:26px;font-weight:800;letter-spacing:.16em;
+  background:#fff;border:1px dashed #a78bfa;border-radius:10px;padding:12px;text-align:center;margin:8px 0}
+.oficial-box a{color:#6d28d9;font-weight:600}

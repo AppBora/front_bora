@@ -48,9 +48,10 @@
         <span style="color:#94a3b8;font-size:12px">${i._open ? 'fechar ▲' : 'abrir ▼'}</span>
       </div>
       <div class="intbody ${open}" id="body-${i.canal}">
+        ${i.oficial ? corpoOficial(i) : ''}
         <div class="field"><label>Merchant ID (ID da loja no ${esc(i.label)})</label><input id="m-${i.canal}" value="${esc(i.merchantId || '')}" placeholder="ex.: 123e4567-..."></div>
-        <div class="field"><label>Client ID</label><input id="c-${i.canal}" value="${esc(i.clientId || '')}" placeholder="chave de aplicação"></div>
-        <div class="field"><label>Client Secret / Token ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label><input id="s-${i.canal}" type="password" placeholder="${i.temSecret ? '•••••• (deixe em branco p/ manter)' : 'cole o segredo aqui'}"></div>
+        ${i.oficial ? '' : `<div class="field"><label>Client ID</label><input id="c-${i.canal}" value="${esc(i.clientId || '')}" placeholder="chave de aplicação"></div>
+        <div class="field"><label>Client Secret / Token ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label><input id="s-${i.canal}" type="password" placeholder="${i.temSecret ? '•••••• (deixe em branco p/ manter)' : 'cole o segredo aqui'}"></div>`}
         <div class="toggle-row" style="padding:6px 0" onclick="__switch('${i.canal}',this)">
           <span style="font-weight:700;font-size:13px">Ativar recebimento</span>
           <span class="switch ${i.ativo ? 'on' : ''}" data-on="${i.ativo}"></span>
@@ -65,6 +66,63 @@
       <div class="intmini"><span>Pedidos recebidos: <b>${i.pedidosRecebidos || 0}</b></span><span>Última sync: <b>${i.ultimaSync ? new Date(i.ultimaSync).toLocaleString('pt-BR') : '—'}</b></span></div>
     </div>`;
   }
+
+
+  // Canais com integração oficial (iFood, 99Food): a credencial é da plataforma, não do lojista.
+  // O que o lojista faz aqui é autorizar a nossa aplicação a operar a loja dele.
+  function corpoOficial(i) {
+    if (!i.appConfigurado) {
+      return `<div class="oficial-box aviso">
+        <b>Integração oficial ainda não liberada</b>
+        <p>A ${esc(i.label)} precisa aprovar a aplicação do BoraHapp antes de conectar lojas. Assim que sair, esta tela habilita sozinha.</p>
+      </div>`;
+    }
+    if (i.userCode) {
+      return `<div class="oficial-box passo">
+        <b>Passo 2 — autorize no ${esc(i.label)}</b>
+        <p>Entre no portal do parceiro e informe este código:</p>
+        <div class="usercode">${esc(i.userCode)}</div>
+        ${i.verificationUrl ? `<p><a href="${esc(i.verificationUrl)}" target="_blank" rel="noopener">Abrir o portal do ${esc(i.label)} ↗</a></p>` : ''}
+        <div class="field"><label>Código de autorização devolvido pelo portal</label>
+          <input id="auth-${i.canal}" placeholder="cole aqui"></div>
+        <button class="btn" onclick="__confirmar('${i.canal}')">Concluir conexão</button>
+      </div>`;
+    }
+    if (i.status === 'CONECTADO') {
+      const quando = i.ultimoPollingEm ? new Date(i.ultimoPollingEm).toLocaleTimeString('pt-BR') : '—';
+      return `<div class="oficial-box ok">
+        <b>🟢 Conectado — os pedidos chegam sozinhos</b>
+        <p>Última consulta ao ${esc(i.label)}: ${quando}. A loja fica online no aplicativo enquanto esta consulta acontecer.</p>
+        ${i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : ''}
+      </div>`;
+    }
+    return `<div class="oficial-box passo">
+      <b>Passo 1 — conectar a loja</b>
+      <p>Salve o Merchant ID abaixo e clique em conectar. Você não precisa de senha do ${esc(i.label)}: quem se identifica é o BoraHapp.</p>
+      <button class="btn" onclick="__vincular('${i.canal}')">🔗 Conectar ao ${esc(i.label)}</button>
+      ${i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : ''}
+    </div>`;
+  }
+
+  window.__vincular = async canal => {
+    try {
+      await __salvar(canal);
+      const r = await Bora.api('/api/integracoes/' + canal + '/vincular', { method: 'POST' });
+      await carregar(canal);
+      if (r && r.userCode) alert('Código para autorizar no portal: ' + r.userCode);
+    } catch (e) { alert('Não foi possível conectar: ' + e.message); }
+  };
+
+  window.__confirmar = async canal => {
+    const el = document.getElementById('auth-' + canal);
+    const codigo = el ? el.value.trim() : '';
+    if (!codigo) { alert('Cole o código de autorização que o portal mostrou.'); return; }
+    try {
+      await Bora.api('/api/integracoes/' + canal + '/confirmar',
+        { method: 'POST', body: JSON.stringify({ authorizationCode: codigo }) });
+      await carregar(canal);
+    } catch (e) { alert('O marketplace recusou: ' + e.message); }
+  };
 
   function render() { document.getElementById('grid').innerHTML = dados.map(card).join(''); }
 
