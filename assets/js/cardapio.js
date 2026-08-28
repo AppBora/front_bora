@@ -80,7 +80,7 @@
   }
 
   // ---- Checkout online: pedido criado no sistema; PIX na conta Asaas do lojista ----
-  let pixDisponivel = false, pollTimer = null, cupomOk = false;
+  let pixDisponivel = false, pollTimer = null, cupomOk = false, saldoCashback = 0;
   const $ = id => document.getElementById(id);
 
   function itensCarrinho() {
@@ -105,6 +105,27 @@
     $('ckCpfWrap').hidden = !pix || !pixDisponivel;
   }
 
+  // Cashback: o cliente do cardapio nao tem login, entao o telefone e a identificacao.
+  async function verCashback() {
+    const caixa = $('ckCashback');
+    if (!caixa) return;
+    const tel = ($('ckTel').value || '').replace(/\D/g, '');
+    if (tel.length < 10) { caixa.hidden = true; saldoCashback = 0; return; }
+    try {
+      const r = await Bora.api('/public/loja/' + lojaId + '/cashback?telefone=' + encodeURIComponent(tel));
+      saldoCashback = Number(r && r.saldo) || 0;
+      if (saldoCashback > 0) {
+        $('ckSaldo').textContent = money(saldoCashback);
+        caixa.hidden = false;
+      } else {
+        caixa.hidden = true;
+        if ($('ckUsarCashback')) $('ckUsarCashback').checked = false;
+      }
+    } catch (e) {
+      caixa.hidden = true; saldoCashback = 0;
+    }
+  }
+
   async function confirmarPedido() {
     const btn = $('ckEnviar'), err = $('ckErr');
     const forma = document.querySelector('input[name="ckForma"]:checked')?.value === 'PIX' && pixDisponivel ? 'PIX' : 'ENTREGA';
@@ -117,6 +138,7 @@
         endereco: $('ckEnd').value.trim(),
         observacao: $('ckObs').value.trim(),
         cupom: cupomOk ? $('ckCupom').value.trim() : '',
+        usarCashback: !!($('ckUsarCashback') && $('ckUsarCashback').checked && saldoCashback > 0),
         formaPagamento: forma,
         cpf: $('ckCpf').value.trim()
       })});
@@ -166,6 +188,8 @@
       } catch (e) { msg.textContent = '❌ ' + (e.message || 'Cupom inválido'); msg.style.color = '#dc2626'; }
     });
     document.querySelectorAll('input[name="ckForma"]').forEach(r => r.addEventListener('change', atualizarCpf));
+    $('ckTel').addEventListener('blur', verCashback);
+    $('ckTel').addEventListener('change', verCashback);
     $('pxCopiar').addEventListener('click', () => { $('pxPayload').select(); document.execCommand('copy'); $('pxCopiar').textContent = 'Copiado ✓'; setTimeout(() => $('pxCopiar').textContent = 'Copiar código PIX', 2000); });
     try {
       const data = await Bora.cardapioPublico(lojaId);

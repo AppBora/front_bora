@@ -48,6 +48,15 @@
         <button type="button" id="ckAplicarCupom" style="padding:0 14px;border:none;border-radius:8px;background:#f1f5f9;font-weight:700;cursor:pointer">Aplicar</button>
       </div>
       <div id="ckCupomMsg" style="font-size:13px;margin-top:4px"></div>
+
+      <div id="ckCashback" hidden style="margin-top:12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:12px">
+        <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+          <input type="checkbox" id="ckUsarCashback" style="width:20px;height:20px;margin-top:2px;accent-color:#059669">
+          <span style="font-size:14px;color:#065f46">
+            Você tem <b id="ckSaldo">R$ 0,00</b> de cashback. Usar neste pedido?
+          </span>
+        </label>
+      </div>
       <div style="margin:14px 0 4px;font-size:13px;font-weight:700">Pagamento</div>
       <label id="ckOpPix" style="gap:8px;align-items:center;padding:8px 0;cursor:pointer" hidden>
         <input type="radio" name="ckForma" value="PIX" checked> 💠 PIX agora (aprovação na hora)

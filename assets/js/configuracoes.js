@@ -16,6 +16,8 @@
       if (atual.corPrimaria) $('corPrimaria').value = atual.corPrimaria;
       if (atual.corSecundaria) $('corSecundaria').value = atual.corSecundaria;
       $('bannerUrl').value = atual.bannerUrl || '';
+      const cb = $('cashbackPercentual');
+      if (cb) cb.value = (atual.cashbackPercentual === null || atual.cashbackPercentual === undefined) ? '' : atual.cashbackPercentual;
       $('planoInfo').textContent = 'Alguns recursos (cor secundária, banner, subdomínio) dependem do seu plano — o que não estiver liberado é ignorado ao salvar.';
     } catch (e) { $('planoInfo').textContent = e.message; }
   }
@@ -33,6 +35,8 @@
         corPrimaria: $('corPrimaria').value,
         corSecundaria: $('corSecundaria').value,
         bannerUrl: $('bannerUrl').value.trim() || null,
+        cashbackPercentual: $('cashbackPercentual') && $('cashbackPercentual').value !== ''
+          ? Number($('cashbackPercentual').value) : null,
         logoUrl
       };
       atual = await Bora.api('/api/configuracao', { method: 'PUT', body: JSON.stringify(body) });
