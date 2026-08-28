@@ -35,7 +35,12 @@
       </p>
       <span id="fiscalMsg" style="font-size:13px"></span>
       <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
-      <h3 style="margin:0 0 6px">🧠 Módulo IA por loja <span style="font-weight:600;color:var(--muted);font-size:12px">· libere quando o cliente contratar o add-on</span></h3>
+      <h3 style="margin:0 0 6px">🧠 Módulo IA e 💸 taxa do PIX, por loja</h3>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 8px">
+        A taxa é retida por split no PIX online (só vale para lojas com recebimento na própria conta).
+        Deixe <b>vazio</b> para usar o padrão da plataforma (<b id="splitPadrao">—</b>) ou
+        <b>0</b> para isentar — os fundadores foram vendidos sem taxa por pedido.
+      </p>
       <div id="iaLojas" style="font-size:14px">Carregando lojas…</div>
     </div>
     <!-- Módulo IA (aparece apenas para lojas com o add-on liberado) -->
@@ -79,7 +84,11 @@
     st.style.cssText = 'padding:3px 10px;border-radius:999px;font-weight:700;font-size:12px;' +
       (on ? 'background:#dcfce7;color:#166534' : 'background:#fee2e2;color:#991b1b');
   }
-  Bora.api('/admin-bora/config').then(c => render(c['fiscal.habilitado'] === 'true')).catch(e => { msg.textContent = e.message; });
+  Bora.api('/admin-bora/config').then(c => {
+    render(c['fiscal.habilitado'] === 'true');
+    const sp = document.getElementById('splitPadrao');
+    if (sp) sp.textContent = (c['split.padrao'] || '0') + '%';
+  }).catch(e => { msg.textContent = e.message; });
   t.onchange = async () => {
     const alvo = t.checked;
     if (!confirm('Tem certeza que deseja ' + (alvo ? 'LIGAR' : 'DESLIGAR') + ' a emissão de NFC-e para toda a plataforma?')) { t.checked = !alvo; return; }
@@ -95,14 +104,33 @@
     try {
       const lojas = await Bora.api('/admin-bora/lojas');
       wrap.innerHTML = lojas.map(l =>
-        `<label style="display:flex;gap:8px;align-items:center;padding:6px 0;cursor:pointer">
-          <input type="checkbox" data-ia="${l.id}" ${l.moduloIa ? 'checked' : ''} style="width:18px;height:18px">
-          #${l.id} · ${l.nome || 'Loja'} ${l.ativo === false ? '<span style="color:#991b1b">(inativa)</span>' : ''}
-        </label>`).join('') || 'Nenhuma loja.';
+        `<div style="display:flex;gap:10px;align-items:center;padding:6px 0;flex-wrap:wrap">
+          <label style="display:flex;gap:8px;align-items:center;cursor:pointer;flex:1 1 240px">
+            <input type="checkbox" data-ia="${l.id}" ${l.moduloIa ? 'checked' : ''} style="width:18px;height:18px">
+            #${l.id} · ${l.nome || 'Loja'} ${l.ativo === false ? '<span style="color:#991b1b">(inativa)</span>' : ''}
+          </label>
+          <span style="color:var(--muted);font-size:13px">taxa PIX</span>
+          <input type="number" min="0" max="100" step="0.5" data-split="${l.id}"
+                 value="${l.splitPercentual == null ? '' : l.splitPercentual}" placeholder="padrão"
+                 style="width:86px;padding:6px;border:1px solid #e2e8f0;border-radius:6px">
+          <span style="color:var(--muted);font-size:13px">%</span>
+          <span data-splitmsg="${l.id}" style="font-size:12px"></span>
+        </div>`).join('') || 'Nenhuma loja.';
       wrap.querySelectorAll('input[data-ia]').forEach(cb => cb.onchange = async () => {
         try { await Bora.api('/admin-bora/lojas/' + cb.dataset.ia + '/modulo-ia',
           { method: 'PUT', body: JSON.stringify({ habilitado: cb.checked }) }); }
         catch (e) { cb.checked = !cb.checked; alert('Erro: ' + e.message); }
+      });
+      wrap.querySelectorAll('input[data-split]').forEach(inp => inp.onchange = async () => {
+        const id = inp.dataset.split;
+        const m = wrap.querySelector('[data-splitmsg="' + id + '"]');
+        const v = inp.value.trim();
+        try {
+          const r = await Bora.api('/admin-bora/lojas/' + id + '/split',
+            { method: 'PUT', body: JSON.stringify({ percentual: v === '' ? null : Number(v) }) });
+          m.style.color = '#166534'; m.textContent = 'salvo · ' + r.efetivo;
+          setTimeout(() => m.textContent = '', 4000);
+        } catch (e) { m.style.color = '#dc2626'; m.textContent = e.message; }
       });
     } catch (e) { wrap.textContent = 'Erro: ' + e.message; }
   }
