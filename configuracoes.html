@@ -19,6 +19,27 @@
       </form>
       <div class="theme-preview" id="preview"></div>
     </div>
+    <!-- Minha senha (todo usuário logado troca a própria) -->
+    <div class="card" id="cardSenha" style="margin-top:16px">
+      <h2>🔒 Minha senha</h2>
+      <p style="color:var(--muted);font-size:13px;margin:6px 0 12px">
+        Troque de tempos em tempos, e sempre que a senha tiver sido combinada por mensagem. Mínimo de 8 caracteres.
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <label style="font-size:13px">Senha atual<br>
+          <input type="password" id="senhaAtual" autocomplete="current-password"
+                 style="padding:9px 10px;border:1px solid #e2e8f0;border-radius:6px;min-width:190px"></label>
+        <label style="font-size:13px">Nova senha<br>
+          <input type="password" id="senhaNova" autocomplete="new-password"
+                 style="padding:9px 10px;border:1px solid #e2e8f0;border-radius:6px;min-width:190px"></label>
+        <label style="font-size:13px">Repita a nova<br>
+          <input type="password" id="senhaNova2" autocomplete="new-password"
+                 style="padding:9px 10px;border:1px solid #e2e8f0;border-radius:6px;min-width:190px"></label>
+        <button class="btn" id="btnTrocarSenha" style="height:40px">Trocar senha</button>
+      </div>
+      <p id="senhaMsg" style="font-size:13px;margin:10px 0 0"></p>
+    </div>
+
     <!-- Plataforma (visível SOMENTE para o ADMINISTRADOR_BORA — nenhuma conta de loja vê) -->
     <div class="card" id="cardPlataforma" hidden style="margin-top:16px;border:2px dashed var(--primary)">
       <h2>🔧 Plataforma BoraHapp <span style="font-weight:600;color:var(--muted);font-size:12px">· só o administrador da plataforma vê isto</span></h2>
@@ -71,6 +92,32 @@
 </div>
 <script src="assets/js/api.js?v=20260828"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/configuracoes.js?v=20260623"></script>
 <script>
+// Troca da propria senha — disponivel para qualquer usuario logado.
+(function () {
+  const btn = document.getElementById('btnTrocarSenha');
+  if (!btn) return;
+  const msg = document.getElementById('senhaMsg');
+  function aviso(txt, erro) {
+    msg.style.color = erro ? '#dc2626' : '#166534';
+    msg.textContent = txt;
+  }
+  btn.onclick = async () => {
+    const atual = document.getElementById('senhaAtual').value;
+    const nova = document.getElementById('senhaNova').value;
+    const nova2 = document.getElementById('senhaNova2').value;
+    if (nova.length < 8) { aviso('A nova senha precisa ter ao menos 8 caracteres.', true); return; }
+    if (nova !== nova2) { aviso('As duas novas senhas não conferem.', true); return; }
+    btn.disabled = true;
+    try {
+      await Bora.api('/auth/trocar-senha', { method: 'POST', body: JSON.stringify({ senhaAtual: atual, novaSenha: nova }) });
+      ['senhaAtual', 'senhaNova', 'senhaNova2'].forEach(id => document.getElementById(id).value = '');
+      aviso('Senha trocada. Use a nova no próximo acesso.');
+    } catch (e) {
+      aviso(e.message || 'Não foi possível trocar a senha.', true);
+    } finally { btn.disabled = false; }
+  };
+})();
+
 // Chave do módulo fiscal — o card só aparece para ADMINISTRADOR_BORA (a API também bloqueia com 403).
 (function () {
   const u = Bora.user();
