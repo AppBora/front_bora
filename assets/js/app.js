@@ -44,7 +44,7 @@ const BORA_NAV = [
   { href:'cardapio-qr.html',   label:'Cardápio QR',     ic:'📱' },
   { href:'promocoes.html',     label:'Promoções',       ic:'⚡' },
   { href:'relatorios.html',    label:'Relatórios',      ic:'📈' },
-  { href:'rede.html',          label:'Rede & Análise',  ic:'🏪', roles:['ADMINISTRADOR_LOJA'] },
+  { href:'rede.html',          label:'Rede & Análise',  ic:'🏪', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'configuracoes.html', label:'Configurações',   ic:'⚙️' },
   { href:'ajustes.html',       label:'Ajustes Operação',ic:'🛠️' },
   { href:'usuarios.html',      label:'Usuários',        ic:'🔑' },
