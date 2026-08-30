@@ -59,6 +59,30 @@
       </p>
       <span id="fiscalMsg" style="font-size:13px"></span>
       <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
+      <h3 style="margin:0 0 6px">➕ Nova loja (cliente)</h3>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 10px">
+        Cadastro feito pela plataforma — é o único caminho que grava o <b>CNPJ</b> na criação.
+        A loja nasce semeada (formas de pagamento, motivos de cancelamento e horários 18h–23h) e
+        com <b>5% de cashback</b> no cardápio; zere no painel dela se o lojista não quiser.
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+        <label style="font-size:13px">Nome da loja *<br>
+          <input id="nlNome" placeholder="Ex.: Zirá Montreal" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+        <label style="font-size:13px">CNPJ ou CPF<br>
+          <input id="nlDoc" placeholder="Só números" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+        <label style="font-size:13px">Nome do responsável<br>
+          <input id="nlAdminNome" placeholder="Quem vai administrar a loja" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+        <label style="font-size:13px">E-mail do responsável *<br>
+          <input id="nlEmail" type="email" placeholder="dono@loja.com" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+        <label style="font-size:13px">Senha provisória * <span style="color:var(--muted)">(mín. 6)</span><br>
+          <input id="nlSenha" type="password" placeholder="o lojista troca no 1º acesso" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+        <label style="font-size:13px">Preço mensal negociado <span style="color:var(--muted)">(vazio = tabela)</span><br>
+          <input id="nlPreco" type="number" min="0" step="0.01" placeholder="Ex.: 149.00" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+      </div>
+      <button class="btn" id="nlCriar" style="margin-top:12px">Criar loja</button>
+      <span id="nlMsg" style="font-size:13px;margin-left:10px"></span>
+      <div id="nlResultado" style="display:none;margin-top:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;font-size:13px"></div>
+      <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
       <h3 style="margin:0 0 6px">🧠 Módulo IA e 💸 taxa do PIX, por loja</h3>
       <p style="color:var(--muted);font-size:13px;margin:0 0 8px">
         A taxa é retida por split no PIX online (só vale para lojas com recebimento na própria conta).
@@ -185,6 +209,57 @@
     } catch (e) { wrap.textContent = 'Erro: ' + e.message; }
   }
   carregarLojas();
+
+  // Cadastro de loja nova pela plataforma (POST /admin-bora/lojas) — o unico caminho que grava o CNPJ.
+  const nl = id => document.getElementById(id);
+  nl('nlCriar').onclick = async () => {
+    const btn = nl('nlCriar'), msg = nl('nlMsg'), out = nl('nlResultado');
+    const nome = nl('nlNome').value.trim();
+    const email = nl('nlEmail').value.trim();
+    const senha = nl('nlSenha').value;
+    const preco = nl('nlPreco').value.trim();
+    msg.style.color = '#dc2626';
+    if (!nome) { msg.textContent = 'Informe o nome da loja.'; return; }
+    if (!email.includes('@')) { msg.textContent = 'E-mail inválido.'; return; }
+    if (senha.length < 6) { msg.textContent = 'A senha provisória precisa de ao menos 6 caracteres.'; return; }
+    btn.disabled = true; msg.style.color = 'var(--muted)'; msg.textContent = 'Criando…';
+    try {
+      const r = await Bora.api('/admin-bora/lojas', { method: 'POST', body: JSON.stringify({
+        nomeLoja: nome,
+        documento: nl('nlDoc').value.replace(/\D/g, '') || null,
+        plano: 'UNICO',
+        adminNome: nl('nlAdminNome').value.trim() || null,
+        adminEmail: email,
+        adminSenha: senha
+      })});
+      let avisoPreco = '';
+      if (preco !== '') {
+        try {
+          await Bora.api('/admin-bora/lojas/' + r.lojaId + '/preco',
+            { method: 'PUT', body: JSON.stringify({ precoMensal: Number(preco) }) });
+          avisoPreco = '<br>Preço negociado: <b>R$ ' + Number(preco).toFixed(2) + '</b> (definido antes da assinatura ✓)';
+        } catch (e) {
+          avisoPreco = '<br><b style="color:#b45309">A loja foi criada, mas o preço não salvou:</b> ' + e.message
+            + ' — ajuste antes de o lojista ativar a assinatura.';
+        }
+      }
+      const link = location.origin + '/cardapio.html?loja=' + r.lojaId;
+      out.style.display = 'block';
+      out.innerHTML = '<b>Loja #' + r.lojaId + ' criada.</b><br>'
+        + 'Login do lojista: <b>' + r.adminEmail + '</b> (senha provisória — peça para trocar em Configurações › Minha senha)<br>'
+        + 'Cardápio: <a href="' + link + '" target="_blank">' + link + '</a>'
+        + avisoPreco
+        + '<br>Falta o lojista: marca, cardápio, taxas de entrega, horário real e assinatura.';
+      msg.textContent = ''; 
+      ['nlNome','nlDoc','nlAdminNome','nlEmail','nlSenha','nlPreco'].forEach(i => nl(i).value = '');
+      carregarLojas();
+    } catch (e) {
+      msg.style.color = '#dc2626';
+      msg.textContent = e.message === 'E-mail já cadastrado'
+        ? 'E-mail já cadastrado — esse responsável já tem conta; use outro e-mail ou vincule a loja à conta existente pelo cadastro público.'
+        : 'Erro: ' + e.message;
+    } finally { btn.disabled = false; }
+  };
 })();
 
 // Card Módulo IA da loja — só aparece quando o adm liberou (o backend valida tudo de novo).
