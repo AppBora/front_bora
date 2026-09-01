@@ -83,7 +83,11 @@
       <span id="nlMsg" style="font-size:13px;margin-left:10px"></span>
       <div id="nlResultado" style="display:none;margin-top:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;font-size:13px"></div>
       <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
-      <h3 style="margin:0 0 6px">🧠 Módulo IA e 💸 taxa do PIX, por loja</h3>
+      <h3 style="margin:0 0 6px">🏪 Clientes — Módulo IA, taxa do PIX e situação</h3>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:0 0 8px;cursor:pointer">
+        <input type="checkbox" id="verArquivadas" style="width:16px;height:16px">
+        Mostrar também os clientes arquivados
+      </label>
       <p style="color:var(--muted);font-size:13px;margin:0 0 8px">
         A taxa é retida por split no PIX online (só vale para lojas com recebimento na própria conta).
         Deixe <b>vazio</b> para usar o padrão da plataforma (<b id="splitPadrao">—</b>) ou
@@ -172,22 +176,50 @@
       msg.textContent = 'Salvo ✓'; setTimeout(() => msg.textContent = '', 3000);
     } catch (e) { t.checked = !alvo; msg.textContent = 'Erro: ' + e.message; }
   };
-  // Liberação do Módulo IA por loja (add-on pago)
+  // Liberação do Módulo IA por loja (add-on pago) + situação do cliente
   const wrap = document.getElementById('iaLojas');
+  const verArquivadas = document.getElementById('verArquivadas');
+
+  function selo(texto, fundo, cor) {
+    return `<span style="background:${fundo};color:${cor};padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">${texto}</span>`;
+  }
+  // "ativo" é status de pagamento (webhook do Asaas); "suspensa" é decisão da plataforma. São coisas
+  // diferentes e o admin precisa distinguir: uma volta sozinha quando o cliente paga, a outra não.
+  function situacao(l) {
+    if (l.excluidaEm) return selo('arquivada', '#e2e8f0', '#334155');
+    if (l.suspensaPelaPlataforma) return selo('suspensa por você', '#fee2e2', '#991b1b');
+    if (l.ativo === false) return selo('sem pagamento', '#fef3c7', '#92400e');
+    return selo('ativa', '#dcfce7', '#166534');
+  }
+  function botao(acao, id, texto, cor) {
+    return `<button class="btn" data-acao="${acao}" data-loja="${id}"
+             style="background:${cor};padding:6px 10px;font-size:12px">${texto}</button>`;
+  }
+  function acoes(l) {
+    if (l.excluidaEm) return botao('restaurar', l.id, 'Restaurar', '#0f766e');
+    return (l.suspensaPelaPlataforma
+      ? botao('reativar', l.id, 'Reativar', '#166534')
+      : botao('suspender', l.id, 'Suspender', '#b45309'))
+      + ' ' + botao('arquivar', l.id, 'Arquivar', '#991b1b');
+  }
+
   async function carregarLojas() {
     try {
-      const lojas = await Bora.api('/admin-bora/lojas');
+      const lojas = await Bora.api('/admin-bora/lojas'
+        + (verArquivadas && verArquivadas.checked ? '?incluirArquivadas=true' : ''));
       wrap.innerHTML = lojas.map(l =>
-        `<div style="display:flex;gap:10px;align-items:center;padding:6px 0;flex-wrap:wrap">
+        `<div style="display:flex;gap:10px;align-items:center;padding:8px 0;flex-wrap:wrap;border-top:1px solid #f1f5f9">
           <label style="display:flex;gap:8px;align-items:center;cursor:pointer;flex:1 1 240px">
-            <input type="checkbox" data-ia="${l.id}" ${l.moduloIa ? 'checked' : ''} style="width:18px;height:18px">
-            #${l.id} · ${l.nome || 'Loja'} ${l.ativo === false ? '<span style="color:#991b1b">(inativa)</span>' : ''}
+            <input type="checkbox" data-ia="${l.id}" ${l.moduloIa ? 'checked' : ''} style="width:18px;height:18px"
+                   ${l.excluidaEm ? 'disabled' : ''}>
+            #${l.id} · ${l.nome || 'Loja'} ${situacao(l)}
           </label>
           <span style="color:var(--muted);font-size:13px">taxa PIX</span>
           <input type="number" min="0" max="100" step="0.5" data-split="${l.id}"
                  value="${l.splitPercentual == null ? '' : l.splitPercentual}" placeholder="padrão"
                  style="width:86px;padding:6px;border:1px solid #e2e8f0;border-radius:6px">
           <span style="color:var(--muted);font-size:13px">%</span>
+          ${acoes(l)}
           <span data-splitmsg="${l.id}" style="font-size:12px"></span>
         </div>`).join('') || 'Nenhuma loja.';
       wrap.querySelectorAll('input[data-ia]').forEach(cb => cb.onchange = async () => {
@@ -206,8 +238,50 @@
           setTimeout(() => m.textContent = '', 4000);
         } catch (e) { m.style.color = '#dc2626'; m.textContent = e.message; }
       });
+      wrap.querySelectorAll('button[data-acao]').forEach(b => b.onclick = () => executarAcao(b));
     } catch (e) { wrap.textContent = 'Erro: ' + e.message; }
   }
+
+  async function executarAcao(btn) {
+    const id = btn.dataset.loja, acao = btn.dataset.acao;
+    const nome = '#' + id;
+    let url, body = null, aviso;
+    if (acao === 'suspender') {
+      aviso = 'Suspender a loja ' + nome + '?\n\nA equipe dela perde o acesso ao painel na hora, o cardápio '
+        + 'público sai do ar e a assinatura é cancelada no Asaas (o cliente para de ser cobrado).';
+      if (!confirm(aviso)) return;
+      const motivo = prompt('Motivo (fica no log de auditoria):', 'inadimplência');
+      if (motivo === null) return;
+      url = '/admin-bora/lojas/' + id + '/ativo'; body = { ativo: false, motivo };
+    } else if (acao === 'reativar') {
+      if (!confirm('Reativar a loja ' + nome + '?\n\nO acesso volta, mas a assinatura foi cancelada — '
+        + 'o lojista precisa ativar uma nova em Planos para a cobrança recomeçar.')) return;
+      url = '/admin-bora/lojas/' + id + '/ativo'; body = { ativo: true };
+    } else if (acao === 'arquivar') {
+      aviso = 'ARQUIVAR a loja ' + nome + '?\n\nEla some desta lista, perde o acesso e a assinatura é '
+        + 'cancelada. Os dados (pedidos, clientes, financeiro) são preservados e dá para restaurar depois.';
+      if (!confirm(aviso)) return;
+      const motivo = prompt('Motivo (fica no log de auditoria):', 'encerrou o contrato');
+      if (motivo === null) return;
+      url = '/admin-bora/lojas/' + id + '/arquivar'; body = { motivo };
+    } else {
+      if (!confirm('Restaurar a loja ' + nome + '?\n\nEla volta para a lista, mas continua suspensa: '
+        + 'reativar é um segundo passo.')) return;
+      url = '/admin-bora/lojas/' + id + '/restaurar';
+    }
+    btn.disabled = true;
+    try {
+      const r = await Bora.api(url, { method: 'PUT', body: body ? JSON.stringify(body) : undefined });
+      if (r && r.assinatura) alert('Assinatura: ' + r.assinatura);
+      if (r && r.aviso) alert(r.aviso);
+      await carregarLojas();
+    } catch (e) {
+      alert('Erro: ' + e.message);
+      btn.disabled = false;
+    }
+  }
+
+  if (verArquivadas) verArquivadas.onchange = carregarLojas;
   carregarLojas();
 
   // Cadastro de loja nova pela plataforma (POST /admin-bora/lojas) — o unico caminho que grava o CNPJ.
