@@ -183,45 +183,74 @@
   function selo(texto, fundo, cor) {
     return `<span style="background:${fundo};color:${cor};padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">${texto}</span>`;
   }
-  // "ativo" é status de pagamento (webhook do Asaas); "suspensa" é decisão da plataforma. São coisas
-  // diferentes e o admin precisa distinguir: uma volta sozinha quando o cliente paga, a outra não.
-  function situacao(l) {
-    if (l.excluidaEm) return selo('arquivada', '#e2e8f0', '#334155');
-    if (l.suspensaPelaPlataforma) return selo('suspensa por você', '#fee2e2', '#991b1b');
-    if (l.ativo === false) return selo('sem pagamento', '#fef3c7', '#92400e');
-    return selo('ativa', '#dcfce7', '#166534');
+  // "sem pagamento" é o Asaas tendo derrubado a loja (volta sozinha quando o cliente paga);
+  // "suspensa" é decisão da plataforma (só a plataforma reverte). O admin precisa distinguir.
+  const SELOS = {
+    ARQUIVADA:     ['arquivada', '#e2e8f0', '#334155'],
+    SUSPENSA:      ['suspensa por você', '#fee2e2', '#991b1b'],
+    SEM_PAGAMENTO: ['sem pagamento', '#fef3c7', '#92400e'],
+    ATIVA:         ['ativa', '#dcfce7', '#166534']
+  };
+  function situacao(c) {
+    const x = SELOS[c.situacao] || SELOS.ATIVA;
+    return selo(x[0], x[1], x[2]);
+  }
+  const ASSINATURA = { ATIVA: '✅ assinatura ativa', PENDENTE: '⏳ assinatura pendente',
+                       INADIMPLENTE: '⚠️ inadimplente', CANCELADA: '⛔ assinatura cancelada' };
+  function data(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR');
+  }
+  function dinheiro(v) {
+    return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
+  }
+  // Linha de contexto: o que o dono olha para cobrar e para dar suporte.
+  function ficha(c) {
+    const partes = [];
+    if (c.documento) partes.push(c.documento);
+    partes.push(dinheiro(c.precoMensal) + (c.precoNegociado ? ' (negociado)' : ''));
+    partes.push(c.assinatura ? (ASSINATURA[c.assinatura] || c.assinatura) : 'sem assinatura');
+    partes.push(c.usuariosAtivos + '/' + c.maxUsuarios + ' usuários');
+    partes.push('cliente desde ' + data(c.criadoEm));
+    partes.push(c.ultimoPedidoEm ? 'último pedido ' + data(c.ultimoPedidoEm) : 'nenhum pedido ainda');
+    if (c.motivo) partes.push('motivo: ' + c.motivo);
+    return partes.join(' · ');
   }
   function botao(acao, id, texto, cor) {
     return `<button class="btn" data-acao="${acao}" data-loja="${id}"
              style="background:${cor};padding:6px 10px;font-size:12px">${texto}</button>`;
   }
-  function acoes(l) {
-    if (l.excluidaEm) return botao('restaurar', l.id, 'Restaurar', '#0f766e');
-    return (l.suspensaPelaPlataforma
-      ? botao('reativar', l.id, 'Reativar', '#166534')
-      : botao('suspender', l.id, 'Suspender', '#b45309'))
-      + ' ' + botao('arquivar', l.id, 'Arquivar', '#991b1b');
+  function acoes(c) {
+    if (c.situacao === 'ARQUIVADA') return botao('restaurar', c.id, 'Restaurar', '#0f766e');
+    return (c.situacao === 'SUSPENSA'
+      ? botao('reativar', c.id, 'Reativar', '#166534')
+      : botao('suspender', c.id, 'Suspender', '#b45309'))
+      + ' ' + botao('arquivar', c.id, 'Arquivar', '#991b1b');
   }
 
   async function carregarLojas() {
     try {
-      const lojas = await Bora.api('/admin-bora/lojas'
+      const clientes = await Bora.api('/admin-bora/clientes'
         + (verArquivadas && verArquivadas.checked ? '?incluirArquivadas=true' : ''));
-      wrap.innerHTML = lojas.map(l =>
-        `<div style="display:flex;gap:10px;align-items:center;padding:8px 0;flex-wrap:wrap;border-top:1px solid #f1f5f9">
-          <label style="display:flex;gap:8px;align-items:center;cursor:pointer;flex:1 1 240px">
-            <input type="checkbox" data-ia="${l.id}" ${l.moduloIa ? 'checked' : ''} style="width:18px;height:18px"
-                   ${l.excluidaEm ? 'disabled' : ''}>
-            #${l.id} · ${l.nome || 'Loja'} ${situacao(l)}
-          </label>
-          <span style="color:var(--muted);font-size:13px">taxa PIX</span>
-          <input type="number" min="0" max="100" step="0.5" data-split="${l.id}"
-                 value="${l.splitPercentual == null ? '' : l.splitPercentual}" placeholder="padrão"
-                 style="width:86px;padding:6px;border:1px solid #e2e8f0;border-radius:6px">
-          <span style="color:var(--muted);font-size:13px">%</span>
-          ${acoes(l)}
-          <span data-splitmsg="${l.id}" style="font-size:12px"></span>
-        </div>`).join('') || 'Nenhuma loja.';
+      wrap.innerHTML = clientes.map(c =>
+        `<div style="padding:10px 0;border-top:1px solid #f1f5f9">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <label style="display:flex;gap:8px;align-items:center;cursor:pointer;flex:1 1 240px;font-weight:600">
+              <input type="checkbox" data-ia="${c.id}" ${c.moduloIa ? 'checked' : ''} style="width:18px;height:18px"
+                     ${c.situacao === 'ARQUIVADA' ? 'disabled' : ''} title="Módulo IA (add-on)">
+              #${c.id} · ${c.nome || 'Loja'} ${situacao(c)}
+            </label>
+            <span style="color:var(--muted);font-size:13px">taxa PIX</span>
+            <input type="number" min="0" max="100" step="0.5" data-split="${c.id}"
+                   value="${c.splitPercentual == null ? '' : c.splitPercentual}" placeholder="padrão"
+                   style="width:86px;padding:6px;border:1px solid #e2e8f0;border-radius:6px">
+            <span style="color:var(--muted);font-size:13px">%</span>
+            ${acoes(c)}
+            <span data-splitmsg="${c.id}" style="font-size:12px"></span>
+          </div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px;padding-left:26px">${ficha(c)}</div>
+        </div>`).join('') || 'Nenhum cliente ainda.';
       wrap.querySelectorAll('input[data-ia]').forEach(cb => cb.onchange = async () => {
         try { await Bora.api('/admin-bora/lojas/' + cb.dataset.ia + '/modulo-ia',
           { method: 'PUT', body: JSON.stringify({ habilitado: cb.checked }) }); }
