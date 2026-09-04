@@ -225,6 +225,7 @@
     if (c.situacao === 'ARQUIVADA') return botao('restaurar', c.id, 'Restaurar', '#0f766e');
     // Entrar na loja: o cadastro do cliente é feito por nós, e sem isto seria preciso a senha dele.
     return botao('entrar', c.id, 'Entrar na loja', '#4f46e5') + ' '
+      + botao('renomear', c.id, 'Renomear', '#0369a1') + ' '
       + (c.situacao === 'SUSPENSA'
         ? botao('reativar', c.id, 'Reativar', '#166534')
         : botao('suspender', c.id, 'Suspender', '#b45309'))
@@ -277,6 +278,19 @@
     const id = btn.dataset.loja, acao = btn.dataset.acao;
     const nome = '#' + id;
     let url, body = null, aviso;
+    if (acao === 'renomear') {
+      // O nome da loja e o que o cliente final le no cardapio e no app; o white-label so muda o painel.
+      const novo = prompt('Novo nome da loja ' + nome + '?' + '\n\nE o nome que o cliente final ve no cardapio e no app instalavel.');
+      if (novo === null || !novo.trim()) return;
+      btn.disabled = true;
+      try {
+        const r = await Bora.api('/admin-bora/lojas/' + id + '/nome',
+          { method: 'PUT', body: JSON.stringify({ nome: novo.trim() }) });
+        await carregarLojas();
+        alert('Renomeada: "' + (r.nomeAnterior || '-') + '" para "' + r.nome + '"');
+      } catch (e) { alert('Erro: ' + e.message); btn.disabled = false; }
+      return;
+    }
     if (acao === 'entrar') {
       if (!confirm('Entrar na loja ' + nome + ' como suporte?\n\nVocê passa a operar dentro dela — '
         + 'cardápio, taxas, horário e marca. Fica registrado no log de auditoria. Para voltar à '
