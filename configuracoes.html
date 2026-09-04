@@ -223,9 +223,11 @@
   }
   function acoes(c) {
     if (c.situacao === 'ARQUIVADA') return botao('restaurar', c.id, 'Restaurar', '#0f766e');
-    return (c.situacao === 'SUSPENSA'
-      ? botao('reativar', c.id, 'Reativar', '#166534')
-      : botao('suspender', c.id, 'Suspender', '#b45309'))
+    // Entrar na loja: o cadastro do cliente é feito por nós, e sem isto seria preciso a senha dele.
+    return botao('entrar', c.id, 'Entrar na loja', '#4f46e5') + ' '
+      + (c.situacao === 'SUSPENSA'
+        ? botao('reativar', c.id, 'Reativar', '#166534')
+        : botao('suspender', c.id, 'Suspender', '#b45309'))
       + ' ' + botao('arquivar', c.id, 'Arquivar', '#991b1b');
   }
 
@@ -275,6 +277,19 @@
     const id = btn.dataset.loja, acao = btn.dataset.acao;
     const nome = '#' + id;
     let url, body = null, aviso;
+    if (acao === 'entrar') {
+      if (!confirm('Entrar na loja ' + nome + ' como suporte?\n\nVocê passa a operar dentro dela — '
+        + 'cardápio, taxas, horário e marca. Fica registrado no log de auditoria. Para voltar à '
+        + 'plataforma, saia e entre de novo com sua conta.')) return;
+      btn.disabled = true;
+      try {
+        const r = await Bora.api('/admin-bora/lojas/' + id + '/acessar', { method: 'POST' });
+        Bora.setSession(r);
+        localStorage.removeItem('boraTheme');
+        location.href = 'dashboard.html';
+      } catch (e) { alert('Erro: ' + e.message); btn.disabled = false; }
+      return;
+    }
     if (acao === 'suspender') {
       aviso = 'Suspender a loja ' + nome + '?\n\nA equipe dela perde o acesso ao painel na hora, o cardápio '
         + 'público sai do ar e a assinatura é cancelada no Asaas (o cliente para de ser cobrado).';

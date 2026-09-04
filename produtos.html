@@ -20,11 +20,26 @@
           <div class="field full"><button class="btn" type="submit" id="btnSalvar">Salvar produto</button> <button type="button" class="btn secondary" id="cancelar" style="display:none">Cancelar</button> <span id="msg" style="color:var(--danger);margin-left:10px"></span></div>
         </form>
       </div>
+      <div class="card"><h2>📋 Importar cardápio (lista)</h2>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 8px">
+          Cole o cardápio inteiro, <b>um produto por linha</b>, no formato
+          <code>Categoria ; Nome ; Preço</code> — também aceita tabulação ou barra vertical como
+          separador. Sem categoria, o produto entra em "Geral".
+        </p>
+        <textarea id="impTexto" rows="6" placeholder="Bebidas ; Coca-Cola Lata 350ml ; 8,00&#10;Bebidas ; Água Mineral 500ml ; 4,50"
+                  style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-family:monospace;font-size:13px"></textarea>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn" id="impConferir" style="background:#64748b">Conferir</button>
+          <button class="btn" id="impCriar" disabled>Importar</button>
+          <span id="impMsg" style="font-size:13px"></span>
+        </div>
+        <div id="impPreview" style="display:none;margin-top:10px;font-size:13px;max-height:220px;overflow:auto;background:#f8fafc;border-radius:8px;padding:10px"></div>
+      </div>
       <div class="card"><h2>Catálogo da loja</h2>
         <table class="table"><thead><tr><th>Produto</th><th>Preço</th><th>Margem</th><th>Estoque</th><th></th></tr></thead><tbody id="lista"></tbody></table>
       </div>
     </section>
   </main>
 </div>
-<script src="assets/js/api.js?v=20260828"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/produtos.js?v=20260623"></script><script src="assets/js/complementos-gestao.js?v=20260708"></script>
+<script src="assets/js/api.js?v=20260828"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/produtos.js?v=20260904"></script><script src="assets/js/complementos-gestao.js?v=20260708"></script>
 </body></html>

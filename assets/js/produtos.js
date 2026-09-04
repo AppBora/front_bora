@@ -124,4 +124,72 @@
   });
 
   document.addEventListener('DOMContentLoaded', lista);
+
+  // ---- Importação de cardápio em massa ----------------------------------------------------
+  // O cadastro de loja nova é feito pela plataforma: digitar 30 produtos um a um é o gargalo.
+  (function importador() {
+    const txt = document.getElementById('impTexto');
+    if (!txt) return;
+    const msg = document.getElementById('impMsg');
+    const prev = document.getElementById('impPreview');
+    const btnCriar = document.getElementById('impCriar');
+    let lote = [];
+
+    // Aceita ";", tab ou "|" — quem copia de planilha ou do bloco de notas não deve ter que pensar.
+    function parse(texto) {
+      const linhas = texto.split('\n').map(l => l.trim()).filter(Boolean);
+      const itens = [], erros = [];
+      linhas.forEach((linha, n) => {
+        const p = linha.split(/[;|	]/).map(x => x.trim()).filter(x => x !== '');
+        if (p.length < 2) { erros.push('linha ' + (n + 1) + ': faltou o preço — ' + linha); return; }
+        const precoBruto = p[p.length - 1];
+        const preco = Number(precoBruto.replace(/[R$\s.]/g, '').replace(',', '.'));
+        if (!isFinite(preco) || preco <= 0) { erros.push('linha ' + (n + 1) + ': preço inválido "' + precoBruto + '"'); return; }
+        const nome = p.length >= 3 ? p[1] : p[0];
+        const categoria = p.length >= 3 ? p[0] : 'Geral';
+        if (!nome) { erros.push('linha ' + (n + 1) + ': faltou o nome'); return; }
+        itens.push({ nome, categoria, preco, ativo: true });
+      });
+      return { itens, erros };
+    }
+
+    document.getElementById('impConferir').onclick = () => {
+      const r = parse(txt.value);
+      lote = r.itens;
+      btnCriar.disabled = lote.length === 0;
+      prev.style.display = 'block';
+      const jaExiste = n => produtos.some(p => (p.nome || '').toLowerCase() === n.toLowerCase());
+      const repetidos = lote.filter(i => jaExiste(i.nome));
+      prev.innerHTML =
+        '<b>' + lote.length + ' produto(s) prontos para importar</b>'
+        + (repetidos.length ? '<br><span style="color:#b45309">' + repetidos.length
+            + ' já existem no catálogo com o mesmo nome e seriam duplicados: '
+            + repetidos.map(i => i.nome).join(', ') + '</span>' : '')
+        + (r.erros.length ? '<br><span style="color:#dc2626">' + r.erros.length + ' linha(s) com problema:<br>'
+            + r.erros.join('<br>') + '</span>' : '')
+        + '<hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0">'
+        + lote.map(i => i.categoria + ' · <b>' + i.nome + '</b> · R$ '
+            + i.preco.toFixed(2).replace('.', ',')).join('<br>');
+      msg.textContent = '';
+    };
+
+    btnCriar.onclick = async () => {
+      if (!lote.length) return;
+      if (!confirm('Importar ' + lote.length + ' produtos para o catálogo desta loja?')) return;
+      btnCriar.disabled = true;
+      let ok = 0; const falhas = [];
+      for (const item of lote) {
+        try { await Bora.api('/api/produtos', { method: 'POST', body: JSON.stringify(item) }); ok++; }
+        catch (e) { falhas.push(item.nome + ': ' + e.message); }
+        msg.style.color = 'var(--muted)';
+        msg.textContent = 'importando… ' + ok + '/' + lote.length;
+      }
+      msg.style.color = falhas.length ? '#b45309' : '#166534';
+      msg.textContent = ok + ' importado(s)' + (falhas.length ? ' · ' + falhas.length + ' falharam' : ' ✓');
+      if (falhas.length) prev.innerHTML = '<span style="color:#dc2626">' + falhas.join('<br>') + '</span>';
+      else { prev.style.display = 'none'; txt.value = ''; lote = []; }
+      await lista();
+    };
+  })();
+
 })();
