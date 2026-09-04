@@ -27,8 +27,13 @@
     const vis = produtos.filter(p => p.ativo !== false)
       .filter(p => cat === 'TODAS' || (p.categoria || 'Outros') === cat)
       .filter(p => !termo || (p.nome || '').toLowerCase().includes(termo));
+    // No balcão se vende pelo olho: a foto acha o produto mais rápido que ler o nome.
+    // Quem não tem foto mostra a inicial, para os cartões não ficarem de alturas diferentes.
     $('grid').innerHTML = vis.length ? vis.map(p =>
       `<button class="prodtile" onclick="__add(${p.id})">
+        ${p.imagemUrl
+          ? `<img class="pf" src="${p.imagemUrl}" alt="" loading="lazy">`
+          : `<div class="pf pf-vazia">${esc((p.nome || '?').trim().charAt(0).toUpperCase())}</div>`}
         <div class="pc">${esc(p.categoria || 'Outros')}</div>
         <div class="pn">${esc(p.nome)}</div>
         <div class="pp">${money(p.preco)}</div>
