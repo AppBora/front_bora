@@ -74,7 +74,15 @@
     if (!i.appConfigurado) {
       return `<div class="oficial-box aviso">
         <b>Integração oficial ainda não liberada</b>
-        <p>A ${esc(i.label)} precisa aprovar a aplicação do BoraHapp antes de conectar lojas. Assim que sair, esta tela habilita sozinha.</p>
+        <p>A ${esc(i.label)} precisa aprovar a aplicação do BoraHapp antes de conectar lojas pela credencial da plataforma. Assim que sair, esta tela habilita sozinha — e nada do que você configurar aqui se perde.</p>
+        <p><b>Não quer esperar?</b> Se a sua loja já tem um aplicativo próprio no portal de desenvolvedores da ${esc(i.label)}, informe a credencial dele abaixo e conecte agora. ${i.temSecret ? '<b style="color:#059669">Credencial própria salva ✓</b>' : ''}</p>
+        <div class="field"><label>Client ID do aplicativo da sua loja</label>
+          <input id="oc-${i.canal}" value="${esc(i.clientId || '')}" placeholder="opcional — só se você tiver o seu"></div>
+        <div class="field"><label>Client Secret ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label>
+          <input id="os-${i.canal}" type="password" placeholder="${i.temSecret ? '•••••• (em branco mantém o atual)' : 'cole o segredo aqui'}"></div>
+        <p style="font-size:12px;color:#64748b">Salve o Merchant ID e a credencial, ative o recebimento e clique em Conectar.</p>
+        <button class="btn" onclick="__vincular('${i.canal}')">🔗 Conectar ao ${esc(i.label)}</button>
+        ${i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : ''}
       </div>`;
     }
     if (i.userCode) {
@@ -132,12 +140,15 @@
     const t = btn.textContent; btn.textContent = '✓'; setTimeout(() => btn.textContent = t, 1000); };
 
   window.__salvar = async canal => {
+    // Canal oficial não renderiza Client ID/Secret no corpo principal: ler direto quebraria a tela.
+    const val = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
     const body = {
-      merchantId: document.getElementById('m-' + canal).value.trim(),
-      clientId: document.getElementById('c-' + canal).value.trim(),
+      merchantId: val('m-' + canal),
       ativo: document.querySelector(`#body-${canal} .switch`).dataset.on === 'true'
     };
-    const secret = document.getElementById('s-' + canal).value.trim();
+    const cid = val('c-' + canal) || val('oc-' + canal);
+    if (cid) body.clientId = cid;
+    const secret = val('s-' + canal) || val('os-' + canal);
     if (secret) body.clientSecret = secret;
     try { await Bora.salvarIntegracao(canal, body); await carregar(canal); }
     catch (e) { alert('Erro ao salvar: ' + e.message); }
