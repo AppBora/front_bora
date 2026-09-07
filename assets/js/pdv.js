@@ -5,6 +5,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   let produtos = [], clientes = [], cart = [], cat = 'TODAS', termo = '', pagamento = 'Dinheiro';
+  const complementosPorProduto = {}; // cache por produto, para o toque no tile abrir na hora
 
   const $ = id => document.getElementById(id);
 
@@ -44,11 +45,11 @@
     const box = $('items');
     if (!cart.length) { box.innerHTML = '<div class="cart-empty">Toque em um produto para começar</div>'; }
     else {
-      box.innerHTML = cart.map(i =>
+      box.innerHTML = cart.map((i, ix) =>
         `<div class="citem">
-          <div class="cn">${esc(i.nome)}<small>${money(i.preco)} un</small></div>
+          <div class="cn">${esc(i.nome)}${i.extras ? ' <em style="font-style:normal;color:#64748b">' + esc(i.extras) + '</em>' : ''}<small>${money(i.preco)} un</small></div>
           <div class="qty">
-            <button onclick="__dec(${i.id})">−</button><span>${i.qtd}</span><button onclick="__inc(${i.id})">+</button>
+            <button onclick="__dec(${ix})">−</button><span>${i.qtd}</span><button onclick="__inc(${ix})">+</button>
           </div>
           <div style="width:74px;text-align:right;font-weight:800">${money(i.preco * i.qtd)}</div>
         </div>`).join('');
@@ -60,10 +61,83 @@
     $('finish').disabled = !cart.length;
   }
 
-  window.__add = id => { const p = produtos.find(x => x.id === id); if (!p) return;
-    const it = cart.find(x => x.id === id); if (it) it.qtd++; else cart.push({ id, nome: p.nome, preco: Number(p.preco || 0), qtd: 1 }); renderCart(); };
-  window.__inc = id => { const it = cart.find(x => x.id === id); if (it) it.qtd++; renderCart(); };
-  window.__dec = id => { const it = cart.find(x => x.id === id); if (it) { it.qtd--; if (it.qtd <= 0) cart = cart.filter(x => x.id !== id); } renderCart(); };
+  /** Produto sem complemento entra direto; com complemento abre a escolha antes. */
+  window.__add = async id => {
+    const p = produtos.find(x => x.id === id);
+    if (!p) return;
+    const grupos = await carregarComplementos(id);
+    if (!grupos.length) { colocar(p, [], [], 0); return; }
+    abrirEscolha(p, grupos);
+  };
+  window.__inc = ix => { if (cart[ix]) cart[ix].qtd++; renderCart(); };
+  window.__dec = ix => { if (!cart[ix]) return; cart[ix].qtd--; if (cart[ix].qtd <= 0) cart.splice(ix, 1); renderCart(); };
+
+  function colocar(p, ids, nomes, extra) {
+    const chave = p.id + ':' + ids.slice().sort((a, b) => a - b).join(',');
+    const it = cart.find(x => x.chave === chave);
+    if (it) it.qtd++;
+    else cart.push({ chave, id: p.id, nome: p.nome, extras: nomes.join(', '), complementos: ids,
+                     preco: Number(p.preco || 0) + extra, qtd: 1 });
+    renderCart();
+  }
+
+  /* ---- complementos: sem isso o balcão vendia açaí sem adicional e pelo preço errado ---- */
+
+  async function carregarComplementos(produtoId) {
+    if (!complementosPorProduto[produtoId]) {
+      try { complementosPorProduto[produtoId] = await Bora.api('/api/produtos/' + produtoId + '/complementos') || []; }
+      catch (e) { complementosPorProduto[produtoId] = []; }
+    }
+    return complementosPorProduto[produtoId];
+  }
+
+  function abrirEscolha(p, grupos) {
+    const modal = $('modalComp');
+    $('mcTitulo').textContent = p.nome;
+    $('mcErro').textContent = '';
+    $('mcCorpo').innerHTML = grupos.map(g => {
+      const min = g.minimo || 0, max = g.maximo || 1;
+      const regra = min > 0 ? `escolha ${min === max ? min : min + ' a ' + max}` : `até ${max}, opcional`;
+      return `<div class="mc-grupo">
+        <div class="mc-gnome">${esc(g.nome)} <span>(${regra})</span></div>
+        ${(g.itens || []).map(i => `<label class="mc-op">
+          <input type="${max === 1 ? 'radio' : 'checkbox'}" name="g${g.id}" value="${i.id}"
+                 data-grupo="${g.id}" data-max="${max}" data-preco="${Number(i.preco || 0)}" data-nome="${esc(i.nome)}">
+          <span>${esc(i.nome)}</span>
+          <b>${Number(i.preco || 0) > 0 ? '+' + money(i.preco) : ''}</b></label>`).join('')}
+      </div>`;
+    }).join('');
+
+    const atualizarPreco = () => {
+      const extra = Array.from($('mcCorpo').querySelectorAll('input:checked'))
+        .reduce((s, i) => s + Number(i.dataset.preco || 0), 0);
+      $('mcPreco').textContent = money(Number(p.preco || 0) + extra);
+    };
+    $('mcCorpo').querySelectorAll('input').forEach(inp => inp.addEventListener('change', () => {
+      if (inp.type === 'checkbox' && inp.checked
+          && $('mcCorpo').querySelectorAll(`input[data-grupo="${inp.dataset.grupo}"]:checked`).length > Number(inp.dataset.max)) {
+        inp.checked = false; return;
+      }
+      atualizarPreco();
+    }));
+    atualizarPreco();
+
+    $('mcOk').onclick = () => {
+      const marcados = Array.from($('mcCorpo').querySelectorAll('input:checked'));
+      for (const g of grupos) {
+        const min = g.minimo || 0;
+        if (min && marcados.filter(i => i.dataset.grupo === String(g.id)).length < min) {
+          $('mcErro').textContent = `Escolha ${min} em "${g.nome}"`;
+          return;
+        }
+      }
+      colocar(p, marcados.map(i => Number(i.value)), marcados.map(i => i.dataset.nome),
+              marcados.reduce((s, i) => s + Number(i.dataset.preco || 0), 0));
+      modal.style.display = 'none';
+    };
+    $('mcCancelar').onclick = () => { modal.style.display = 'none'; };
+    modal.style.display = 'flex';
+  }
 
   async function finalizar() {
     if (!cart.length) return;
@@ -71,7 +145,7 @@
       clienteId: $('cliente').value ? Number($('cliente').value) : null,
       formaPagamento: pagamento, origem: 'Balcão',
       usarCashback: $('usarCashback').checked,
-      itens: cart.map(i => ({ produtoId: i.id, quantidade: i.qtd }))
+      itens: cart.map(i => ({ produtoId: i.id, quantidade: i.qtd, complementos: i.complementos || [] }))
     };
     $('finish').disabled = true; $('finish').textContent = 'Processando…';
     try {
@@ -96,9 +170,12 @@
     $('finish').addEventListener('click', finalizar);
     $('cliente').addEventListener('change', atualizarCashback);
     try {
-      const [prods, cls, formas] = await Promise.all([Bora.produtos(), Bora.clientes(), Bora.formasPagamento()]);
-      produtos = prods; clientes = cls;
-      const ativas = (formas || []).filter(f => f.ativo !== false);
+      // allSettled: forma de pagamento com problema não pode fechar o caixa da loja
+      const [rp, rc, rf] = await Promise.allSettled([Bora.produtos(), Bora.clientes(), Bora.formasPagamento()]);
+      if (rp.status === 'rejected') throw new Error(rp.reason.message);
+      produtos = rp.value || [];
+      clientes = rc.status === 'fulfilled' ? (rc.value || []) : [];
+      const ativas = (rf.status === 'fulfilled' ? (rf.value || []) : []).filter(f => f.ativo !== false);
       if (ativas.length) {
         pagamento = ativas[0].descricao;
         $('pays').innerHTML = ativas.map((f, i) => `<button class="pay-btn ${i === 0 ? 'sel' : ''}" data-p="${esc(f.descricao)}">${esc(f.descricao)}</button>`).join('');

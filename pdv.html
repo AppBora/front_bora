@@ -38,6 +38,32 @@
       </div>
     </div>
   </main>
+
+  <!-- Escolha de complementos: no balcão precisa caber num toque, então é modal e não outra tela. -->
+  <div id="modalComp" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:60;align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border-radius:16px;max-width:460px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:16px 18px;border-bottom:1px solid #e2e8f0">
+        <b id="mcTitulo" style="font-size:17px"></b>
+        <div style="font-size:13px;color:#64748b;margin-top:2px">Unitário: <b id="mcPreco" style="color:#111"></b></div>
+      </div>
+      <div id="mcCorpo" style="padding:12px 18px;overflow-y:auto"></div>
+      <div style="padding:12px 18px;border-top:1px solid #e2e8f0;display:flex;gap:10px;align-items:center">
+        <button class="btn" id="mcOk" style="flex:1">Adicionar</button>
+        <button class="btn ghost" id="mcCancelar" style="background:#e5e7eb;color:#111">Cancelar</button>
+        <span id="mcErro" style="color:var(--danger);font-size:13px"></span>
+      </div>
+    </div>
+  </div>
+  <style>
+    .mc-grupo{margin:10px 0}
+    .mc-gnome{font-size:13px;font-weight:800;margin-bottom:4px}
+    .mc-gnome span{font-weight:600;color:#94a3b8}
+    .mc-op{display:flex;align-items:center;gap:9px;padding:9px 6px;border-bottom:1px solid #f1f5f9;cursor:pointer;font-size:15px}
+    .mc-op input{width:19px;height:19px}
+    .mc-op span{flex:1}
+    .mc-op b{color:#166534}
+  </style>
+
 </div>
-<script src="assets/js/api.js?v=20260828"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/pdv.js?v=20260904"></script>
+<script src="assets/js/api.js?v=20260828"></script><script src="assets/js/app.js?v=20260623"></script><script src="assets/js/whitelabel.js?v=20260623"></script><script src="assets/js/pdv.js?v=20260907"></script>
 </body></html>
