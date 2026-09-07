@@ -43,7 +43,10 @@
   function resetForm() { $('id').value = ''; $('form').reset(); $('formTitulo').textContent = 'Novo entregador'; $('cancelar').style.display = 'none'; $('msg').textContent = ''; }
 
   async function carregar() {
-    [entregadores, board] = await Promise.all([Bora.entregadores(), Bora.board()]);
+    // Antes somava a vida inteira da loja porque o board vinha completo. Agora o intervalo é dito.
+    const desde = new Date(Date.now() - 30 * 86400000 - new Date().getTimezoneOffset() * 60000)
+      .toISOString().slice(0, 10);
+    [entregadores, board] = await Promise.all([Bora.entregadores(), Bora.board(null, desde)]);
     render();
   }
 

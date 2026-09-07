@@ -21,6 +21,12 @@
         <button class="chip" data-f="BALCAO">Balcão</button>
         <button class="chip" data-f="CANCELADO">Cancelados</button>
       </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn secondary" id="diaAnterior" title="Dia anterior" style="padding:8px 10px">‹</button>
+        <input type="date" id="dia" title="Dia do quadro" style="padding:8px;border:1px solid #e5e7eb;border-radius:10px">
+        <button class="btn secondary" id="diaSeguinte" title="Dia seguinte" style="padding:8px 10px">›</button>
+        <button class="btn secondary" id="diaHoje" style="padding:8px 12px">Hoje</button>
+      </div>
       <div class="live-tag"><span class="live-dot"></span><span id="liveTxt">Ao vivo</span></div>
       <button class="btn secondary" onclick="window.__refresh&&__refresh()" title="Atualizar agora">↻</button>
     </div>
@@ -31,5 +37,5 @@
 <script src="assets/js/api.js?v=20260828"></script>
 <script src="assets/js/app.js?v=20260907b"></script>
 <script src="assets/js/whitelabel.js?v=20260623"></script>
-<script src="assets/js/pedidos.js?v=20260623"></script>
+<script src="assets/js/pedidos.js?v=20260907d"></script>
 </body></html>

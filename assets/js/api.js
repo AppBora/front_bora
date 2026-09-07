@@ -29,7 +29,8 @@ const Bora = {
   // Atalhos
   login(email, senha) { return this.api('/auth/login', { method: 'POST', body: JSON.stringify({ email, senha }) }); },
   pedidos() { return this.api('/api/pedidos'); },
-  board() { return this.api('/api/pedidos/board'); },
+  board(dia, desde) { const q = []; if (dia) q.push('dia=' + dia); if (desde) q.push('desde=' + desde);
+    return this.api('/api/pedidos/board' + (q.length ? '?' + q.join('&') : '')); },
   criarPedido(body) { return this.api('/api/pedidos', { method: 'POST', body: JSON.stringify(body) }); },
   mudarStatus(id, status, motivo) { let u = `/api/pedidos/${id}/status?status=${status}`; if (motivo) u += '&motivo=' + encodeURIComponent(motivo); return this.api(u, { method: 'PATCH' }); },
   definirEntregador(id, nome) { return this.api(`/api/pedidos/${id}/entregador${nome ? '?nome=' + encodeURIComponent(nome) : ''}`, { method: 'PATCH' }); },
@@ -42,7 +43,7 @@ const Bora = {
   excluirEntregador(id) { return this.api('/api/entregadores/' + id, { method: 'DELETE' }); },
   produtos() { return this.api('/api/produtos'); },
   atualizarProduto(id, b) { return this.api('/api/produtos/' + id, { method: 'PUT', body: JSON.stringify(b) }); },
-  relatorios(dias) { return this.api('/api/relatorios?dias=' + (dias || 30)); },
+  relatorios(dias, lojaId) { return this.api('/api/relatorios?dias=' + (dias || 30) + (lojaId ? '&lojaId=' + lojaId : '')); },
   insumos() { return this.api('/api/insumos'); },
   salvarInsumo(b) { return this.api('/api/insumos' + (b.id ? '/' + b.id : ''), { method: b.id ? 'PUT' : 'POST', body: JSON.stringify(b) }); },
   excluirInsumo(id) { return this.api('/api/insumos/' + id, { method: 'DELETE' }); },

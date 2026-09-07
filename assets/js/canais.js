@@ -7,7 +7,7 @@
   let board = [], periodo = 'hoje';
 
   const dentroPeriodo = iso => {
-    if (periodo === 'tudo' || !iso) return periodo === 'tudo';
+    if (periodo === 'tudo' || !iso) return periodo === 'tudo'; // "tudo" = os 30 dias carregados
     const d = new Date(iso);
     if (periodo === 'hoje') { const h = new Date(); return d.toDateString() === h.toDateString(); }
     return (Date.now() - d.getTime()) <= 7 * 86400000; // 7 dias
@@ -48,7 +48,11 @@
     }).join('') : '<tr><td colspan="5" style="color:#94a3b8">Sem vendas no período.</td></tr>';
   }
 
-  async function carregar() { try { board = await Bora.board(); render(); } catch (e) {
+  // O quadro passou a ser do dia; esta tela soma período, então pede o intervalo explicitamente.
+  const desdeISO = d => new Date(Date.now() - d * 86400000 - new Date().getTimezoneOffset() * 60000)
+    .toISOString().slice(0, 10);
+
+  async function carregar() { try { board = await Bora.board(null, desdeISO(30)); render(); } catch (e) {
     document.getElementById('rank').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${e.message}</td></tr>`; } }
 
   document.addEventListener('DOMContentLoaded', () => {

@@ -4,7 +4,26 @@
   const money = v => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const $ = id => document.getElementById(id);
-  let dias = 30, rel = null;
+  let dias = 30, rel = null, lojaEscolhida = null;
+
+  /**
+   * Seletor de loja: o balancete já mostrava a rede lado a lado, mas o relatório detalhado (dia,
+   * canal, produto, entregador, margem) só saía da loja em que a sessão estava. Para ver a outra
+   * unidade era preciso trocar o painel inteiro de contexto.
+   */
+  async function ligarSeletorDeLoja() {
+    const sel = $('relLoja');
+    if (!sel) return;
+    let lojas = [];
+    try { lojas = await Bora.minhasLojas() || []; } catch (e) { return; }
+    if (lojas.length < 2) return;                       // loja única não precisa escolher
+    const atual = lojas.find(l => l.atual) || lojas[0];
+    lojaEscolhida = atual.id;
+    sel.innerHTML = lojas.map(l => `<option value="${l.id}">${esc(l.nome)}</option>`).join('');
+    sel.value = String(lojaEscolhida);
+    sel.parentElement.style.display = '';
+    sel.addEventListener('change', () => { lojaEscolhida = Number(sel.value); carregar(); });
+  }
 
   function barras(porDia) {
     const ent = Object.entries(porDia);
@@ -48,7 +67,9 @@
 
   async function carregar() {
     try {
-      rel = await Bora.relatorios(dias);
+      rel = await Bora.relatorios(dias, lojaEscolhida);
+      const sub = $('relSub');
+      if (sub && rel.loja) sub.textContent = rel.loja + ' · últimos ' + rel.dias + ' dias';
       $('kFat').textContent = money(rel.faturamento);
       $('kPed').textContent = rel.pedidos;
       $('kTicket').textContent = money(rel.ticketMedio);
@@ -71,9 +92,9 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    ligarSeletorDeLoja().then(carregar);
     $('periodo').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return;
       document.querySelectorAll('#periodo .chip').forEach(x => x.classList.remove('active')); b.classList.add('active'); dias = Number(b.dataset.d); carregar(); });
     $('csv').addEventListener('click', exportarCsv);
-    carregar();
   });
 })();

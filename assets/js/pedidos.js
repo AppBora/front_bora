@@ -22,6 +22,12 @@
 
   let cache = [];
   let filtro = 'ATIVOS';
+
+  // O quadro é do dia. Sem isso a coluna "Entregue" empilhava dia após dia e o balcão abria a manhã
+  // com a tela do dia anterior. Pedido em andamento de outro dia o servidor manda junto de qualquer
+  // forma — quem entrou 23h50 e está em preparo à meia-noite não pode sumir da cozinha.
+  const hojeISO = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const diaEscolhido = () => { const el = document.getElementById('dia'); return el && el.value ? el.value : hojeISO(); };
   let termo = '';
 
   async function mudarStatus(id, status, motivo) {
@@ -132,7 +138,7 @@
   async function carregar() {
     const board = document.getElementById('kboard'); if (!board) return;
     try {
-      cache = await Bora.board();
+      cache = await Bora.board(diaEscolhido());
       detectarNovos(cache);
       render();
       const lt = document.getElementById('liveTxt');
@@ -140,6 +146,31 @@
     } catch (e) {
       if (!cache.length) board.innerHTML = `<p style="color:var(--danger)">${e.message}</p>`;
     }
+  }
+
+  /** Troca o dia do quadro; "Hoje" volta ao ao vivo. */
+  function ligarControlesDeDia() {
+    const el = document.getElementById('dia');
+    if (!el) return;
+    el.value = hojeISO();
+    const mover = (passo) => {
+      const d = new Date(el.value + 'T12:00:00');
+      d.setDate(d.getDate() + passo);
+      el.value = d.toISOString().slice(0, 10);
+      aoTrocarDia();
+    };
+    const aoTrocarDia = () => {
+      const ehHoje = el.value === hojeISO();
+      const tag = document.getElementById('liveTxt');
+      if (tag) tag.textContent = ehHoje ? 'Ao vivo' : 'Dia fechado';
+      document.getElementById('diaSeguinte').disabled = ehHoje;
+      if (window.__refresh) window.__refresh();
+    };
+    el.addEventListener('change', aoTrocarDia);
+    document.getElementById('diaAnterior').addEventListener('click', () => mover(-1));
+    document.getElementById('diaSeguinte').addEventListener('click', () => mover(1));
+    document.getElementById('diaHoje').addEventListener('click', () => { el.value = hojeISO(); aoTrocarDia(); });
+    aoTrocarDia();
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -151,7 +182,9 @@
       chips.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       b.classList.add('active'); filtro = b.dataset.f; render();
     });
+    ligarControlesDeDia();
     carregar();
-    setInterval(carregar, 8000);
+    // dia fechado não muda mais: só o dia corrente fica se atualizando sozinho
+    setInterval(() => { if (diaEscolhido() === hojeISO()) carregar(); }, 8000);
   });
 })();
