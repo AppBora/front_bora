@@ -115,20 +115,31 @@ async function renderLojaSwitcher(){
   if(typeof Bora==='undefined' || !Bora.token()) return;
   try{
     const lojas = await Bora.minhasLojas();
-    if(!Array.isArray(lojas) || lojas.length < 2) return;
+    if(!Array.isArray(lojas) || !lojas.length) return;
+    // A plataforma vê todos os clientes e precisa do seletor mesmo com uma loja só; o lojista com
+    // uma loja apenas não precisa de seletor nenhum.
+    const suporte = lojas.some(l => l.suporte);
+    if(!suporte && lojas.length < 2) return;
     const brand = document.querySelector('.side .brand') || document.querySelector('.brand');
     if(!brand || document.getElementById('lojaSwitch')) return;
     const sel = document.createElement('select');
     sel.id = 'lojaSwitch';
     sel.title = 'Trocar de loja';
     sel.style.cssText = 'display:block;margin:8px 12px 4px;width:calc(100% - 24px);padding:7px 8px;border-radius:8px;border:1px solid #cbd5e1;background:#fff;color:#111;font-weight:600;font-size:13px;cursor:pointer';
-    sel.innerHTML = lojas.map(l => `<option value="${l.id}" ${l.atual ? 'selected' : ''}>🏪 ${l.nome}${l.ativo === false ? ' (inativa)' : ''}</option>`).join('');
+    sel.innerHTML =
+      (suporte ? `<option value="" ${lojas.some(l=>l.atual) ? '' : 'selected'}>🏢 Plataforma (sem loja)</option>` : '') +
+      lojas.map(l => `<option value="${l.id}" ${l.atual ? 'selected' : ''}>🏪 ${l.nome}${l.ativo === false ? ' (inativa)' : ''}</option>`).join('');
     sel.onchange = async () => {
       try{
-        const r = await Bora.trocarLoja(Number(sel.value));
+        // O suporte entra pela porta da plataforma (/acessar), que registra quem entrou em qual
+        // loja; o lojista troca pelo vínculo dele.
+        const r = !sel.value ? await Bora.api('/admin-bora/sair-da-loja', { method:'POST' })
+                : suporte     ? await Bora.api('/admin-bora/lojas/' + Number(sel.value) + '/acessar', { method:'POST' })
+                              : await Bora.trocarLoja(Number(sel.value));
         Bora.setSession(r);
         localStorage.removeItem('boraTheme');
-        boraToast('Agora você está na loja <b>' + (r.lojaNome || '') + '</b>');
+        boraToast(r.lojaId ? ('Agora você está na loja <b>' + (r.lojaNome || '') + '</b>')
+                           : 'Você voltou para a <b>plataforma</b>');
         setTimeout(() => location.reload(), 400);
       }catch(e){
         alert('Erro ao trocar de loja: ' + (e.message || 'falha'));
