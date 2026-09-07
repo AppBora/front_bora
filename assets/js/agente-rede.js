@@ -99,12 +99,16 @@
     try {
       plano = await Bora.api('/api/ia/rede/analisar' + periodo(), { method: 'POST' });
       $('iaResumo').style.display = 'block';
-      $('iaResumo').innerHTML = '<b>Leitura do período:</b> ' + esc(plano.resumo || '');
+      // reabrir a análise do dia não custa nada; dizer isso evita o lojista achar que travou
+      $('iaResumo').innerHTML = (plano.aviso ? '<div style="font-size:13px;color:#7c2d12;margin-bottom:8px">'
+          + '⏳ ' + esc(plano.aviso) + '</div>' : '')
+        + '<b>Leitura do período:</b> ' + esc(plano.resumo || '');
       const recs = plano.recomendacoes || [];
       $('iaCards').innerHTML = recs.length
         ? recs.map(cartao).join('')
         : '<p style="color:var(--muted)">Nenhuma recomendação para este período.</p>';
-      $('iaStatus').textContent = recs.length + ' recomendação(ões) · ' + (plano.inicio || '') + ' a ' + (plano.fim || '');
+      $('iaStatus').textContent = recs.length + ' recomendação(ões) · ' + (plano.inicio || '') + ' a ' + (plano.fim || '')
+        + (plano.doCache ? ' · análise de hoje, sem novo custo' : '');
     } catch (e) {
       // erro de IA precisa dizer o que fazer: chave, saldo ou add-on
       $('iaStatus').innerHTML = '<span style="color:var(--danger)">' + esc(e.message) + '</span>';
