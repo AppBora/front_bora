@@ -44,6 +44,7 @@ const BORA_NAV = [
   { href:'cardapio-qr.html',   label:'Cardápio QR',     ic:'📱' },
   { href:'promocoes.html',     label:'Promoções',       ic:'⚡' },
   { href:'relatorios.html',    label:'Relatórios',      ic:'📈' },
+  { href:'desempenho.html',    label:'Desempenho',      ic:'💹', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'rede.html',          label:'Rede & Análise',  ic:'🏪', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'configuracoes.html', label:'Configurações',   ic:'⚙️' },
   { href:'ajustes.html',       label:'Ajustes Operação',ic:'🛠️' },
@@ -148,3 +149,27 @@ async function renderLojaSwitcher(){
 })();
 
 document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();renderLojaSwitcher();});
+
+// ---- Plataforma sem loja: avisa em vez de deixar a tela vazia ou quebrada ----------------------
+// O ADMINISTRADOR_BORA logado na plataforma não tem loja. As telas de operação dependem dela: umas
+// mostravam lista vazia (parecia loja sem cadastro), outras estouravam 500 ao semear padrões.
+(function avisoSemLoja(){
+  if (typeof Bora === 'undefined' || !Bora.token()) return;
+  var u = Bora.user();
+  if (!u || u.papel !== 'ADMINISTRADOR_BORA' || u.lojaId) return;
+  var telasDaPlataforma = ['configuracoes.html', 'desempenho.html', 'login.html', 'index.html', ''];
+  var atual = location.pathname.split('/').pop();
+  if (telasDaPlataforma.indexOf(atual) >= 0) return;
+  document.addEventListener('DOMContentLoaded', function(){
+    var faixa = document.createElement('div');
+    faixa.style.cssText = 'background:#fdf0dc;border-left:4px solid #b45309;color:#7c2d12;padding:12px 16px;'
+      + 'margin:0 0 14px;border-radius:0 8px 8px 0;font-size:14px;line-height:1.5';
+    faixa.innerHTML = '<b>Você está na plataforma, sem loja selecionada.</b> Esta tela é de operação da loja e '
+      + 'não vai funcionar assim. Vá em <a href="configuracoes.html" style="color:#7c2d12"><b>Configurações → Plataforma</b></a> '
+      + 'e clique em <b>Entrar na loja</b> do cliente.';
+    var main = document.querySelector('.main');
+    var header = main && main.querySelector('.top');
+    if (header && header.nextSibling) main.insertBefore(faixa, header.nextSibling);
+    else if (main) main.insertBefore(faixa, main.firstChild);
+  });
+})();
