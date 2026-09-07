@@ -58,6 +58,10 @@
               background:${IMPACTO[r.impacto] || '#64748b'};color:#fff">${esc(r.impacto || '')}</span>
       </div>
       <p style="margin:8px 0 0;font-size:13px;color:#475569;line-height:1.5">${esc(r.porque)}</p>
+      <span style="display:inline-block;margin-top:8px;font-size:10px;font-weight:800;letter-spacing:.06em;
+            padding:2px 7px;border-radius:999px;${r.origem === 'IA'
+              ? 'background:#ede9fe;color:#5b21b6'
+              : 'background:#e2e8f0;color:#475569'}">${r.origem === 'IA' ? '🤖 IA' : '⚙️ REGRA'}</span>
       ${r.ganhoEstimado ? `<p style="margin:8px 0 0;font-size:13px;font-weight:700;color:#166534">≈ ${esc(r.ganhoEstimado)}</p>` : ''}
       <button class="btn" style="margin-top:12px;width:100%" onclick="__iaAbrir(${idx})">
         ${d ? esc(d.rotulo) : 'Ver detalhe'}</button>
@@ -122,9 +126,29 @@
     }
   }
 
+  /** Sinais das regras: sem IA, sem custo. Rodam sozinhos ao abrir a aba. */
+  async function carregarSinais() {
+    $('iaStatus').textContent = 'Cruzando os números…';
+    try {
+      plano = await Bora.api('/api/ia/rede/sinais' + periodo());
+      const recs = plano.recomendacoes || [];
+      $('iaCards').innerHTML = recs.length
+        ? recs.map(cartao).join('')
+        : '<p style="color:var(--muted)">Nenhum sinal de alerta no período. Operação dentro dos limites.</p>';
+      $('iaStatus').textContent = recs.length
+        ? recs.length + ' sinal(is) achado(s) pelas regras — sem custo de IA'
+        : 'Nada fora do limite no período';
+    } catch (e) {
+      $('iaStatus').innerHTML = '<span style="color:var(--danger)">' + esc(e.message) + '</span>';
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     if (!$('iaAnalisar')) return;
     $('iaAnalisar').addEventListener('click', analisar);
+    // a aba só carrega quando o lojista entra nela — não gasta consulta de quem não vai usar
+    const chip = document.querySelector('.subnav .chip[data-v="agente"]');
+    if (chip) chip.addEventListener('click', () => { if (!plano) carregarSinais(); }, { once: false });
     $('iaDados').addEventListener('click', verDossie);
     $('imFechar').addEventListener('click', () => { $('iaModal').style.display = 'none'; });
     $('iaModal').addEventListener('click', e => { if (e.target === $('iaModal')) $('iaModal').style.display = 'none'; });
