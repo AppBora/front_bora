@@ -45,10 +45,10 @@
 </style></head><body>
 <div class="layout">
   <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>BoraHapp</b><br><small>Delivery em tempo real</small></div></div>
-    <nav class="nav"><a href="dashboard.html">Dashboard</a><a href="pedidos.html">Pedidos</a><a href="pdv.html">Frente de Caixa</a><a href="kds.html">KDS</a><a href="canais.html">Canais</a><a href="entregas.html">Entregas</a><a href="clientes.html">Clientes</a><a href="produtos.html">Produtos</a><a href="estoque.html">Estoque</a><a href="promocoes.html">Promoções</a><a href="relatorios.html">Relatórios</a><a class="active" href="rede.html">Rede &amp; Análise</a><a href="configuracoes.html">Configurações</a><a href="usuarios.html">Usuários</a><a href="planos.html">Planos</a></nav>
+    <nav class="nav"><a href="dashboard.html">Dashboard</a><a href="pedidos.html">Pedidos</a><a href="pdv.html">Frente de Caixa</a><a href="kds.html">KDS</a><a href="canais.html">Canais</a><a href="entregas.html">Entregas</a><a href="clientes.html">Clientes</a><a href="produtos.html">Produtos</a><a href="estoque.html">Estoque</a><a href="promocoes.html">Promoções</a><a href="relatorios.html">Relatórios</a><a class="active" href="rede.html">Rede &amp; Análise IA</a><a href="configuracoes.html">Configurações</a><a href="usuarios.html">Usuários</a><a href="planos.html">Planos</a></nav>
   </aside>
   <main class="main">
-    <header class="top"><div class="title"><h1>Rede &amp; Análise</h1><p>Consolidado das suas lojas, canais, horários de pico e operação</p></div>
+    <header class="top"><div class="title"><h1>Rede &amp; Análise IA</h1><p>Consolidado das suas lojas, canais, horários de pico e operação — com o agente de estratégia</p></div>
       <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
         <div class="field" style="margin:0"><label>Início</label><input type="date" id="dtIni"></div>
         <div class="field" style="margin:0"><label>Fim</label><input type="date" id="dtFim"></div>
@@ -62,6 +62,7 @@
       <button class="chip" data-v="canais">📡 Canais &amp; produtos</button>
       <button class="chip" data-v="horario">⏰ Vendas por horário</button>
       <button class="chip" data-v="tempos">⏱️ Tempo &amp; cancelamentos</button>
+      <button class="chip" data-v="agente">🤖 Agente IA</button>
     </div>
 
     <!-- FATURAMENTO -->
@@ -124,7 +125,46 @@
       </div>
     </section>
 
+    <!-- AGENTE IA -->
+    <section class="view" id="v-agente">
+      <div class="panel" style="margin-top:0">
+        <h2>🤖 Agente de estratégia</h2>
+        <p class="sub" style="color:var(--muted);font-size:13px;margin:2px 0 12px">
+          Ele lê as quatro abas desta tela — faturamento por loja, canais e produtos, vendas por horário,
+          tempos e cancelamentos — mais a cobertura de estoque, e devolve o que fazer. Ele propõe; quem aplica é você.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn" id="iaAnalisar">Analisar minha rede</button>
+          <button class="btn" id="iaDados" style="background:#64748b">Ver os números crus</button>
+          <span id="iaStatus" style="font-size:13px;color:var(--muted)"></span>
+        </div>
+        <div id="iaResumo" style="display:none;margin-top:14px;padding:14px 16px;border-left:3px solid var(--primary);background:#faf5ff;border-radius:0 10px 10px 0;font-size:15px;line-height:1.55"></div>
+      </div>
+      <div id="iaCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;margin-top:16px"></div>
+      <pre id="iaDossie" style="display:none;margin-top:16px;background:#0f172a;color:#e2e8f0;padding:14px;border-radius:12px;font-size:12px;max-height:420px;overflow:auto"></pre>
+    </section>
+
   </main>
+
+<div id="iaModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:70;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:86vh;overflow:auto">
+    <div style="padding:18px 20px;border-bottom:1px solid #e2e8f0">
+      <div id="imTag" style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7c3aed"></div>
+      <b id="imTitulo" style="font-size:18px;display:block;margin-top:4px"></b>
+    </div>
+    <div style="padding:16px 20px;font-size:14px;line-height:1.6">
+      <div style="color:#64748b;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em">Por quê</div>
+      <p id="imPorque" style="margin:4px 0 14px"></p>
+      <div style="color:#64748b;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em">Como fazer no Bora</div>
+      <p id="imComo" style="margin:4px 0 14px"></p>
+      <p id="imGanho" style="margin:0;color:#166534;font-weight:700"></p>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid #e2e8f0;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn" id="imFechar" style="background:#e5e7eb;color:#111">Fechar</button>
+      <a class="btn" id="imIr" target="_blank" rel="noopener">Abrir tela</a>
+    </div>
+  </div>
 </div>
-<script src="assets/js/api.js?v=20260828"></script><script src="assets/js/app.js?v=20260907b"></script><script src="assets/js/whitelabel.js?v=20260709"></script><script src="assets/js/rede-analise.js?v=20260709"></script>
+</div>
+<script src="assets/js/api.js?v=20260828"></script><script src="assets/js/app.js?v=20260907e"></script><script src="assets/js/whitelabel.js?v=20260709"></script><script src="assets/js/rede-analise.js?v=20260907d"></script><script src="assets/js/agente-rede.js?v=20260907d"></script>
 </body></html>

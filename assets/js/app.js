@@ -45,7 +45,7 @@ const BORA_NAV = [
   { href:'promocoes.html',     label:'Promoções',       ic:'⚡' },
   { href:'relatorios.html',    label:'Relatórios',      ic:'📈' },
   { href:'desempenho.html',    label:'Desempenho',      ic:'💹', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
-  { href:'rede.html',          label:'Rede & Análise',  ic:'🏪', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'rede.html',          label:'Rede & Análise IA', ic:'🏪', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'configuracoes.html', label:'Configurações',   ic:'⚙️' },
   { href:'ajustes.html',       label:'Ajustes Operação',ic:'🛠️' },
   { href:'usuarios.html',      label:'Usuários',        ic:'🔑' },
