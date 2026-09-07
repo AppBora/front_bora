@@ -13,6 +13,7 @@
   let produtos = [], clientes = [], taxas = [], itens = [];
   const complementosPorProduto = {}; // cache: produtoId -> grupos (evita rebuscar a cada troca)
   let escolhaAtual = [];             // ids marcados no produto em foco
+  let pendente = false;              // mexeu no produto/quantidade/adicionais e ainda não adicionou
 
   /* ---------------- cliente ---------------- */
 
@@ -84,6 +85,7 @@
     const pid = Number($('produto').value);
     const box = $('complementos');
     escolhaAtual = [];
+    pendente = true;
     avisar('');
     mostrarFoto(pid);
     if (!pid) { box.innerHTML = ''; box.style.display = 'none'; $('precoProduto').textContent = money(0); return; }
@@ -118,6 +120,7 @@
         if (marcados.length > Number(inp.dataset.max)) { inp.checked = false; return; }
       }
       escolhaAtual = Array.from(box.querySelectorAll('input:checked')).map(i => Number(i.value));
+      pendente = true;
       $('precoProduto').textContent = money(precoComExtras(Number($('produto').value)));
     }));
     $('precoProduto').textContent = money(precoComExtras(pid));
@@ -176,7 +179,7 @@
         <td style="width:40px;text-align:right">
           <button type="button" class="btn ghost" onclick="__rem(${idx})"
                   style="background:#e5e7eb;color:#111;padding:4px 8px" title="Remover">✕</button></td>
-      </tr>`).join('') || '<tr><td colspan="4" style="color:#94a3b8">Nenhum item ainda.</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="4" style="color:#94a3b8">Nenhum item ainda — monte o produto acima e clique em <b>Adicionar ao pedido</b>.</td></tr>';
     renderTotais();
   }
   window.__rem = idx => { itens.splice(idx, 1); render(); };
@@ -186,6 +189,7 @@
     const el = $('msgItem');
     el.textContent = texto || '';
     el.style.display = texto ? 'block' : 'none';
+    if (texto) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
 
   function adicionar() {
@@ -193,9 +197,9 @@
     const p = produtos.find(x => x.id === pid);
     $('msg').textContent = '';
     avisar('');
-    if (!p) { avisar('Escolha um produto'); return; }
+    if (!p) { avisar('Escolha um produto'); return false; }
     const erro = faltaEscolher(pid);
-    if (erro) { avisar(erro); return; }
+    if (erro) { avisar(erro); return false; }
 
     const qtd = Math.max(1, parseInt($('qtd').value || '1', 10));
     const escolhidos = escolhaAtual.slice().sort((a, b) => a - b);
@@ -217,6 +221,8 @@
     $('complementos').querySelectorAll('input:checked').forEach(i => { i.checked = false; });
     escolhaAtual = [];
     $('precoProduto').textContent = money(precoComExtras(pid));
+    pendente = false;
+    return true;
   }
 
   /* ---------------- carga ---------------- */
@@ -266,7 +272,23 @@
     e.preventDefault();
     const msg = $('msg');
     msg.textContent = '';
-    if (!itens.length) { msg.textContent = 'Adicione ao menos um item'; return; }
+
+    // Quem monta o produto e vai direto no "Salvar" está certo: escolher o item já é o pedido.
+    // Com o carrinho vazio a tela adiciona o que está montado em vez de recusar com uma mensagem
+    // genérica; se faltar escolha obrigatória, o aviso é o motivo de verdade.
+    const pid = Number($('produto').value);
+    const temProduto = produtos.some(x => x.id === pid);
+    if (!itens.length) {
+      if (temProduto && !adicionar()) return;
+      if (!itens.length) { avisar('Escolha um produto e clique em Adicionar ao pedido'); return; }
+    } else if (pendente && temProduto && !faltaEscolher(pid)) {
+      // Com itens no carrinho não dá para adivinhar: somar sozinho pode cobrar a mais, ignorar pode
+      // deixar de cobrar. Quem decide é quem está atendendo.
+      const p = produtos.find(x => x.id === pid);
+      avisar('Você montou "' + p.nome + '" e ainda não adicionou. Clique em Adicionar ao pedido, '
+             + 'ou desfaça a escolha dos adicionais para salvar sem ele.');
+      return;
+    }
 
     const btn = $('salvar');
     btn.disabled = true; // dois cliques no "Salvar" viravam dois pedidos iguais
