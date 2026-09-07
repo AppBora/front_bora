@@ -47,15 +47,39 @@
     }
 
     // ainda não provisionada → formulário de ativação
+    // Os campos abaixo são os que o Asaas exige para abrir a conta: faltando qualquer um,
+    // ele recusa com 400 e o lojista fica sem entender o que fazer.
     card(`<h2>💸 Ative o recebimento por PIX</h2>
-      <p class="rc-sub">Crie sua conta de recebimento em 1 clique. O PIX do cliente cai <b>direto na sua conta</b> — você só confirma seus dados depois.</p>
+      <p class="rc-sub">Crie sua conta de recebimento. O PIX do cliente cai <b>direto na sua conta</b> — depois você confirma seus documentos.</p>
       <div class="rc-row">
         <div><label>CPF ou CNPJ *</label><input id="rcDoc" placeholder="Somente números"></div>
-        <div><label>Celular</label><input id="rcFone" placeholder="(11) 90000-0000"></div>
-        <div><label>CEP</label><input id="rcCep" placeholder="00000-000"></div>
+        <div id="rcBoxTipo" style="display:none"><label>Tipo de empresa *</label>
+          <select id="rcTipo">
+            <option value="MEI">MEI</option>
+            <option value="LIMITED">Ltda / Limitada</option>
+            <option value="INDIVIDUAL">Empresário individual</option>
+            <option value="ASSOCIATION">Associação</option>
+          </select></div>
+        <div id="rcBoxNasc" style="display:none"><label>Data de nascimento *</label><input id="rcNasc" type="date"></div>
+        <div><label>Celular *</label><input id="rcFone" placeholder="(11) 90000-0000"></div>
+        <div><label>Faturamento mensal *</label><input id="rcRenda" type="number" min="0" step="100" placeholder="Ex.: 30000"></div>
+        <div><label>CEP *</label><input id="rcCep" placeholder="00000-000"></div>
+        <div><label>Endereço *</label><input id="rcEnd" placeholder="Rua / avenida"></div>
+        <div><label>Número *</label><input id="rcNum" placeholder="751"></div>
+        <div><label>Bairro *</label><input id="rcBairro" placeholder="Centro"></div>
+        <div><label>Complemento</label><input id="rcCompl" placeholder="opcional"></div>
         <button class="btn" id="rcAtivar" style="height:40px">Ativar recebimento</button>
       </div>
       <p id="rcMsg" style="margin:10px 0 0;font-size:13px"></p>`);
+
+    // CNPJ pede tipo de empresa; CPF pede data de nascimento. Alterna conforme o documento.
+    const alternaDoc = () => {
+      const n = (document.getElementById('rcDoc').value || '').replace(/\D/g, '').length;
+      document.getElementById('rcBoxTipo').style.display = n > 11 ? '' : 'none';
+      document.getElementById('rcBoxNasc').style.display = n > 0 && n <= 11 ? '' : 'none';
+    };
+    document.getElementById('rcDoc').oninput = alternaDoc;
+    alternaDoc();
 
     document.getElementById('rcAtivar').onclick = async () => {
       const doc = (document.getElementById('rcDoc').value || '').replace(/\D/g, '');
@@ -64,11 +88,20 @@
       const btn = document.getElementById('rcAtivar'); btn.disabled = true; btn.textContent = 'Ativando…';
       msg.style.color = '#475569'; msg.textContent = 'Criando sua conta de recebimento…';
       try {
-        await Bora.api('/api/recebimento/ativar', { method: 'POST', body: JSON.stringify({
+        const v = id => (document.getElementById(id).value || '').trim();
+        const corpo = {
           cpfCnpj: doc,
-          mobilePhone: (document.getElementById('rcFone').value || '').replace(/\D/g, ''),
-          postalCode: (document.getElementById('rcCep').value || '').replace(/\D/g, '')
-        }) });
+          mobilePhone: v('rcFone').replace(/\D/g, ''),
+          postalCode: v('rcCep').replace(/\D/g, ''),
+          address: v('rcEnd'),
+          addressNumber: v('rcNum'),
+          province: v('rcBairro'),
+          complement: v('rcCompl'),
+          incomeValue: Number(v('rcRenda') || 0)
+        };
+        if (doc.length > 11) corpo.companyType = v('rcTipo');
+        else if (v('rcNasc')) corpo.birthDate = v('rcNasc');
+        await Bora.api('/api/recebimento/ativar', { method: 'POST', body: JSON.stringify(corpo) });
         render();
       } catch (e) {
         btn.disabled = false; btn.textContent = 'Ativar recebimento';

@@ -18,6 +18,9 @@
       $('bannerUrl').value = atual.bannerUrl || '';
       const cb = $('cashbackPercentual');
       if (cb) cb.value = (atual.cashbackPercentual === null || atual.cashbackPercentual === undefined) ? '' : atual.cashbackPercentual;
+      const num = (id, v) => { const e = $(id); if (e) e.value = (v === null || v === undefined) ? '' : v; };
+      num('aliquotaImposto', atual.aliquotaImposto);
+      num('custoFixoMensal', atual.custoFixoMensal);
       $('planoInfo').textContent = 'Alguns recursos (cor secundária, banner, subdomínio) dependem do seu plano — o que não estiver liberado é ignorado ao salvar.';
     } catch (e) { $('planoInfo').textContent = e.message; }
   }
@@ -37,6 +40,11 @@
         bannerUrl: $('bannerUrl').value.trim() || null,
         cashbackPercentual: $('cashbackPercentual') && $('cashbackPercentual').value !== ''
           ? Number($('cashbackPercentual').value) : null,
+        // vazio = "não informado", e a tela de Desempenho avisa que ali é margem, não lucro
+        aliquotaImposto: $('aliquotaImposto') && $('aliquotaImposto').value !== ''
+          ? Number($('aliquotaImposto').value) : null,
+        custoFixoMensal: $('custoFixoMensal') && $('custoFixoMensal').value !== ''
+          ? Number($('custoFixoMensal').value) : null,
         logoUrl
       };
       atual = await Bora.api('/api/configuracao', { method: 'PUT', body: JSON.stringify(body) });
