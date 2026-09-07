@@ -84,9 +84,15 @@
     const pid = Number($('produto').value);
     const box = $('complementos');
     escolhaAtual = [];
-    if (!pid) { box.innerHTML = ''; box.style.display = 'none'; return; }
+    avisar('');
+    mostrarFoto(pid);
+    if (!pid) { box.innerHTML = ''; box.style.display = 'none'; $('precoProduto').textContent = money(0); return; }
     const grupos = await carregarComplementos(pid);
-    if (!grupos.length) { box.innerHTML = ''; box.style.display = 'none'; return; }
+    if (!grupos.length) {
+      box.innerHTML = ''; box.style.display = 'none';
+      $('precoProduto').textContent = money(precoComExtras(pid));
+      return;
+    }
 
     box.style.display = 'block';
     box.innerHTML = grupos.map(g => {
@@ -94,14 +100,15 @@
       const unico = max === 1;
       const regra = min > 0 ? `escolha ${min === max ? min : min + ' a ' + max}` : `até ${max}, opcional`;
       const opcoes = (g.itens || []).map(i => `
-        <label style="display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer">
+        <label class="cop">
           <input type="${unico ? 'radio' : 'checkbox'}" name="g${g.id}" value="${i.id}"
                  data-grupo="${g.id}" data-max="${max}" data-preco="${Number(i.preco || 0)}">
-          <span>${esc(i.nome)}${Number(i.preco || 0) > 0 ? ' <b>+' + money(i.preco) + '</b>' : ''}</span>
+          <span class="cop-n">${esc(i.nome)}</span>
+          <span class="cop-p">${Number(i.preco || 0) > 0 ? '+' + money(i.preco) : ''}</span>
         </label>`).join('');
-      return `<div style="margin-top:10px">
-        <div style="font-size:13px;font-weight:800">${esc(g.nome)}
-          <span style="font-weight:600;color:#94a3b8">(${regra})</span></div>${opcoes}</div>`;
+      return `<div class="cg">
+        <div class="cg-h">${esc(g.nome)} <span>(${regra})</span></div>
+        <div class="cg-ops">${opcoes}</div></div>`;
     }).join('');
 
     box.querySelectorAll('input').forEach(inp => inp.addEventListener('change', () => {
@@ -114,6 +121,14 @@
       $('precoProduto').textContent = money(precoComExtras(Number($('produto').value)));
     }));
     $('precoProduto').textContent = money(precoComExtras(pid));
+  }
+
+  /** A foto confirma que o produto escolhido no combo é o que o cliente pediu. */
+  function mostrarFoto(pid) {
+    const p = produtos.find(x => x.id === pid);
+    const img = $('fotoProduto');
+    if (p && p.imagemUrl) { img.src = p.imagemUrl; img.style.display = 'block'; }
+    else { img.removeAttribute('src'); img.style.display = 'none'; }
   }
 
   function precoComExtras(pid) {
@@ -166,14 +181,21 @@
   }
   window.__rem = idx => { itens.splice(idx, 1); render(); };
 
+  /** O aviso tem que nascer perto do botão: o rodapé do formulário fica fora da tela. */
+  function avisar(texto) {
+    const el = $('msgItem');
+    el.textContent = texto || '';
+    el.style.display = texto ? 'block' : 'none';
+  }
+
   function adicionar() {
     const pid = Number($('produto').value);
     const p = produtos.find(x => x.id === pid);
-    const msg = $('msg');
-    msg.textContent = '';
-    if (!p) { msg.textContent = 'Escolha um produto'; return; }
+    $('msg').textContent = '';
+    avisar('');
+    if (!p) { avisar('Escolha um produto'); return; }
     const erro = faltaEscolher(pid);
-    if (erro) { msg.textContent = erro; return; }
+    if (erro) { avisar(erro); return; }
 
     const qtd = Math.max(1, parseInt($('qtd').value || '1', 10));
     const escolhidos = escolhaAtual.slice().sort((a, b) => a - b);

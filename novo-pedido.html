@@ -1,4 +1,21 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoraHapp - Novo Pedido</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260828"></head><body>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoraHapp - Novo Pedido</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260907b"><style>
+  /* A folha global estica qualquer input dentro de .field (width:100%;padding:12px). Num campo de
+     texto isso e certo; num checkbox faz a caixa empurrar o nome para o canto e quebrar a linha,
+     que foi exatamente o que apareceu na tela. Aqui a lista de adicionais tem regra propria. */
+  #complementos{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-top:8px}
+  #complementos .cg + .cg{margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0}
+  #complementos .cg-h{font-size:13px;font-weight:800;color:#111;margin:0 0 6px;text-transform:none}
+  #complementos .cg-h span{font-weight:600;color:#94a3b8}
+  #complementos .cg-ops{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:0 18px}
+  #complementos label.cop{display:flex;align-items:center;gap:9px;margin:0;padding:7px 8px;border-radius:8px;
+    cursor:pointer;font-size:14px;color:#111;text-transform:none;line-height:1.25}
+  #complementos label.cop:hover{background:#eef2ff}
+  #complementos input[type=checkbox],#complementos input[type=radio]{
+    width:18px;height:18px;min-width:18px;flex:0 0 18px;padding:0;margin:0;border-radius:4px;accent-color:var(--primary)}
+  #complementos .cop-n{flex:1}
+  #complementos .cop-p{color:#166534;font-weight:700;white-space:nowrap}
+</style>
+</head><body>
 <div class="layout">
   <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>BoraHapp</b><br><small>Delivery em tempo real</small></div></div>
     <nav class="nav"><a href="dashboard.html">Dashboard</a><a class="active" href="pedidos.html">Pedidos</a><a href="clientes.html">Clientes</a><a href="produtos.html">Produtos</a><a href="entregas.html">Entregas</a><a href="promocoes.html">Promoções</a><a href="relatorios.html">Relatórios</a><a href="configuracoes.html">Configurações</a><a class="" href="usuarios.html">Usuários</a><a href="planos.html">Planos</a></nav>
@@ -29,8 +46,12 @@
             <input id="qtd" type="number" min="1" value="1" style="width:80px">
             <button type="button" class="btn" id="add">Adicionar</button>
           </div>
-          <div id="complementos" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-top:8px"></div>
-          <p style="margin:6px 0 0;font-size:13px;color:#64748b">Unitário com adicionais: <b id="precoProduto">R$ 0,00</b></p>
+          <p id="msgItem" style="display:none;margin:8px 0 0;padding:9px 12px;border-radius:8px;background:#fef2f2;color:#b91c1c;font-size:14px;font-weight:600"></p>
+          <div id="complementos" style="display:none"></div>
+          <div id="resumoProduto" style="display:flex;align-items:center;gap:10px;margin-top:8px;font-size:13px;color:#64748b">
+            <img id="fotoProduto" alt="" style="display:none;width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid #e2e8f0">
+            <span>Unitário com adicionais: <b id="precoProduto" style="color:#111;font-size:15px">R$ 0,00</b></span>
+          </div>
         </div>
 
         <div class="field full"><label>Itens do pedido</label>
@@ -56,7 +77,7 @@
   </main>
 </div>
 <script src="assets/js/api.js?v=20260828"></script>
-<script src="assets/js/app.js?v=20260623"></script>
+<script src="assets/js/app.js?v=20260907b"></script>
 <script src="assets/js/whitelabel.js?v=20260623"></script>
-<script src="assets/js/novo-pedido.js?v=20260907"></script>
+<script src="assets/js/novo-pedido.js?v=20260907b"></script>
 </body></html>
