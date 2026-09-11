@@ -62,8 +62,7 @@
         <div><b>${esc(rot)}</b> <span class="rc-badge ${cls}">${esc(txt)}</span>
           ${dica ? `<div class="rc-sub" style="margin:2px 0 0">${esc(dica)}</div>` : ''}</div>
         ${aprovado ? '<span style="font-size:20px">✓</span>'
-          : SO_PELO_APP.includes(i.type)
-            ? '<span class="rc-sub" style="margin:0">foto tirada na hora ↓</span>'
+          : SO_PELO_APP.includes(i.type) ? ''
             : `<button class="btn rc-envia" data-doc="${esc(i.id)}" data-tipo="${esc(i.type)}" data-cam="${cam}"
                  ${analisando ? 'style="background:#64748b"' : ''}>📷 ${analisando ? 'Enviar outra foto' : 'Enviar foto'}</button>`}
       </div>`;
@@ -84,6 +83,14 @@
           <li>Entre com o e-mail <b>${esc((d && d.email) || 'da conta')}</b> — na primeira vez use "Esqueci minha senha"</li>
           <li>Abra <b>Documentos</b> e siga o passo a passo com a câmera</li>
         </ol>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <a class="btn" href="https://play.google.com/store/apps/details?id=asaas.asaas" target="_blank" rel="noopener"
+             style="text-decoration:none">📱 Baixar no Android</a>
+          <a class="btn" href="https://apps.apple.com/br/app/id1421133076" target="_blank" rel="noopener"
+             style="text-decoration:none">📱 Baixar no iPhone</a>
+          <button class="btn" id="rcCopiar" style="background:#25D366">💬 Copiar instruções para o WhatsApp</button>
+        </div>
+        <span id="rcCopiaMsg" style="font-size:13px;display:block;margin-top:6px"></span>
         <p class="rc-sub" style="margin:8px 0 0">A análise leva até 48 horas. Assim que o Asaas aprovar,
         o PIX aparece sozinho no seu cardápio — você não precisa avisar ninguém.</p>
       </div>` : `
@@ -91,6 +98,39 @@
       em "Enviar outra foto" no mesmo item. A foto vai direto para o banco que processa o pagamento; nós não
       guardamos nenhuma cópia. A análise leva até 48 horas.</p>`}
       <p id="rcDocMsg" style="font-size:13px;margin:6px 0 0"></p>`;
+  }
+
+  // O lojista nao mora no painel: ele mora no WhatsApp. Este botao entrega a instrucao pronta para
+  // colar la, com o e-mail certo da conta dele - sem isso o dono teria que redigitar tudo na mao.
+  function ligarCopia(d, itens) {
+    const b = document.getElementById('rcCopiar');
+    if (!b) return;
+    const titular = (itens.find(i => i.responsible && i.responsible.name) || {}).responsible;
+    const texto = [
+      'Para liberar o Pix no seu cardapio, falta confirmar a identidade do titular da conta'
+        + (titular ? ' (' + titular.name + ')' : '') + '.',
+      '',
+      'Sao duas fotos, tiradas na hora pela camera do celular: documento com foto (RG ou CNH) e uma selfie.',
+      '',
+      'Como fazer:',
+      '1) Baixe o aplicativo Asaas: Android https://play.google.com/store/apps/details?id=asaas.asaas | iPhone https://apps.apple.com/br/app/id1421133076',
+      '2) Entre com o e-mail ' + ((d && d.email) || 'da conta') + ' — na primeira vez toque em "Esqueci minha senha" para criar a senha',
+      '3) Abra Documentos e siga o passo a passo',
+      '',
+      'A analise leva ate 48 horas. Assim que aprovar, o Pix aparece sozinho no seu cardapio.'
+    ].join('\n');
+    b.onclick = async () => {
+      const m = document.getElementById('rcCopiaMsg');
+      try {
+        await navigator.clipboard.writeText(texto);
+        m.style.color = '#166534'; m.textContent = 'Copiado — e so colar na conversa do lojista.';
+      } catch (e) {
+        // Sem permissao de area de transferencia: mostra o texto para copiar na mao.
+        m.style.color = '#475569';
+        m.innerHTML = 'Copie daqui:<textarea readonly style="width:100%;height:120px;margin-top:6px;'
+          + 'border:1px solid #cbd5e1;border-radius:8px;padding:8px;font-size:12px">' + esc(texto) + '</textarea>';
+      }
+    };
   }
 
   // Upload com FormData: o navegador precisa montar o boundary do multipart sozinho, entao aqui
@@ -195,7 +235,7 @@
         é a mesma conferência que um banco faz quando você abre conta pelo aplicativo.</p>
         ${corpo}${blocoWebhook(d)}`);
       ligarBotaoWebhook();
-      if (itens && itens.length) ligarEnvios();
+      if (itens && itens.length) { ligarEnvios(); ligarCopia(d, itens); }
       return;
     }
 
