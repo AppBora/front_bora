@@ -1,5 +1,6 @@
 // Recebimento PIX direto na conta do lojista (subconta Asaas white-label).
-// Substitui o "cole sua API key": aqui o lojista só ativa e conclui o KYC por link.
+// Substitui o "cole sua API key": aqui o lojista ativa e manda documento e selfie pela
+// propria tela — o arquivo e repassado ao Asaas e nao fica guardado em lugar nenhum.
 (function () {
   if (typeof Bora === 'undefined' || !Bora.token()) return;
   const mount = document.getElementById('recebimentoMount');
@@ -16,10 +17,89 @@
   .rc-badge{display:inline-block;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px}
   .rc-ok{background:#dcfce7;color:#166534}.rc-pend{background:#fef3c7;color:#92400e}.rc-off{background:#e5e7eb;color:#475569}
   .rc-link{display:inline-block;margin-top:10px;background:#7c3aed;color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;text-decoration:none}
+  .rc-doc{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-top:8px}
+  .rc-doc b{font-size:14px}
+  .rc-recusa{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px;margin-top:8px;font-size:13px;color:#b91c1c}
   `;
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
 
   function card(inner) { mount.innerHTML = `<div class="rc-card">${inner}</div>`; }
+
+  // O Asaas devolve rotulo tecnico ("Documentos de identificacao"); o lojista precisa saber o que
+  // apontar a camera. O terceiro item diz qual camera abrir no celular: traseira para o documento,
+  // frontal para a selfie.
+  const ROTULOS = {
+    IDENTIFICATION: ['Documento com foto', 'RG ou CNH do titular — frente e verso', 'environment'],
+    IDENTIFICATION_SELFIE: ['Selfie do titular', 'foto do rosto de quem é o dono do CNPJ', 'user']
+  };
+  const SIT = {
+    APPROVED: ['aprovado', 'rc-ok'],
+    NOT_SENT: ['falta enviar', 'rc-pend'],
+    PENDING: ['em análise', 'rc-pend'],
+    AWAITING_APPROVAL: ['em análise', 'rc-pend'],
+    REJECTED: ['recusado — envie de novo', 'rc-pend']
+  };
+  const PRONTO = ['APPROVED', 'PENDING', 'AWAITING_APPROVAL'];
+
+  function listaDocs(itens, recusas) {
+    const titular = (itens.find(i => i.responsible && i.responsible.name) || {}).responsible;
+    const linhas = itens.map(i => {
+      const [rot, dica, cam] = ROTULOS[i.type] || [i.title || 'Documento', '', 'environment'];
+      const [txt, cls] = SIT[i.status] || [String(i.status || '').toLowerCase(), 'rc-pend'];
+      const feito = PRONTO.includes(i.status);
+      return `<div class="rc-doc">
+        <div><b>${esc(rot)}</b> <span class="rc-badge ${cls}">${esc(txt)}</span>
+          ${dica ? `<div class="rc-sub" style="margin:2px 0 0">${esc(dica)}</div>` : ''}</div>
+        ${feito ? '<span style="font-size:20px">✓</span>'
+                : `<button class="btn rc-envia" data-doc="${esc(i.id)}" data-tipo="${esc(i.type)}" data-cam="${cam}">📷 Enviar foto</button>`}
+      </div>`;
+    }).join('');
+    const motivos = Array.isArray(recusas) && recusas.length
+      ? `<div class="rc-recusa"><b>O que foi recusado:</b><br>${recusas.map(r => esc(r.description || r.reason || r)).join('<br>')}</div>`
+      : '';
+    return `${titular ? `<p class="rc-sub">Titular da conta: <b>${esc(titular.name)}</b> — as fotos precisam ser dessa pessoa.</p>` : ''}
+      ${linhas}${motivos}
+      <p class="rc-sub" style="margin-top:10px">A foto vai direto para o banco que processa o pagamento; nós não guardamos nenhuma cópia. A análise leva até 48 horas.</p>
+      <p id="rcDocMsg" style="font-size:13px;margin:6px 0 0"></p>`;
+  }
+
+  // Upload com FormData: o navegador precisa montar o boundary do multipart sozinho, entao aqui
+  // NAO da para usar o Bora.api (ele forca Content-Type: application/json).
+  function ligarEnvios() {
+    mount.querySelectorAll('.rc-envia').forEach(btn => {
+      btn.onclick = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*,application/pdf';
+        input.capture = btn.dataset.cam;
+        input.onchange = async () => {
+          const f = input.files && input.files[0];
+          if (!f) return;
+          const msg = document.getElementById('rcDocMsg');
+          btn.disabled = true;
+          msg.style.color = '#475569'; msg.textContent = 'Enviando ' + f.name + '…';
+          try {
+            const fd = new FormData();
+            fd.append('arquivo', f);
+            fd.append('tipo', btn.dataset.tipo || '');
+            const res = await fetch(Bora.apiBase() + '/api/recebimento/documentos/' + encodeURIComponent(btn.dataset.doc),
+              { method: 'POST', headers: { Authorization: 'Bearer ' + Bora.token() }, body: fd });
+            if (!res.ok) {
+              let m = 'Erro ' + res.status;
+              try { const b = await res.json(); m = b.message || b.error || m; } catch (e) {}
+              throw new Error(m);
+            }
+            msg.style.color = '#166534'; msg.textContent = 'Enviado ✓';
+            render();
+          } catch (e) {
+            btn.disabled = false;
+            msg.style.color = '#dc2626'; msg.textContent = e.message || 'Não consegui enviar.';
+          }
+        };
+        input.click();
+      };
+    });
+  }
 
   // O aviso de pagamento e uma segunda chamada ao Asaas, que ja falhou em producao. Se ele nao
   // estiver de pe, o PIX do cliente cai na conta do lojista e o pedido fica "aguardando" para sempre.
@@ -62,17 +142,30 @@
     }
 
     if (d.provisionada) {
-      // Sem onboardingUrl (o Asaas nem sempre devolve) nao existe "aguardar": ninguem vai avisar.
-      // O caminho real e entrar no Asaas com o e-mail da conta e concluir o cadastro por la.
-      const link = d.onboardingUrl
-        ? `<a class="rc-link" href="${esc(d.onboardingUrl)}" target="_blank" rel="noopener">Concluir meu cadastro (documentos + selfie)</a>`
+      // A subconta criada por API vem SEM link de onboarding (conferido em producao): o Asaas manda
+      // "acesse nosso aplicativo", e o lojista fica sem saber por onde enviar. Como a regra dele so
+      // proibe o envio por API quando existe onboardingUrl, aqui podemos - e devemos - pedir a foto
+      // na nossa propria tela. O lojista nunca precisa saber que o Asaas existe.
+      let itens = null, recusas = null;
+      try {
+        const r = await Bora.api('/api/recebimento/documentos');
+        itens = r && r.asaas && r.asaas.data;
+        recusas = r && r.asaas && r.asaas.rejectReasons;
+      } catch (e) { itens = null; }
+
+      const corpo = (itens && itens.length)
+        ? listaDocs(itens, recusas)
         : `<p class="rc-sub">Para liberar o dinheiro, entre no Asaas com o e-mail
              <b>${esc(d.email || 'da conta')}</b>, defina a senha em "Esqueci minha senha" e conclua o
-             cadastro (documentos e dados da empresa). É lá também que você corrige endereço e telefone.</p>
+             cadastro.</p>
            <a class="rc-link" href="https://www.asaas.com/login" target="_blank" rel="noopener">Abrir o Asaas</a>`;
-      card(`<h2>💸 Recebimento por PIX <span class="rc-badge rc-pend">falta o KYC</span></h2>
-        <p class="rc-sub">Sua conta de recebimento foi criada. Falta só confirmar seus documentos para liberar o dinheiro.</p>${link}${blocoWebhook(d)}`);
+
+      card(`<h2>💸 Recebimento por PIX <span class="rc-badge rc-pend">falta confirmar identidade</span></h2>
+        <p class="rc-sub">Sua conta de recebimento já está criada. Falta confirmar quem é o titular —
+        é a mesma conferência que um banco faz quando você abre conta pelo aplicativo.</p>
+        ${corpo}${blocoWebhook(d)}`);
       ligarBotaoWebhook();
+      if (itens && itens.length) ligarEnvios();
       return;
     }
 
