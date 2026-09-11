@@ -89,6 +89,24 @@
       <span id="nlMsg" style="font-size:13px;margin-left:10px"></span>
       <div id="nlResultado" style="display:none;margin-top:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;font-size:13px"></div>
       <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
+      <h3 style="margin:0 0 6px">👤 Administradores da plataforma</h3>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 10px">
+        Contas que enxergam <b>todos os clientes</b> e entram em qualquer loja pelo suporte — não são
+        contas de loja. Até aqui só existia a que nasce no primeiro start do sistema: se ela se
+        perdesse, não havia caminho de volta sem mexer no banco. Crie ao menos uma segunda.
+      </p>
+      <div id="apLista" style="font-size:14px;margin-bottom:12px">Carregando…</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+        <label style="font-size:13px">Nome *<br>
+          <input id="apNome" placeholder="Ex.: Maria (sócia)" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+        <label style="font-size:13px">E-mail *<br>
+          <input id="apEmail" type="email" placeholder="pessoa@borahapp.com.br" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+        <label style="font-size:13px">Senha provisória * <span style="color:var(--muted)">(mín. 8)</span><br>
+          <input id="apSenha" type="password" placeholder="ela troca no 1º acesso" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+      </div>
+      <button class="btn" id="apCriar" style="margin-top:12px">Criar administrador</button>
+      <span id="apMsg" style="font-size:13px;margin-left:10px"></span>
+      <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
       <h3 style="margin:0 0 6px">🏪 Clientes — Módulo IA, taxa do PIX e situação</h3>
       <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:0 0 8px;cursor:pointer">
         <input type="checkbox" id="verArquivadas" style="width:16px;height:16px">
@@ -186,6 +204,12 @@
   const wrap = document.getElementById('iaLojas');
   const verArquivadas = document.getElementById('verArquivadas');
 
+  // Nome de loja e nome/e-mail de admin sao texto que OUTRA pessoa escreveu (o lojista renomeia a
+  // propria loja). Indo cru para innerHTML, um <img onerror=...> rodaria dentro da sessao de quem
+  // abre esta tela - justamente a conta que enxerga todos os clientes.
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
   function selo(texto, fundo, cor) {
     return `<span style="background:${fundo};color:${cor};padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">${texto}</span>`;
   }
@@ -248,7 +272,7 @@
             <label style="display:flex;gap:8px;align-items:center;cursor:pointer;flex:1 1 240px;font-weight:600">
               <input type="checkbox" data-ia="${c.id}" ${c.moduloIa ? 'checked' : ''} style="width:18px;height:18px"
                      ${c.situacao === 'ARQUIVADA' ? 'disabled' : ''} title="Módulo IA (add-on)">
-              #${c.id} · ${c.nome || 'Loja'} ${situacao(c)}
+              #${c.id} · ${esc(c.nome) || 'Loja'} ${situacao(c)}
             </label>
             <span style="color:var(--muted);font-size:13px">taxa PIX</span>
             <input type="number" min="0" max="100" step="0.5" data-split="${c.id}"
@@ -396,6 +420,61 @@
       msg.textContent = e.message === 'E-mail já cadastrado'
         ? 'E-mail já cadastrado — esse responsável já tem conta; use outro e-mail ou vincule a loja à conta existente pelo cadastro público.'
         : 'Erro: ' + e.message;
+    } finally { btn.disabled = false; }
+  };
+
+  // Administradores da plataforma. O backend recusa e-mail que ja existe (nunca promove conta de
+  // loja) e nao deixa desativar a si mesmo nem o ultimo ativo - a tela so reflete essas regras.
+  const ap = id => document.getElementById(id);
+  async function carregarAdmins() {
+    const box = ap('apLista');
+    try {
+      const lista = await Bora.api('/admin-bora/admins');
+      const ativos = lista.filter(a => a.ativo).length;
+      box.innerHTML = lista.map(a => {
+        const marca = a.ativo ? selo('ativo', '#dcfce7', '#166534') : selo('desativado', '#e2e8f0', '#334155');
+        const eu = a.euMesmo ? ' <span style="color:var(--muted);font-size:12px">(você)</span>' : '';
+        const ultimo = a.ativo && ativos === 1;
+        const btn = a.euMesmo || ultimo
+          ? `<span style="color:var(--muted);font-size:12px">${a.euMesmo ? 'sua conta' : 'último ativo'}</span>`
+          : `<button class="btn" data-adm="${a.id}" data-ativo="${a.ativo ? 'false' : 'true'}"
+               style="padding:5px 10px;font-size:12px;background:${a.ativo ? '#64748b' : 'var(--primary)'}">${a.ativo ? 'Desativar' : 'Reativar'}</button>`;
+        return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #f1f5f9">
+          <b>${esc(a.nome) || '—'}</b>${eu} <span style="color:var(--muted)">${esc(a.email)}</span> ${marca}
+          <span style="margin-left:auto">${btn}</span></div>`;
+      }).join('') + (ativos === 1
+        ? '<p style="color:#b45309;font-size:13px;margin:10px 0 0"><b>Só existe um administrador ativo.</b> Enquanto for assim, perder esta conta deixa a plataforma sem dono.</p>'
+        : '');
+      box.querySelectorAll('[data-adm]').forEach(b => b.onclick = async () => {
+        const ligar = b.dataset.ativo === 'true';
+        if (!confirm((ligar ? 'Reativar' : 'Desativar') + ' este administrador da plataforma?'
+          + (ligar ? '' : ' Ele perde o acesso no próximo clique que der, sem esperar o login vencer.'))) return;
+        b.disabled = true;
+        try { await Bora.api('/admin-bora/admins/' + b.dataset.adm + '/ativo',
+          { method: 'PUT', body: JSON.stringify({ ativo: ligar }) }); carregarAdmins(); }
+        catch (e) { b.disabled = false; alert('Erro: ' + e.message); }
+      });
+    } catch (e) { box.textContent = 'Não consegui carregar: ' + e.message; }
+  }
+  carregarAdmins();
+
+  ap('apCriar').onclick = async () => {
+    const btn = ap('apCriar'), msg = ap('apMsg');
+    const nome = ap('apNome').value.trim(), email = ap('apEmail').value.trim(), senha = ap('apSenha').value;
+    msg.style.color = '#dc2626';
+    if (!nome) { msg.textContent = 'Informe o nome.'; return; }
+    if (!email.includes('@')) { msg.textContent = 'E-mail inválido.'; return; }
+    if (senha.length < 8) { msg.textContent = 'A senha precisa de ao menos 8 caracteres.'; return; }
+    btn.disabled = true; msg.style.color = 'var(--muted)'; msg.textContent = 'Criando…';
+    try {
+      const r = await Bora.api('/admin-bora/admins', { method: 'POST', body: JSON.stringify({ nome, email, senha }) });
+      msg.style.color = '#166534';
+      msg.textContent = 'Criado: ' + r.email + ' — peça para trocar a senha no primeiro acesso.';
+      ['apNome', 'apEmail', 'apSenha'].forEach(i => ap(i).value = '');
+      carregarAdmins();
+    } catch (e) {
+      msg.style.color = '#dc2626';
+      msg.textContent = 'Erro: ' + e.message;
     } finally { btn.disabled = false; }
   };
 })();
