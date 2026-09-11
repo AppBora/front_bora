@@ -33,8 +33,26 @@
 
   let dados = [];
 
+  // A Meta chama o webhook do robo em /public/whatsapp-webhook/{loja} e valida o hub.verify_token
+  // contra o nosso webhookToken. Ele so existe depois de salvar a conexao uma vez.
+  function boxMeta(i) {
+    if (!i.webhookPath) return `<div class="webhook-box"><label style="font-size:12px;color:#64748b;font-weight:700">Salve a conexão para gerar o verify token da Meta.</label></div>`;
+    const q = new URLSearchParams(i.webhookPath.split('?')[1] || '');
+    const loja = q.get('loja') || '';
+    const verify = q.get('token') || '';
+    const url = Bora.apiBase() + '/public/whatsapp-webhook/' + loja;
+    return `<div class="webhook-box">
+      <label style="font-size:12px;color:#64748b;font-weight:700">Callback URL (cole em WhatsApp → Configuração, no painel da Meta)</label>
+      <div class="wl"><input readonly value="${esc(url)}"><button class="btn" style="padding:8px 12px" onclick="__copy(this)">Copiar</button></div>
+      <label style="font-size:12px;color:#64748b;font-weight:700;margin-top:10px;display:block">Verify token (o campo logo abaixo da URL, no mesmo painel)</label>
+      <div class="wl"><input readonly value="${esc(verify)}"><button class="btn" style="padding:8px 12px" onclick="__copy(this)">Copiar</button></div>
+      <p style="font-size:12px;color:#64748b;margin:8px 0 0">Depois de verificar, assine o campo <b>messages</b> na mesma tela da Meta.</p>
+    </div>`;
+  }
+
   function card(i) {
     const mp = MP[i.canal] || { ic: '🧾', cor: '#94a3b8' };
+    const zap = i.canal === 'WHATSAPP';
     const open = i._open ? 'open' : '';
     const webhookFull = i.webhookPath ? (Bora.apiBase() + i.webhookPath) : '';
     return `<div class="intcard" style="--c:${mp.cor}">
@@ -49,18 +67,19 @@
       </div>
       <div class="intbody ${open}" id="body-${i.canal}">
         ${i.oficial ? corpoOficial(i) : ''}
-        <div class="field"><label>Merchant ID (ID da loja no ${esc(i.label)})</label><input id="m-${i.canal}" value="${esc(i.merchantId || '')}" placeholder="ex.: 123e4567-..."></div>
-        ${i.oficial ? '' : `<div class="field"><label>Client ID</label><input id="c-${i.canal}" value="${esc(i.clientId || '')}" placeholder="chave de aplicação"></div>
-        <div class="field"><label>Client Secret / Token ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label><input id="s-${i.canal}" type="password" placeholder="${i.temSecret ? '•••••• (deixe em branco p/ manter)' : 'cole o segredo aqui'}"></div>`}
+        ${zap ? '' : `<div class="field"><label>Merchant ID (ID da loja no ${esc(i.label)})</label><input id="m-${i.canal}" value="${esc(i.merchantId || '')}" placeholder="ex.: 123e4567-..."></div>`}
+        ${i.oficial ? '' : `<div class="field"><label>${zap ? 'Phone Number ID (Meta)' : 'Client ID'}</label><input id="c-${i.canal}" value="${esc(i.clientId || '')}" placeholder="${zap ? 'ex.: 123456789012345' : 'chave de aplicação'}"></div>
+        <div class="field"><label>${zap ? 'Token permanente do System User' : 'Client Secret / Token'} ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label><input id="s-${i.canal}" type="password" placeholder="${i.temSecret ? '•••••• (deixe em branco p/ manter)' : 'cole o segredo aqui'}"></div>`}
         <div class="toggle-row" style="padding:6px 0" onclick="__switch('${i.canal}',this)">
           <span style="font-weight:700;font-size:13px">Ativar recebimento</span>
           <span class="switch ${i.ativo ? 'on' : ''}" data-on="${i.ativo}"></span>
         </div>
         <div class="intfoot">
           <button class="btn" onclick="__salvar('${i.canal}')">💾 Salvar conexão</button>
-          <button class="btn secondary" onclick="__simular('${i.canal}')" ${i.webhookPath ? '' : 'disabled title="Salve a conexão primeiro"'}>🧪 Simular pedido</button>
+          ${zap ? '' : `<button class="btn secondary" onclick="__simular('${i.canal}')" ${i.webhookPath ? '' : 'disabled title="Salve a conexão primeiro"'}>🧪 Simular pedido</button>`}
         </div>
-        ${webhookFull ? `<div class="webhook-box"><label style="font-size:12px;color:#64748b;font-weight:700">URL de Webhook (cole no painel do ${esc(i.label)})</label>
+        ${zap ? boxMeta(i) : ''}
+        ${webhookFull && !zap ? `<div class="webhook-box"><label style="font-size:12px;color:#64748b;font-weight:700">URL de Webhook (cole no painel do ${esc(i.label)})</label>
           <div class="wl"><input readonly value="${esc(webhookFull)}"><button class="btn" style="padding:8px 12px" onclick="__copy(this)">Copiar</button></div></div>` : ''}
       </div>
       <div class="intmini"><span>Pedidos recebidos: <b>${i.pedidosRecebidos || 0}</b></span><span>Última sync: <b>${i.ultimaSync ? new Date(i.ultimaSync).toLocaleString('pt-BR') : '—'}</b></span></div>
