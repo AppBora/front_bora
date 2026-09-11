@@ -75,16 +75,15 @@
       ${linhas}${motivos}
       ${itens.some(i => SO_PELO_APP.includes(i.type) && i.status !== APROVADO) ? `
       <div style="margin-top:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px">
-        <b>Documento e selfie são tirados na hora, pela câmera</b>
-        <p class="rc-sub" style="margin:6px 0 0">É exigência do banco: não aceita arquivo salvo — a foto do
-        documento e a do rosto precisam ser capturadas ao vivo, pela webcam do computador ou pela câmera do
-        celular. Por isso não dá para anexar por aqui.</p>
+        <b>Documento e selfie só pelo aplicativo do Asaas</b>
+        <p class="rc-sub" style="margin:6px 0 0">Não dá para enviar por aqui nem pelo site do Asaas: a
+        própria tela de documentos dele diz "acesse nosso aplicativo". É por causa da verificação ao vivo —
+        a foto do documento e a do rosto têm que ser tiradas na hora, pela câmera.</p>
         <ol class="rc-sub" style="margin:8px 0 0;padding-left:18px">
-          <li>Abra o botão abaixo e entre com o e-mail <b>${esc((d && d.email) || 'da conta')}</b> — na primeira vez, use "Esqueci minha senha" para criar a senha</li>
-          <li>A página já abre na lista de documentos: siga o passo a passo com a câmera</li>
-          <li>Sem webcam no computador? A própria tela mostra um <b>QR Code</b> para continuar pelo celular</li>
+          <li>No celular <b>do titular</b>, baixe o aplicativo <b>Asaas</b></li>
+          <li>Entre com o e-mail <b>${esc((d && d.email) || 'da conta')}</b> — na primeira vez use "Esqueci minha senha"</li>
+          <li>Abra <b>Documentos</b> e siga o passo a passo com a câmera</li>
         </ol>
-        <a class="rc-link" href="https://www.asaas.com/config/index?tab=documentation" target="_blank" rel="noopener">Abrir meus documentos no Asaas</a>
         <p class="rc-sub" style="margin:8px 0 0">A análise leva até 48 horas. Assim que o Asaas aprovar,
         o PIX aparece sozinho no seu cardápio — você não precisa avisar ninguém.</p>
       </div>` : `
