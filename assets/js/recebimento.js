@@ -42,10 +42,16 @@
   // So o APROVADO perde o botao. Em analise ele CONTINUA, porque o Asaas aceita mais de um arquivo
   // no mesmo item - CNH e RG tem frente e verso, e sem isso o lojista mandaria um lado so e ficaria
   // sem como mandar o outro.
+  // O Asaas RECUSA identidade e selfie por API: "Esse tipo de documento nao pode ser enviado via
+  // API" (invalid_object, visto em producao na loja 18 em 11/09/2026). Faz sentido do lado dele -
+  // e o nucleo do KYC, e ele quer capturar no app, com prova de vida. A doc dele diz "quando o
+  // documento nao possuir onboardingUrl E PERMITIR envio pela API"; a segunda condicao e esta.
+  // Se um dia liberarem para a nossa integracao, e so tirar o tipo desta lista.
+  const SO_PELO_APP = ['IDENTIFICATION', 'IDENTIFICATION_SELFIE'];
   const APROVADO = 'APPROVED';
   const EM_ANALISE = ['PENDING', 'AWAITING_APPROVAL'];
 
-  function listaDocs(itens, recusas) {
+  function listaDocs(itens, recusas, d) {
     const titular = (itens.find(i => i.responsible && i.responsible.name) || {}).responsible;
     const linhas = itens.map(i => {
       const [rot, dica, cam] = ROTULOS[i.type] || [i.title || 'Documento', '', 'environment'];
@@ -56,8 +62,10 @@
         <div><b>${esc(rot)}</b> <span class="rc-badge ${cls}">${esc(txt)}</span>
           ${dica ? `<div class="rc-sub" style="margin:2px 0 0">${esc(dica)}</div>` : ''}</div>
         ${aprovado ? '<span style="font-size:20px">✓</span>'
-                : `<button class="btn rc-envia" data-doc="${esc(i.id)}" data-tipo="${esc(i.type)}" data-cam="${cam}"
-                     ${analisando ? 'style="background:#64748b"' : ''}>📷 ${analisando ? 'Enviar outra foto' : 'Enviar foto'}</button>`}
+          : SO_PELO_APP.includes(i.type)
+            ? '<span class="rc-sub" style="margin:0">envio pelo app do Asaas ↓</span>'
+            : `<button class="btn rc-envia" data-doc="${esc(i.id)}" data-tipo="${esc(i.type)}" data-cam="${cam}"
+                 ${analisando ? 'style="background:#64748b"' : ''}>📷 ${analisando ? 'Enviar outra foto' : 'Enviar foto'}</button>`}
       </div>`;
     }).join('');
     const motivos = Array.isArray(recusas) && recusas.length
@@ -65,9 +73,23 @@
       : '';
     return `${titular ? `<p class="rc-sub">Titular da conta: <b>${esc(titular.name)}</b> — as fotos precisam ser dessa pessoa.</p>` : ''}
       ${linhas}${motivos}
+      ${itens.some(i => SO_PELO_APP.includes(i.type) && i.status !== APROVADO) ? `
+      <div style="margin-top:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px">
+        <b>Documento e selfie são enviados pelo aplicativo do Asaas</b>
+        <p class="rc-sub" style="margin:6px 0 0">É exigência do banco: a foto do documento e a do rosto
+        precisam ser tiradas dentro do aplicativo dele, com verificação ao vivo. Por isso não dá para enviar
+        por aqui.</p>
+        <ol class="rc-sub" style="margin:8px 0 0;padding-left:18px">
+          <li>Baixe o aplicativo <b>Asaas</b> na loja do celular</li>
+          <li>Entre com o e-mail <b>${esc((d && d.email) || 'da conta')}</b> — use "Esqueci minha senha" para criar a senha</li>
+          <li>Envie o documento e a selfie do titular por lá</li>
+        </ol>
+        <p class="rc-sub" style="margin:8px 0 0">A análise leva até 48 horas. Assim que o Asaas aprovar,
+        o PIX aparece sozinho no seu cardápio — você não precisa avisar ninguém.</p>
+      </div>` : `
       <p class="rc-sub" style="margin-top:10px">Documento com frente e verso? Envie um lado, depois clique de novo
       em "Enviar outra foto" no mesmo item. A foto vai direto para o banco que processa o pagamento; nós não
-      guardamos nenhuma cópia. A análise leva até 48 horas.</p>
+      guardamos nenhuma cópia. A análise leva até 48 horas.</p>`}
       <p id="rcDocMsg" style="font-size:13px;margin:6px 0 0"></p>`;
   }
 
@@ -162,7 +184,7 @@
       } catch (e) { itens = null; }
 
       const corpo = (itens && itens.length)
-        ? listaDocs(itens, recusas)
+        ? listaDocs(itens, recusas, d)
         : `<p class="rc-sub">Para liberar o dinheiro, entre no Asaas com o e-mail
              <b>${esc(d.email || 'da conta')}</b>, defina a senha em "Esqueci minha senha" e conclua o
              cadastro.</p>
