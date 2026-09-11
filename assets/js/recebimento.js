@@ -75,14 +75,14 @@
       ${linhas}${motivos}
       ${itens.some(i => SO_PELO_APP.includes(i.type) && i.status !== APROVADO) ? `
       <div style="margin-top:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px">
-        <b>Documento e selfie são enviados pelo aplicativo do Asaas</b>
-        <p class="rc-sub" style="margin:6px 0 0">É exigência do banco: a foto do documento e a do rosto
-        precisam ser tiradas dentro do aplicativo dele, com verificação ao vivo. Por isso não dá para enviar
-        por aqui.</p>
+        <b>Documento e selfie são tirados na hora, pela câmera</b>
+        <p class="rc-sub" style="margin:6px 0 0">É exigência do banco: não aceita arquivo salvo — a foto do
+        documento e a do rosto precisam ser capturadas ao vivo, pela webcam do computador ou pela câmera do
+        celular. Por isso não dá para anexar por aqui.</p>
         <ol class="rc-sub" style="margin:8px 0 0;padding-left:18px">
-          <li>Baixe o aplicativo <b>Asaas</b> na loja do celular</li>
-          <li>Entre com o e-mail <b>${esc((d && d.email) || 'da conta')}</b> — use "Esqueci minha senha" para criar a senha</li>
-          <li>Envie o documento e a selfie do titular por lá</li>
+          <li>Entre em <b>asaas.com</b> com o e-mail <b>${esc((d && d.email) || 'da conta')}</b> — use "Esqueci minha senha" para criar a senha</li>
+          <li>Vá em <b>Minha conta → Documentos</b> e siga o passo a passo</li>
+          <li>Sem webcam no computador? A própria tela mostra um <b>QR Code</b> para continuar pelo celular</li>
         </ol>
         <p class="rc-sub" style="margin:8px 0 0">A análise leva até 48 horas. Assim que o Asaas aprovar,
         o PIX aparece sozinho no seu cardápio — você não precisa avisar ninguém.</p>
