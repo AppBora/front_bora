@@ -39,19 +39,25 @@
     AWAITING_APPROVAL: ['em análise', 'rc-pend'],
     REJECTED: ['recusado — envie de novo', 'rc-pend']
   };
-  const PRONTO = ['APPROVED', 'PENDING', 'AWAITING_APPROVAL'];
+  // So o APROVADO perde o botao. Em analise ele CONTINUA, porque o Asaas aceita mais de um arquivo
+  // no mesmo item - CNH e RG tem frente e verso, e sem isso o lojista mandaria um lado so e ficaria
+  // sem como mandar o outro.
+  const APROVADO = 'APPROVED';
+  const EM_ANALISE = ['PENDING', 'AWAITING_APPROVAL'];
 
   function listaDocs(itens, recusas) {
     const titular = (itens.find(i => i.responsible && i.responsible.name) || {}).responsible;
     const linhas = itens.map(i => {
       const [rot, dica, cam] = ROTULOS[i.type] || [i.title || 'Documento', '', 'environment'];
       const [txt, cls] = SIT[i.status] || [String(i.status || '').toLowerCase(), 'rc-pend'];
-      const feito = PRONTO.includes(i.status);
+      const aprovado = i.status === APROVADO;
+      const analisando = EM_ANALISE.includes(i.status);
       return `<div class="rc-doc">
         <div><b>${esc(rot)}</b> <span class="rc-badge ${cls}">${esc(txt)}</span>
           ${dica ? `<div class="rc-sub" style="margin:2px 0 0">${esc(dica)}</div>` : ''}</div>
-        ${feito ? '<span style="font-size:20px">✓</span>'
-                : `<button class="btn rc-envia" data-doc="${esc(i.id)}" data-tipo="${esc(i.type)}" data-cam="${cam}">📷 Enviar foto</button>`}
+        ${aprovado ? '<span style="font-size:20px">✓</span>'
+                : `<button class="btn rc-envia" data-doc="${esc(i.id)}" data-tipo="${esc(i.type)}" data-cam="${cam}"
+                     ${analisando ? 'style="background:#64748b"' : ''}>📷 ${analisando ? 'Enviar outra foto' : 'Enviar foto'}</button>`}
       </div>`;
     }).join('');
     const motivos = Array.isArray(recusas) && recusas.length
@@ -59,7 +65,9 @@
       : '';
     return `${titular ? `<p class="rc-sub">Titular da conta: <b>${esc(titular.name)}</b> — as fotos precisam ser dessa pessoa.</p>` : ''}
       ${linhas}${motivos}
-      <p class="rc-sub" style="margin-top:10px">A foto vai direto para o banco que processa o pagamento; nós não guardamos nenhuma cópia. A análise leva até 48 horas.</p>
+      <p class="rc-sub" style="margin-top:10px">Documento com frente e verso? Envie um lado, depois clique de novo
+      em "Enviar outra foto" no mesmo item. A foto vai direto para o banco que processa o pagamento; nós não
+      guardamos nenhuma cópia. A análise leva até 48 horas.</p>
       <p id="rcDocMsg" style="font-size:13px;margin:6px 0 0"></p>`;
   }
 
