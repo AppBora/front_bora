@@ -43,6 +43,18 @@
   window.__imprimir = (id) => { const p = cache.find(x => x.id === id); if (p && typeof boraPrintComanda === 'function') boraPrintComanda(p); };
   window.__refresh = () => carregar();
 
+  // Excluir some com o pedido de vez (inclusive das vendas). Só gerente e dono, e só para teste ou
+  // pedido lançado errado — o de verdade que não vai sair se cancela, e fica no histórico.
+  const papel = (Bora.user() && Bora.user().papel) || '';
+  const podeExcluir = ['GERENTE', 'ADMINISTRADOR_LOJA', 'ADMINISTRADOR_BORA'].includes(papel);
+  window.__excluir = async (id) => {
+    const p = cache.find(x => x.id === id);
+    const nome = p ? (p.codigo || '#' + p.id) : '#' + id;
+    if (!confirm(`Excluir o pedido ${nome} de vez?\n\nUse só para pedido de TESTE ou lançado errado: ele some das vendas e dos relatórios e não dá para desfazer.\n\nPedido de verdade que não vai sair: use Cancelar.`)) return;
+    try { await Bora.api('/api/pedidos/' + id, { method: 'DELETE' }); carregar(); }
+    catch (e) { alert('Não foi possível excluir: ' + e.message); }
+  };
+
   // detecção de pedido novo → som + toast
   let conhecidos = null;
   function detectarNovos(board) {
@@ -113,6 +125,7 @@
               : '<button class="adv" disabled style="opacity:.5;cursor:default">Concluído</button>')}
         <button class="prt" title="Imprimir comanda" onclick="__imprimir(${p.id})">🖨</button>
         ${!novo && p.status !== 'ENTREGUE' && p.status !== 'CANCELADO' ? `<button class="no" title="Cancelar" onclick="__cancelar(${p.id})">✕</button>` : ''}
+        ${podeExcluir ? `<button class="no" title="Excluir pedido de teste (não dá para desfazer)" onclick="__excluir(${p.id})">🗑</button>` : ''}
       </div>
     </div>`;
   }
