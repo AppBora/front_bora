@@ -19,8 +19,18 @@
       case 'IFOOD': return { id: 'IF-' + Date.now(), customer: { name: 'Ana (iFood)', phone: { number: '11955550001' } },
         delivery: { deliveryAddress: { streetName: 'Rua das Flores', streetNumber: '120', neighborhood: 'Centro' } },
         items: [{ name: 'Combo Açaí 700ml', quantity: 1, unitPrice: v }], total: { orderAmount: { value: v } }, payments: { methods: [{ method: 'CREDIT' }] } };
-      case 'NOVE_NOVE': return { order_id: '99-' + Date.now(), consumer: { name: 'Bruno (99Food)', phone: '11955550002' },
-        address: { street: 'Av. Brasil', number: '500', district: 'Jardim' }, products: [{ name: 'Milk Shake', qty: 2, price: v }], total_amount: v, payment_method: 'Pago no app' };
+      case 'NOVE_NOVE': {
+        // Formato Open Delivery v1.7.1 (o mesmo que a 99 devolve em GET /v1/orders/{id}).
+        const un = Number(v), tot = un * 2, brl = x => ({ value: Number(x.toFixed(2)), currency: 'BRL' });
+        return { id: '99-' + Date.now(), displayId: String(1000 + Math.floor(Math.random() * 9000)),
+          customer: { name: 'Bruno (99Food)', phone: { number: '11955550002' } },
+          delivery: { deliveredBy: 'MARKETPLACE',
+            deliveryAddress: { street: 'Av. Brasil', number: '500', complement: 'casa 2', district: 'Jardim' } },
+          items: [{ name: 'Milk Shake', quantity: 2, unitPrice: brl(un), totalPrice: brl(tot) }],
+          total: { itemsPrice: brl(tot), otherFees: brl(0), discount: brl(0), orderAmount: brl(tot) },
+          payments: { prepaid: tot, pending: 0, methods: [{ value: tot, currency: 'BRL', type: 'PREPAID', method: 'CREDIT' }] },
+          extraInfo: 'Pedido de demonstracao' };
+      }
       case 'RAPPI': return { order_id: 'RP-' + Date.now(), client: { first_name: 'Carla (Rappi)', phone: '11955550003' },
         delivery_address: { address: 'Rua Verde, 88', neighborhood: 'Vila Nova' }, items: [{ name: 'Sorvete 1L', units: 1, unit_price: v }], total_value: v, payment_method: 'Pago no app' };
       case 'UBER_EATS': return { id: 'UE-' + Date.now(), eater: { firstName: 'Diego (Uber)', phone: '11955550004' },
@@ -67,7 +77,7 @@
       </div>
       <div class="intbody ${open}" id="body-${i.canal}">
         ${i.oficial ? corpoOficial(i) : ''}
-        ${zap ? '' : `<div class="field"><label>Merchant ID (ID da loja no ${esc(i.label)})</label><input id="m-${i.canal}" value="${esc(i.merchantId || '')}" placeholder="ex.: 123e4567-..."></div>`}
+        ${zap ? '' : `<div class="field"><label>${i.canal === 'NOVE_NOVE' ? 'App Shop ID (o código desta loja que você cadastrou no portal da 99)' : 'Merchant ID (ID da loja no ' + esc(i.label) + ')'}</label><input id="m-${i.canal}" value="${esc(i.merchantId || '')}" placeholder="${i.canal === 'NOVE_NOVE' ? 'ex.: zira-acaiteria' : 'ex.: 123e4567-...'}"></div>`}
         ${i.oficial ? '' : `<div class="field"><label>${zap ? 'Phone Number ID (Meta)' : 'Client ID'}</label><input id="c-${i.canal}" value="${esc(i.clientId || '')}" placeholder="${zap ? 'ex.: 123456789012345' : 'chave de aplicação'}"></div>
         <div class="field"><label>${zap ? 'Token permanente do System User' : 'Client Secret / Token'} ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label><input id="s-${i.canal}" type="password" placeholder="${i.temSecret ? '•••••• (deixe em branco p/ manter)' : 'cole o segredo aqui'}"></div>`}
         <div class="toggle-row" style="padding:6px 0" onclick="__switch('${i.canal}',this)">
@@ -125,7 +135,7 @@
     }
     return `<div class="oficial-box passo">
       <b>Passo 1 — conectar a loja</b>
-      <p>Salve o Merchant ID abaixo e clique em conectar. Você não precisa de senha do ${esc(i.label)}: quem se identifica é o BoraHapp.</p>
+      <p>Salve o ${i.canal === 'NOVE_NOVE' ? 'App Shop ID' : 'Merchant ID'} abaixo e clique em conectar. Você não precisa de senha do ${esc(i.label)}: quem se identifica é o BoraHapp.</p>
       <button class="btn" onclick="__vincular('${i.canal}')">🔗 Conectar ao ${esc(i.label)}</button>
       ${i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : ''}
     </div>`;
