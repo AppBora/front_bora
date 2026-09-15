@@ -60,6 +60,16 @@
     </div>`;
   }
 
+  // A 99 manda os avisos para um endereço só, cadastrado no aplicativo do BoraHapp no portal dela, e
+  // descobre a loja pelo App Shop ID. O endereço /webhooks/nove_nove?loja=&token= que o card mostrava
+  // antes nunca seria chamado pela 99.
+  function boxOpenDelivery() {
+    const url = Bora.apiBase() + '/public/opendelivery/v1/newEvent';
+    return `<div class="webhook-box"><label style="font-size:12px;color:#64748b;font-weight:700">Endereço de avisos da 99 (URL de callback)</label>
+      <div class="wl"><input readonly value="${esc(url)}"><button class="btn" style="padding:8px 12px" onclick="__copy(this)">Copiar</button></div>
+      <p style="font-size:12px;color:#64748b;margin:8px 0 0">É cadastrado uma vez só, no aplicativo do BoraHapp no portal de desenvolvedores da 99, e vale para todas as lojas. A loja não precisa colar em lugar nenhum.</p></div>`;
+  }
+
   function card(i) {
     const mp = MP[i.canal] || { ic: '🧾', cor: '#94a3b8' };
     const zap = i.canal === 'WHATSAPP';
@@ -72,7 +82,7 @@
         <span class="intstatus is-${i.status}">${i.status}</span>
       </div>
       <div class="toggle-row" onclick="__toggleOpen('${i.canal}')">
-        <span style="font-weight:700;font-size:13px">${i.ativo ? '🟢 Recebendo pedidos' : 'Configurar conexão'}</span>
+        <span style="font-weight:700;font-size:13px">${i.recebendo ? '🟢 Recebendo pedidos' : 'Configurar conexão'}</span>
         <span style="color:#94a3b8;font-size:12px">${i._open ? 'fechar ▲' : 'abrir ▼'}</span>
       </div>
       <div class="intbody ${open}" id="body-${i.canal}">
@@ -89,7 +99,8 @@
           ${zap ? '' : `<button class="btn secondary" onclick="__simular('${i.canal}')" ${i.webhookPath ? '' : 'disabled title="Salve a conexão primeiro"'}>🧪 Simular pedido</button>`}
         </div>
         ${zap ? boxMeta(i) : ''}
-        ${webhookFull && !zap ? `<div class="webhook-box"><label style="font-size:12px;color:#64748b;font-weight:700">URL de Webhook (cole no painel do ${esc(i.label)})</label>
+        ${i.canal === 'NOVE_NOVE' ? boxOpenDelivery() : ''}
+        ${webhookFull && !zap && i.canal !== 'NOVE_NOVE' ? `<div class="webhook-box"><label style="font-size:12px;color:#64748b;font-weight:700">URL de Webhook (cole no painel do ${esc(i.label)})</label>
           <div class="wl"><input readonly value="${esc(webhookFull)}"><button class="btn" style="padding:8px 12px" onclick="__copy(this)">Copiar</button></div></div>` : ''}
       </div>
       <div class="intmini"><span>Pedidos recebidos: <b>${i.pedidosRecebidos || 0}</b></span><span>Última sync: <b>${i.ultimaSync ? new Date(i.ultimaSync).toLocaleString('pt-BR') : '—'}</b></span></div>
@@ -109,7 +120,7 @@
           <input id="oc-${i.canal}" value="${esc(i.clientId || '')}" placeholder="opcional — só se você tiver o seu"></div>
         <div class="field"><label>Client Secret ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label>
           <input id="os-${i.canal}" type="password" placeholder="${i.temSecret ? '•••••• (em branco mantém o atual)' : 'cole o segredo aqui'}"></div>
-        <p style="font-size:12px;color:#64748b">Salve o Merchant ID e a credencial, ative o recebimento e clique em Conectar.</p>
+        <p style="font-size:12px;color:#64748b">Salve o ${i.canal === 'NOVE_NOVE' ? 'App Shop ID' : 'Merchant ID'} e a credencial, ative o recebimento e clique em Conectar.</p>
         <button class="btn" onclick="__vincular('${i.canal}')">🔗 Conectar ao ${esc(i.label)}</button>
         ${i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : ''}
       </div>`;
