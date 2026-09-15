@@ -262,11 +262,40 @@
       + ' ' + botao('arquivar', c.id, 'Arquivar', '#991b1b');
   }
 
+  // O cliente é a empresa (mesmo CNPJ); a rede aparece junta e, com 2+ lojas, dá para suspender,
+  // reativar, arquivar ou restaurar todas de uma vez.
+  function cabecalhoEmpresa(ls) {
+    const e = ls[0];
+    const vivas = ls.filter(c => c.situacao !== 'ARQUIVADA');
+    let botoes = '';
+    if (ls.length > 1 && e.empresaId != null) {
+      const b = (acao, texto, cor) => `<button class="btn" data-empacao="${acao}" data-empresa="${e.empresaId}"
+               style="background:${cor};padding:6px 10px;font-size:12px">${texto}</button>`;
+      if (vivas.some(c => c.situacao !== 'SUSPENSA')) botoes += b('suspender', 'Suspender empresa', '#b45309') + ' ';
+      if (vivas.some(c => c.situacao === 'SUSPENSA')) botoes += b('reativar', 'Reativar empresa', '#166534') + ' ';
+      if (vivas.length) botoes += b('arquivar', 'Arquivar empresa', '#991b1b') + ' ';
+      if (ls.some(c => c.situacao === 'ARQUIVADA')) botoes += b('restaurar', 'Restaurar empresa', '#0f766e');
+    }
+    return `<div style="margin-top:14px;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <b style="flex:1 1 220px">🏢 ${esc(e.empresaNome || e.nome)}
+        <span style="color:var(--muted);font-weight:400;font-size:12px">${e.documento ? esc(e.documento) + ' · ' : ''}${ls.length} loja${ls.length > 1 ? 's' : ''}</span></b>
+      ${botoes}</div>`;
+  }
+
+  let ultimaLista = [];
+
   async function carregarLojas() {
     try {
       const clientes = await Bora.api('/admin-bora/clientes'
         + (verArquivadas && verArquivadas.checked ? '?incluirArquivadas=true' : ''));
-      wrap.innerHTML = clientes.map(c =>
+      ultimaLista = clientes;
+      const grupos = new Map();
+      clientes.forEach(c => {
+        const k = c.empresaId == null ? 'loja-' + c.id : 'empresa-' + c.empresaId;
+        if (!grupos.has(k)) grupos.set(k, []);
+        grupos.get(k).push(c);
+      });
+      const linhaLoja = c =>
         `<div style="padding:10px 0;border-top:1px solid #f1f5f9">
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <label style="display:flex;gap:8px;align-items:center;cursor:pointer;flex:1 1 240px;font-weight:600">
@@ -283,7 +312,10 @@
             <span data-splitmsg="${c.id}" style="font-size:12px"></span>
           </div>
           <div style="color:var(--muted);font-size:12px;margin-top:4px;padding-left:26px">${ficha(c)}</div>
-        </div>`).join('') || 'Nenhum cliente ainda.';
+        </div>`;
+      wrap.innerHTML = [...grupos.values()].map(ls => cabecalhoEmpresa(ls) + ls.map(linhaLoja).join('')).join('')
+        || 'Nenhum cliente ainda.';
+      wrap.querySelectorAll('button[data-empacao]').forEach(b => b.onclick = () => executarAcaoEmpresa(b));
       wrap.querySelectorAll('input[data-ia]').forEach(cb => cb.onchange = async () => {
         try { await Bora.api('/admin-bora/lojas/' + cb.dataset.ia + '/modulo-ia',
           { method: 'PUT', body: JSON.stringify({ habilitado: cb.checked }) }); }
@@ -362,6 +394,44 @@
       const r = await Bora.api(url, { method: 'PUT', body: body ? JSON.stringify(body) : undefined });
       if (r && r.assinatura) alert('Assinatura: ' + r.assinatura);
       if (r && r.aviso) alert(r.aviso);
+      await carregarLojas();
+    } catch (e) {
+      alert('Erro: ' + e.message);
+      btn.disabled = false;
+    }
+  }
+
+  async function executarAcaoEmpresa(btn) {
+    const id = btn.dataset.empresa, acao = btn.dataset.empacao;
+    const ls = ultimaLista.filter(c => String(c.empresaId) === id);
+    const lista = ls.map(c => '• #' + c.id + ' ' + (c.nome || 'Loja')).join('\n');
+    const empresa = (ls[0] && (ls[0].empresaNome || ls[0].nome)) || '#' + id;
+    let url = '/admin-bora/empresas/' + id + '/', body = null;
+    if (acao === 'suspender') {
+      if (!confirm('Suspender a empresa ' + empresa + ' inteira?\n\n' + lista + '\n\nTodas as lojas acima perdem o '
+        + 'acesso ao painel na hora, os cardápios saem do ar e as assinaturas são canceladas no Asaas.')) return;
+      const motivo = prompt('Motivo (fica no log de auditoria):', 'inadimplência');
+      if (motivo === null) return;
+      url += 'ativo'; body = { ativo: false, motivo };
+    } else if (acao === 'reativar') {
+      if (!confirm('Reativar as lojas suspensas da empresa ' + empresa + '?\n\n' + lista + '\n\nO acesso volta, mas as '
+        + 'assinaturas foram canceladas — o lojista precisa ativar uma nova em Planos. Loja "sem pagamento" continua fora.')) return;
+      url += 'ativo'; body = { ativo: true };
+    } else if (acao === 'arquivar') {
+      if (!confirm('ARQUIVAR a empresa ' + empresa + ' inteira?\n\n' + lista + '\n\nTodas somem desta lista, perdem o '
+        + 'acesso e as assinaturas são canceladas. Pedidos, clientes e financeiro ficam guardados e dá para restaurar depois.')) return;
+      const motivo = prompt('Motivo (fica no log de auditoria):', 'encerrou o contrato');
+      if (motivo === null) return;
+      url += 'arquivar'; body = { motivo };
+    } else {
+      if (!confirm('Restaurar as lojas arquivadas da empresa ' + empresa + '?\n\nElas voltam para a lista, mas continuam '
+        + 'suspensas: reativar é um segundo passo.')) return;
+      url += 'restaurar';
+    }
+    btn.disabled = true;
+    try {
+      const r = await Bora.api(url, { method: 'PUT', body: body ? JSON.stringify(body) : undefined });
+      alert((r.lojas || []).map(x => '#' + x.lojaId + ' ' + (x.nome || '') + ': ' + x.resultado).join('\n') || 'Feito.');
       await carregarLojas();
     } catch (e) {
       alert('Erro: ' + e.message);
