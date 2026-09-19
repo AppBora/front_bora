@@ -107,6 +107,14 @@
       <button class="btn" id="apCriar" style="margin-top:12px">Criar administrador</button>
       <span id="apMsg" style="font-size:13px;margin-left:10px"></span>
       <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
+      <h3 style="margin:0 0 6px">🔑 Credenciais dos marketplaces</h3>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 10px">
+        As chaves do aplicativo do BoraHapp em cada marketplace, copiadas do portal de desenvolvedores
+        deles. Valem para todas as lojas. Depois de salvo, o segredo não aparece mais aqui — para trocar,
+        é só colar o novo.
+      </p>
+      <div id="crLista" style="font-size:14px">Carregando…</div>
+      <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
       <h3 style="margin:0 0 6px">🏪 Clientes — Módulo IA, taxa do PIX e situação</h3>
       <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:0 0 8px;cursor:pointer">
         <input type="checkbox" id="verArquivadas" style="width:16px;height:16px">
@@ -527,6 +535,66 @@
     } catch (e) { box.textContent = 'Não consegui carregar: ' + e.message; }
   }
   carregarAdmins();
+
+  // Credenciais do app da plataforma em cada marketplace. O segredo nunca volta do servidor: o campo
+  // nasce vazio e, em branco, mantém o que já está salvo.
+  const ONDE_COPIAR = {
+    IFOOD: ['Client ID', 'Client Secret', 'No portal do iFood: Meus aplicativos → o aplicativo distribuído (D) → Credenciais.'],
+    NOVE_NOVE: ['App ID', 'App Secret', 'No portal da 99: Gerenciamento de aplicativo → o aplicativo do BoraHapp.']
+  };
+  const ORIGEM = {
+    TELA: selo('salvo ✓', '#dcfce7', '#166534'),
+    SERVIDOR: selo('configurado no servidor', '#e0f2fe', '#075985')
+  };
+  async function carregarCredenciais() {
+    const box = ap('crLista');
+    try {
+      const lista = await Bora.api('/admin-bora/credenciais');
+      box.innerHTML = lista.map(c => {
+        const [rotId, rotSec, onde] = ONDE_COPIAR[c.canal] || ['Client ID', 'Client Secret', ''];
+        const estado = ORIGEM[c.origem] || selo('não configurado', '#fee2e2', '#991b1b');
+        return `<div style="padding:10px 0;border-bottom:1px solid #f1f5f9">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${esc(c.label)}</b> ${estado}</div>
+          <div style="color:var(--muted);font-size:12px;margin:2px 0 8px">${esc(onde)}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+            <label style="font-size:13px">${rotId}<br>
+              <input id="cr-id-${c.canal}" value="${esc(c.clientId || '')}" autocomplete="off"
+                     style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+            <label style="font-size:13px">${rotSec}<br>
+              <input id="cr-sec-${c.canal}" type="password" autocomplete="new-password"
+                     placeholder="${c.temSecret ? '•••••• salvo (em branco mantém)' : 'cole o segredo aqui'}"
+                     style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+          </div>
+          <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn" data-cr-salvar="${c.canal}" style="padding:6px 12px;font-size:13px">Salvar</button>
+            ${c.origem === 'TELA' ? `<button class="btn" data-cr-apagar="${c.canal}" style="padding:6px 12px;font-size:13px;background:#64748b">Remover</button>` : ''}
+            <span id="cr-msg-${c.canal}" style="font-size:12px"></span>
+          </div></div>`;
+      }).join('');
+      box.querySelectorAll('[data-cr-salvar]').forEach(b => b.onclick = async () => {
+        const canal = b.dataset.crSalvar, msg = ap('cr-msg-' + canal);
+        const clientId = ap('cr-id-' + canal).value.trim(), clientSecret = ap('cr-sec-' + canal).value.trim();
+        msg.style.color = '#dc2626';
+        if (!clientId) { msg.textContent = 'Cole o ' + (ONDE_COPIAR[canal] || ['Client ID'])[0] + '.'; return; }
+        b.disabled = true;
+        try {
+          await Bora.api('/admin-bora/credenciais/' + canal, { method: 'PUT', body: JSON.stringify({ clientId, clientSecret }) });
+          await carregarCredenciais();
+          const m = ap('cr-msg-' + canal);
+          if (m) { m.style.color = '#166534'; m.textContent = 'Salvo. Já vale para todas as lojas.'; }
+        } catch (e) { msg.textContent = 'Erro: ' + e.message; b.disabled = false; }
+      });
+      box.querySelectorAll('[data-cr-apagar]').forEach(b => b.onclick = async () => {
+        const canal = b.dataset.crApagar;
+        if (!confirm('Remover as credenciais salvas nesta tela?\n\nAs lojas conectadas a este marketplace param de '
+          + 'receber pedidos, a não ser que exista uma credencial configurada no servidor.')) return;
+        b.disabled = true;
+        try { await Bora.api('/admin-bora/credenciais/' + canal, { method: 'DELETE' }); carregarCredenciais(); }
+        catch (e) { alert('Erro: ' + e.message); b.disabled = false; }
+      });
+    } catch (e) { box.textContent = 'Não consegui carregar: ' + e.message; }
+  }
+  carregarCredenciais();
 
   ap('apCriar').onclick = async () => {
     const btn = ap('apCriar'), msg = ap('apMsg');
