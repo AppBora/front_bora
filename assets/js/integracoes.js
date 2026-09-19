@@ -143,7 +143,7 @@
       <div class="intbody ${open}" id="body-${i.canal}">
         ${i.oficial && ehPlataforma ? boxCredencialApp(i) : ''}
         ${i.oficial ? corpoOficial(i) : ''}
-        ${zap ? '' : `<div class="field"><label>${i.canal === 'NOVE_NOVE' ? 'App Shop ID (o código desta loja que você cadastrou no portal da 99)' : 'Merchant ID (ID da loja no ' + esc(i.label) + ')'}</label><input id="m-${i.canal}" value="${esc(i.merchantId || '')}" placeholder="${i.canal === 'NOVE_NOVE' ? 'ex.: zira-acaiteria' : 'ex.: 123e4567-...'}"></div>`}
+        ${zap ? '' : `<div class="field"><label>${i.canal === 'NOVE_NOVE' ? 'App Shop ID (o código desta loja que você cadastrou no portal da 99)' : 'Merchant ID (ID da loja no ' + esc(i.label) + ')'}</label><input id="m-${i.canal}" value="${esc(i.merchantId || '')}" placeholder="${i.canal === 'NOVE_NOVE' ? 'ex.: zira-acaiteria' : 'ex.: 123e4567-...'}" ${i.oficial && !ehPlataforma ? 'readonly style="background:#f1f5f9"' : ''}>${i.oficial && !ehPlataforma ? '<small style="color:#64748b">Definido pelo suporte do BoraHapp — é o código que liga esta loja aos pedidos dela no ' + esc(i.label) + '.</small>' : ''}</div>`}
         ${i.oficial ? '' : `<div class="field"><label>${zap ? 'Phone Number ID (Meta)' : 'Client ID'}</label><input id="c-${i.canal}" value="${esc(i.clientId || '')}" placeholder="${zap ? 'ex.: 123456789012345' : 'chave de aplicação'}"></div>
         <div class="field"><label>${zap ? 'Token permanente do System User' : 'Client Secret / Token'} ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label><input id="s-${i.canal}" type="password" placeholder="${i.temSecret ? '•••••• (deixe em branco p/ manter)' : 'cole o segredo aqui'}"></div>`}
         <div class="toggle-row" style="padding:6px 0" onclick="__switch('${i.canal}',this)">
@@ -156,7 +156,7 @@
         </div>
         ${zap ? boxMeta(i) : ''}
         ${i.canal === 'NOVE_NOVE' ? boxOpenDelivery() : ''}
-        ${webhookFull && !zap && i.canal !== 'NOVE_NOVE' ? `<div class="webhook-box"><label style="font-size:12px;color:#64748b;font-weight:700">URL de Webhook (cole no painel do ${esc(i.label)})</label>
+        ${webhookFull && !zap && !i.oficial ? `<div class="webhook-box"><label style="font-size:12px;color:#64748b;font-weight:700">URL de Webhook (cole no painel do ${esc(i.label)})</label>
           <div class="wl"><input readonly value="${esc(webhookFull)}"><button class="btn" style="padding:8px 12px" onclick="__copy(this)">Copiar</button></div></div>` : ''}
       </div>
       <div class="intmini"><span>Pedidos recebidos: <b>${i.pedidosRecebidos || 0}</b></span><span>Última sync: <b>${i.ultimaSync ? new Date(i.ultimaSync).toLocaleString('pt-BR') : '—'}</b></span></div>
@@ -182,10 +182,18 @@
       </div>`;
     }
     if (i.userCode) {
+      // O código de vínculo vence em poucos minutos (10 no iFood). Sem este botão o card ficava preso
+      // num código morto e não havia como pedir outro pela tela.
+      const vence = i.vinculoExpiraEm ? new Date(i.vinculoExpiraEm) : null;
+      const vencido = vence && vence.getTime() < Date.now();
       return `<div class="oficial-box passo">
         <b>Passo 2 — autorize no ${esc(i.label)}</b>
         <p>Entre no portal do parceiro e informe este código:</p>
-        <div class="usercode">${esc(i.userCode)}</div>
+        <div class="usercode" ${vencido ? 'style="opacity:.45;text-decoration:line-through"' : ''}>${esc(i.userCode)}</div>
+        <p style="font-size:12px;margin:6px 0">${vencido
+          ? '<b style="color:#b91c1c">Este código venceu.</b> Gere um novo e autorize em seguida.'
+          : (vence ? 'Vale até <b>' + vence.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '</b>.' : '')}
+          <button class="btn secondary" style="padding:4px 10px;font-size:12px;margin-left:6px" onclick="__vincular('${i.canal}')">🔄 Gerar novo código</button></p>
         ${i.verificationUrl ? `<p><a href="${esc(i.verificationUrl)}" target="_blank" rel="noopener">Abrir o portal do ${esc(i.label)} ↗</a></p>` : ''}
         <div class="field"><label>Código de autorização devolvido pelo portal</label>
           <input id="auth-${i.canal}" placeholder="cole aqui"></div>
