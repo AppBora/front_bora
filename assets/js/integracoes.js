@@ -43,6 +43,61 @@
 
   let dados = [];
 
+  // Credenciais do aplicativo do BoraHapp nos marketplaces oficiais (iFood, 99). Valem para TODAS as
+  // lojas: se o lojista visse, poderia trocar a chave de todo mundo. Só o administrador da plataforma
+  // vê e edita — o segredo nunca volta do servidor, o campo nasce vazio e em branco mantém o salvo.
+  const ehPlataforma = (Bora.user() || {}).papel === 'ADMINISTRADOR_BORA';
+  let credApp = {};
+  const ROTULOS_APP = {
+    IFOOD: ['Client ID', 'Client Secret', 'Copie no portal do iFood: Meus aplicativos → aplicativo distribuído (D) → Credenciais.'],
+    NOVE_NOVE: ['App ID', 'App Secret', 'Copie no portal da 99: Gerenciamento de aplicativo → aplicativo do BoraHapp.']
+  };
+  async function carregarCredApp() {
+    if (!ehPlataforma) return;
+    try {
+      const lista = await Bora.api('/admin-bora/credenciais');
+      credApp = {};
+      lista.forEach(c => { credApp[c.canal] = c; });
+    } catch (e) { credApp = {}; }
+  }
+  function boxCredencialApp(i) {
+    const c = credApp[i.canal];
+    if (!c) return '';
+    const [rotId, rotSec, onde] = ROTULOS_APP[i.canal] || ['Client ID', 'Client Secret', ''];
+    const estado = c.origem === 'TELA' ? '<span style="color:#059669">· salvo ✓</span>'
+      : c.origem === 'SERVIDOR' ? '<span style="color:#075985">· configurado no servidor</span>'
+      : '<span style="color:#b91c1c">· não configurado</span>';
+    return `<div class="oficial-box" style="border:1px dashed #94a3b8;background:#f8fafc">
+      <b>🔑 Credenciais do aplicativo BoraHapp ${estado}</b>
+      <p style="font-size:12px;color:#64748b;margin:4px 0 8px">Valem para todas as lojas — só o administrador da plataforma vê este bloco. ${esc(onde)}</p>
+      <div class="field"><label>${rotId}</label><input id="app-id-${i.canal}" value="${esc(c.clientId || '')}" autocomplete="off"></div>
+      <div class="field"><label>${rotSec}</label><input id="app-sec-${i.canal}" type="password" autocomplete="new-password"
+        placeholder="${c.temSecret ? '•••••• salvo (em branco mantém)' : 'cole o segredo aqui'}"></div>
+      <button class="btn" onclick="__salvarApp('${i.canal}')">Salvar credenciais</button>
+      ${c.origem === 'TELA' ? `<button class="btn secondary" onclick="__removerApp('${i.canal}')">Remover</button>` : ''}
+    </div>`;
+  }
+  window.__salvarApp = async canal => {
+    const v = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
+    const clientId = v('app-id-' + canal), clientSecret = v('app-sec-' + canal);
+    if (!clientId) { alert('Cole o ' + (ROTULOS_APP[canal] || ['Client ID'])[0] + '.'); return; }
+    try {
+      await Bora.api('/admin-bora/credenciais/' + canal, { method: 'PUT', body: JSON.stringify({ clientId, clientSecret }) });
+      await carregarCredApp();
+      await carregar(canal);
+      alert('Credenciais salvas. Já valem para todas as lojas.');
+    } catch (e) { alert('Erro ao salvar: ' + e.message); }
+  };
+  window.__removerApp = async canal => {
+    if (!confirm('Remover as credenciais do aplicativo?\n\nAs lojas conectadas a este marketplace param de receber pedidos, '
+      + 'a não ser que exista uma credencial configurada no servidor.')) return;
+    try {
+      await Bora.api('/admin-bora/credenciais/' + canal, { method: 'DELETE' });
+      await carregarCredApp();
+      await carregar(canal);
+    } catch (e) { alert('Erro: ' + e.message); }
+  };
+
   // A Meta chama o webhook do robo em /public/whatsapp-webhook/{loja} e valida o hub.verify_token
   // contra o nosso webhookToken. Ele so existe depois de salvar a conexao uma vez.
   function boxMeta(i) {
@@ -86,6 +141,7 @@
         <span style="color:#94a3b8;font-size:12px">${i._open ? 'fechar ▲' : 'abrir ▼'}</span>
       </div>
       <div class="intbody ${open}" id="body-${i.canal}">
+        ${i.oficial && ehPlataforma ? boxCredencialApp(i) : ''}
         ${i.oficial ? corpoOficial(i) : ''}
         ${zap ? '' : `<div class="field"><label>${i.canal === 'NOVE_NOVE' ? 'App Shop ID (o código desta loja que você cadastrou no portal da 99)' : 'Merchant ID (ID da loja no ' + esc(i.label) + ')'}</label><input id="m-${i.canal}" value="${esc(i.merchantId || '')}" placeholder="${i.canal === 'NOVE_NOVE' ? 'ex.: zira-acaiteria' : 'ex.: 123e4567-...'}"></div>`}
         ${i.oficial ? '' : `<div class="field"><label>${zap ? 'Phone Number ID (Meta)' : 'Client ID'}</label><input id="c-${i.canal}" value="${esc(i.clientId || '')}" placeholder="${zap ? 'ex.: 123456789012345' : 'chave de aplicação'}"></div>
@@ -115,13 +171,13 @@
       return `<div class="oficial-box aviso">
         <b>Integração oficial ainda não liberada</b>
         <p>A ${esc(i.label)} precisa aprovar a aplicação do BoraHapp antes de conectar lojas pela credencial da plataforma. Assim que sair, esta tela habilita sozinha — e nada do que você configurar aqui se perde.</p>
-        <p><b>Não quer esperar?</b> Se a sua loja já tem um aplicativo próprio no portal de desenvolvedores da ${esc(i.label)}, informe a credencial dele abaixo e conecte agora. ${i.temSecret ? '<b style="color:#059669">Credencial própria salva ✓</b>' : ''}</p>
+        ${i.canal !== 'NOVE_NOVE' ? '' : `<p><b>Não quer esperar?</b> Se a sua loja já tem um aplicativo próprio no portal de desenvolvedores da ${esc(i.label)}, informe a credencial dele abaixo e conecte agora. ${i.temSecret ? '<b style="color:#059669">Credencial própria salva ✓</b>' : ''}</p>
         <div class="field"><label>Client ID do aplicativo da sua loja</label>
           <input id="oc-${i.canal}" value="${esc(i.clientId || '')}" placeholder="opcional — só se você tiver o seu"></div>
         <div class="field"><label>Client Secret ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label>
           <input id="os-${i.canal}" type="password" placeholder="${i.temSecret ? '•••••• (em branco mantém o atual)' : 'cole o segredo aqui'}"></div>
-        <p style="font-size:12px;color:#64748b">Salve o ${i.canal === 'NOVE_NOVE' ? 'App Shop ID' : 'Merchant ID'} e a credencial, ative o recebimento e clique em Conectar.</p>
-        <button class="btn" onclick="__vincular('${i.canal}')">🔗 Conectar ao ${esc(i.label)}</button>
+        <p style="font-size:12px;color:#64748b">Salve o App Shop ID e a credencial, ative o recebimento e clique em Conectar.</p>
+        <button class="btn" onclick="__vincular('${i.canal}')">🔗 Conectar ao ${esc(i.label)}</button>`}
         ${i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : ''}
       </div>`;
     }
@@ -217,5 +273,5 @@
     } catch (e) { document.getElementById('grid').innerHTML = `<p style="color:var(--danger)">${e.message}</p>`; }
   }
 
-  document.addEventListener('DOMContentLoaded', () => carregar());
+  document.addEventListener('DOMContentLoaded', () => carregarCredApp().then(() => carregar()));
 })();
