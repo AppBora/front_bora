@@ -2,6 +2,7 @@
 (function () {
   if (!Bora.requireAuth()) return;
   const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   const PAPEL = { OPERADOR: 'Operador', GERENTE: 'Gerente', ADMINISTRADOR_LOJA: 'Admin da loja', ADMINISTRADOR_BORA: 'Admin BoraHapp' };
 
@@ -36,16 +37,16 @@ O efeito é imediato: se ela estiver `
     const dela = u.lojas || [];
     const chips = dela.map(l => {
       const x = l.principal ? '' :
-        `<a href="#" title="Tirar acesso" onclick="__desvincular(${u.id},${l.id},'${(l.nome || '').replace(/'/g, "")}');return false"
+        `<a href="#" title="Tirar acesso" onclick="__desvincular(${u.id},${l.id},'${esc((l.nome || '').replace(/'/g, ""))}');return false"
             style="margin-left:4px;color:#991b1b;text-decoration:none">×</a>`;
       return `<span style="display:inline-block;background:#f1f5f9;border-radius:999px;padding:2px 8px;margin:2px 3px 2px 0;font-size:12px">`
-        + `${l.nome}${l.principal ? ' <b title="Loja principal">•</b>' : ''}${x}</span>`;
+        + `${esc(l.nome)}${l.principal ? ' <b title="Loja principal">•</b>' : ''}${x}</span>`;
     }).join('');
     const faltam = lojasEmpresa.filter(l => !dela.some(d => d.id === l.id));
     const add = faltam.length === 0 ? '' :
       `<select onchange="__vincular(${u.id}, this)" style="font-size:12px;padding:3px;border:1px solid #e2e8f0;border-radius:6px;margin-top:2px">
          <option value="">+ dar acesso a…</option>
-         ${faltam.map(l => `<option value="${l.id}">${l.nome}</option>`).join('')}
+         ${faltam.map(l => `<option value="${l.id}">${esc(l.nome)}</option>`).join('')}
        </select>`;
     return chips + '<br>' + add;
   }
@@ -69,12 +70,12 @@ O efeito é imediato: se ela estiver `
         const badge = u.ativo ? '<span class="badge b-entregue">Ativo</span>' : '<span class="badge b-cancelado">Inativo</span>';
         const toggle = `<button class="btn ghost" style="background:#e5e7eb;color:#111;padding:4px 8px;margin-left:6px" onclick="__ativo(${u.id},${!u.ativo})">${u.ativo ? 'Desativar' : 'Ativar'}</button>`;
         const comLojas = Object.assign({}, u, porId[u.id] || {});
-        return `<tr><td>${u.nome || '—'}</td><td>${u.email}</td><td>${PAPEL[u.papel] || u.papel}</td>`
+        return `<tr><td>${esc(u.nome) || '—'}</td><td>${esc(u.email)}</td><td>${PAPEL[u.papel] || esc(u.papel)}</td>`
           + `<td>${celulaLojas(comLojas)}</td><td>${badge}${toggle}</td></tr>`;
       }).join('') || '<tr><td colspan="5" style="color:#94a3b8">Nenhum usuário.</td></tr>';
     } catch (e) {
       const m = e.message.includes('403') || /perfil|restrita/i.test(e.message) ? 'Apenas administradores da loja acessam esta tela.' : e.message;
-      tb.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${m}</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${esc(m)}</td></tr>`;
     }
   }
 

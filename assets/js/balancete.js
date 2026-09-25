@@ -4,6 +4,7 @@
   const money = v => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
   const fmt = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   let dados = null;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   async function init() {
     const sec = document.getElementById('secBalancete');
@@ -28,7 +29,7 @@
     try {
       dados = await Bora.balancete(document.getElementById('balIni').value, document.getElementById('balFim').value);
       corpo.innerHTML = (dados.lojas || []).map(l =>
-        `<tr><td>${l.loja}${l.ativa === false ? ' <span style="color:var(--muted);font-size:12px">(inativa)</span>' : ''}</td>
+        `<tr><td>${esc(l.loja)}${l.ativa === false ? ' <span style="color:var(--muted);font-size:12px">(inativa)</span>' : ''}</td>
          <td>${l.pedidos}</td><td>${l.cancelados}</td><td>${money(l.ticketMedio)}</td><td><b>${money(l.faturamento)}</b></td></tr>`).join('')
         || '<tr><td colspan="5" style="color:var(--muted)">Sem lojas vinculadas</td></tr>';
       const t = dados.total || {};
@@ -37,7 +38,7 @@
          <td>TOTAL DA REDE</td><td>${t.pedidos ?? 0}</td><td>${t.cancelados ?? 0}</td>
          <td>${money(t.ticketMedio)}</td><td>${money(t.faturamento)}</td></tr>`;
     } catch (e) {
-      corpo.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${e.message || 'Erro ao carregar'}</td></tr>`;
+      corpo.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${esc(e.message) || 'Erro ao carregar'}</td></tr>`;
     }
   }
 

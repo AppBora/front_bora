@@ -1,6 +1,7 @@
 // Tela de promoções: termômetro + criar/listar promoções.
 (function () {
   if (!Bora.requireAuth()) return;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   const FAIXA = {
     SAUDAVEL: { cor: '#22c55e', txt: '#166534', label: 'Vendas saudáveis' },
@@ -29,10 +30,10 @@
       tbody.innerHTML = ps.map(p => {
         const vigente = p.ativa && (!p.fim || new Date(p.fim).getTime() > agora);
         const status = vigente ? '<span class="badge b-entregue">Ativa</span>' : '<span class="badge b-cancelado">Encerrada</span>';
-        return `<tr><td>${p.codigo || '—'}</td><td>${p.tipo || '—'}</td><td>${p.percentualDesconto != null ? p.percentualDesconto + '%' : '—'}</td>` +
-          `<td>${dt(p.fim)}</td><td>${(p.usos || 0)}${p.limiteUsos ? '/' + p.limiteUsos : ''}</td><td>${p.origem || '—'}</td><td>${status}</td></tr>`;
+        return `<tr><td>${esc(p.codigo) || '—'}</td><td>${esc(p.tipo) || '—'}</td><td>${p.percentualDesconto != null ? p.percentualDesconto + '%' : '—'}</td>` +
+          `<td>${dt(p.fim)}</td><td>${(p.usos || 0)}${p.limiteUsos ? '/' + p.limiteUsos : ''}</td><td>${esc(p.origem) || '—'}</td><td>${status}</td></tr>`;
       }).join('') || '<tr><td colspan="7" style="color:var(--muted)">Nenhuma promoção ainda.</td></tr>';
-    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger)">${e.message}</td></tr>`; }
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger)">${esc(e.message)}</td></tr>`; }
   }
 
   document.getElementById('form').addEventListener('submit', async (e) => {
