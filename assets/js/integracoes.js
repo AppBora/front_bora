@@ -254,8 +254,16 @@
     if (cid) body.clientId = cid;
     const secret = val('s-' + canal) || val('os-' + canal);
     if (secret) body.clientSecret = secret;
-    try { await Bora.salvarIntegracao(canal, body); await carregar(canal); }
-    catch (e) { alert('Erro ao salvar: ' + e.message); }
+    try {
+      await Bora.salvarIntegracao(canal, body);
+      await carregar(canal);
+      // Sem aviso de sucesso o lojista clicava e nao sabia se tinha salvado (o botao so falava no erro).
+      const nome = (dados.find(x => x.canal === canal) || {}).label || canal;
+      const recado = 'Conexão do <b>' + esc(nome) + '</b> salva ✓'
+        + (body.ativo ? ' — recebendo pedidos' : ' — recebimento desligado');
+      if (typeof boraToast === 'function') boraToast(recado, 'ok');
+      else alert(recado.replace(/<[^>]+>/g, ''));
+    } catch (e) { alert('Erro ao salvar: ' + e.message); }
   };
 
   window.__simular = async canal => {
