@@ -27,12 +27,20 @@
     if (!alterados.length) { $('msg').textContent = 'Nada para ajustar.'; return; }
     if (!confirm(`Ajustar ${alterados.length} produto(s) ao valor contado?`)) return;
     $('aplicar').disabled = true;
+    const falhas = [];
     for (const p of alterados) {
-      await Bora.atualizarProduto(p.id, { nome: p.nome, categoria: p.categoria, preco: p.preco, custo: p.custo,
-        estoque: Number($('c' + p.id).value), estoqueMinimo: p.estoqueMinimo, ativo: p.ativo }).catch(() => {});
+      const novo = Number($('c' + p.id).value);
+      if (!isFinite(novo) || novo < 0) { falhas.push(p.nome + ': quantidade inválida'); continue; }
+      try {
+        await Bora.atualizarProduto(p.id, { nome: p.nome, categoria: p.categoria, preco: p.preco, custo: p.custo,
+          estoque: novo, estoqueMinimo: p.estoqueMinimo, ativo: p.ativo });
+      } catch (e) { falhas.push(p.nome + ': ' + e.message); }
     }
-    $('msg').textContent = '✓ Estoque ajustado!'; $('aplicar').disabled = false;
-    carregar();
+    $('msg').textContent = falhas.length
+      ? '⚠ ' + (alterados.length - falhas.length) + ' ajustado(s); não consegui: ' + falhas.join(' | ')
+      : '✓ Estoque ajustado!';
+    $('aplicar').disabled = false;
+    await carregar().catch(e => { $('msg').textContent += ' (erro ao recarregar: ' + e.message + ')'; });
   }
 
   async function carregar() {
@@ -47,5 +55,6 @@
     $('kDiv').textContent = '0'; $('kImpacto').textContent = money(0);
   }
 
-  document.addEventListener('DOMContentLoaded', () => { $('aplicar').addEventListener('click', aplicar); carregar(); });
+  document.addEventListener('DOMContentLoaded', () => { $('aplicar').addEventListener('click', aplicar);
+    carregar().catch(e => { $('lista').innerHTML = `<tr><td colspan="4" style="color:var(--danger)">${esc(e.message)}</td></tr>`; }); });
 })();

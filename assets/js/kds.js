@@ -35,7 +35,7 @@
     board.forEach(p => {
       if (['RECEBIDO', 'CONFIRMADO'].includes(p.status) && !conhecidos.has(p.id)) {
         boraBeep();
-        boraToast(`🔔 Novo pedido na cozinha<small>${esc(p.codigo) || '#' + p.id} · ${p.clienteNome || 'Cliente'}</small>`, 'novo');
+        boraToast(`🔔 Novo pedido na cozinha<small>${esc(p.codigo) || '#' + p.id} · ${esc(p.clienteNome) || 'Cliente'}</small>`, 'novo');
       }
     });
     conhecidos = new Set(ids);

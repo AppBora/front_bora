@@ -17,7 +17,10 @@ const Bora = {
     const t = this.token();
     if (t) headers['Authorization'] = 'Bearer ' + t;
     const res = await fetch(BORA_API + path, { ...opts, headers });
-    if (res.status === 401) { this.logout(); throw new Error('Sessão expirada'); }
+    // 401 em /auth/login e /auth/trocar-senha e "senha errada", nao "sessao expirada": deslogar aqui
+    // recarregava a tela de login e engolia a mensagem (e, na troca de senha, derrubava quem errou a atual).
+    const ehCredencial = path.startsWith('/auth/login') || path.startsWith('/auth/trocar-senha');
+    if (res.status === 401 && !ehCredencial) { this.logout(); throw new Error('Sessão expirada'); }
     if (!res.ok) {
       let msg = 'Erro ' + res.status;
       try { const b = await res.json(); msg = b.message || b.error || msg; } catch {}

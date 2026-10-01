@@ -29,11 +29,12 @@
     $('id').value = i.id; $('nome').value = i.nome || ''; $('unidade').value = i.unidade || 'un'; $('custo').value = i.custo ?? '';
     $('estoque').value = i.estoque ?? ''; $('estoqueMinimo').value = i.estoqueMinimo ?? '';
     $('btnSalvar').textContent = 'Atualizar insumo'; $('cancelar').style.display = 'inline-block'; window.scrollTo(0, 0); };
-  window.__del = async id => { if (confirm('Excluir insumo?')) { await Bora.excluirInsumo(id); lista(); } };
+  window.__del = async id => { if (!confirm('Excluir insumo?')) return;
+    try { await Bora.excluirInsumo(id); await lista(); } catch (e) { alert('Não foi possível excluir: ' + e.message); } };
 
   $('cancelar').addEventListener('click', reset);
   $('form').addEventListener('submit', async e => { e.preventDefault(); $('msg').textContent = '';
-    try { const b = payload(); if ($('id').value) b.id = Number($('id').value); await Bora.salvarInsumo(b); reset(); lista(); }
+    try { const b = payload(); if ($('id').value) b.id = Number($('id').value); await Bora.salvarInsumo(b); reset(); await lista(); }
     catch (ex) { $('msg').textContent = ex.message; } });
 
   document.addEventListener('DOMContentLoaded', () => lista().catch(e => $('lista').innerHTML = `<tr><td colspan="4" style="color:var(--danger)">${e.message}</td></tr>`));

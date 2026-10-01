@@ -54,7 +54,7 @@
       document.getElementById('cod').textContent = 'Pedido ' + d.codigo + (d.pago ? ' · PIX pago ✔' : '');
       if(d.status === 'CANCELADO'){
         document.getElementById('timeline').innerHTML =
-          '<div class="cancel">😔 Pedido cancelado' + (d.motivoCancelamento ? '<br><small style="font-weight:400">' + d.motivoCancelamento + '</small>' : '') + '</div>';
+          '<div class="cancel">😔 Pedido cancelado' + (d.motivoCancelamento ? '<br><small style="font-weight:400">' + String(d.motivoCancelamento).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}) + '</small>' : '') + '</div>';
         return;
       }
       const atual = ORDEM.indexOf(d.status);
@@ -65,8 +65,10 @@
       }).join('');
       if(d.status === 'ENTREGUE') clearInterval(timer);
     }catch(e){
+      // Falha de rede (sinal fraco, Wi-Fi caindo) nao encerra: tenta de novo no proximo ciclo.
+      if(e.message !== 'Pedido não encontrado') return;
       document.getElementById('loja').textContent = 'Ops!';
-      document.getElementById('timeline').innerHTML = '<div class="cancel">'+e.message+'</div>';
+      document.getElementById('timeline').innerHTML = '<div class="cancel">Pedido não encontrado.</div>';
       clearInterval(timer);
     }
   }

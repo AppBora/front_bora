@@ -268,6 +268,7 @@
 
   window.__simular = async canal => {
     const i = dados.find(x => x.canal === canal); if (!i || !i.webhookPath) return;
+    if (!confirm('Isto cria um PEDIDO DE TESTE de verdade: ele aparece na cozinha (KDS), soma nas vendas e nos relatórios. Depois exclua em Pedidos (🗑). Continuar?')) return;
     try {
       const res = await fetch(Bora.apiBase() + i.webhookPath, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(amostra(canal))

@@ -95,6 +95,7 @@
 
   async function confirmar() {
     if (!selecionado) return;
+    const nomeAcerto = selecionado.entregador; // fecharModal() zera 'selecionado'
     el('mErro').textContent = '';
     el('mConfirmar').disabled = true;
     try {
@@ -107,7 +108,7 @@
         observacao: el('mObs').value || null,
       });
       fecharModal();
-      if (typeof boraToast === 'function') boraToast('Acerto de <b>' + esc(selecionado.entregador) + '</b> registrado ✓', 'ok');
+      if (typeof boraToast === 'function') boraToast('Acerto de <b>' + esc(nomeAcerto) + '</b> registrado ✓', 'ok');
       await buscar();
       await carregarHistorico();
     } catch (e) {

@@ -54,6 +54,11 @@ window.__comp = async (produtoId) => {
       })).filter(i => i.nome)
     })).filter(g => g.nome);
     const msg = div.querySelector('#cgMsg');
+    const ruim = corpo.find(g => g.minimo > g.maximo || g.minimo > g.itens.length);
+    if (ruim) {
+      msg.textContent = '❌ No grupo "' + ruim.nome + '" o mínimo (' + ruim.minimo + ') é maior que o máximo ou que o número de opções — o cliente nunca conseguiria fechar o pedido.';
+      msg.style.color = '#dc2626'; return;
+    }
     try { await Bora.api('/api/produtos/' + produtoId + '/complementos', { method: 'PUT', body: JSON.stringify(corpo) });
       msg.textContent = '✅ Salvo! Já vale no cardápio digital.'; msg.style.color = '#059669'; }
     catch (e) { msg.textContent = '❌ ' + e.message; msg.style.color = '#dc2626'; }

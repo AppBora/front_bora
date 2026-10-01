@@ -151,11 +151,13 @@
     try {
       const ped = await Bora.criarPedido(body);
       // venda de balcão já entregue na hora
-      try { await Bora.mudarStatus(ped.id, 'ENTREGUE'); } catch (e) {}
+      let aviso = '';
+      try { await Bora.mudarStatus(ped.id, 'ENTREGUE'); } catch (e) { aviso = 'Venda registrada, mas não consegui marcá-la como entregue (' + e.message + '). Finalize o pedido em Pedidos para ele sair da cozinha.'; }
       cart = []; renderCart();
       try { clientes = await Bora.clientes(); atualizarCashback(); } catch (e) {} // saldo de cashback atualizado
       $('finish').textContent = '✓ Venda registrada!';
       setTimeout(() => { $('finish').textContent = 'Finalizar venda'; }, 1500);
+      if (aviso) alert(aviso);
     } catch (e) {
       alert('Erro ao finalizar: ' + e.message);
       $('finish').textContent = 'Finalizar venda'; $('finish').disabled = false;

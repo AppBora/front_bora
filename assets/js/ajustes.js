@@ -6,6 +6,8 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const chk = b => `<span style="color:${b ? '#059669' : '#cbd5e1'};font-weight:800">${b ? '✓' : '—'}</span>`;
+  // Toda ação desta tela passa por aqui: erro (sem permissão, rede) vira aviso em vez de clique mudo.
+  const seguro = fn => async (...a) => { try { return await fn(...a); } catch (e) { alert('Não foi possível concluir: ' + (e.message || 'falha')); } };
   const del = (fn, id) => `<button onclick="${fn}(${id})" style="border:0;background:#fef2f2;color:#dc2626;border-radius:8px;padding:5px 9px;cursor:pointer">✕</button>`;
 
   // ---- Taxas ----
@@ -16,12 +18,13 @@
         <td>${chk(x.ativo)}</td><td style="text-align:right">${del('__delTaxa', x.id)}</td></tr>`).join('')
       : '<tr><td colspan="5" style="color:#94a3b8">Nenhuma taxa. Adicione os bairros que você atende.</td></tr>';
   }
-  window.__delTaxa = async id => { if (confirm('Remover taxa?')) { await Bora.excluirTaxa(id); loadTaxas(); } };
-  $('addTaxa').addEventListener('click', async () => {
-    const bairro = $('tBairro').value.trim(); if (!bairro) return;
+  window.__delTaxa = seguro(async id => { if (confirm('Remover taxa?')) { await Bora.excluirTaxa(id); await loadTaxas(); } });
+  $('addTaxa').addEventListener('click', seguro(async () => {
+    const bairro = $('tBairro').value.trim(); if (!bairro) { alert('Informe o bairro.'); return; }
+    if (Number($('tTaxa').value || 0) < 0) { alert('A taxa não pode ser negativa.'); return; }
     await Bora.salvarTaxa({ bairro, taxa: Number($('tTaxa').value || 0), tempoMin: $('tTempo').value ? Number($('tTempo').value) : null, ativo: true });
-    $('tBairro').value = ''; $('tTaxa').value = ''; $('tTempo').value = ''; loadTaxas();
-  });
+    $('tBairro').value = ''; $('tTaxa').value = ''; $('tTempo').value = ''; await loadTaxas();
+  }));
 
   // ---- Formas de pagamento ----
   async function loadFormas() {
@@ -31,14 +34,14 @@
         <td><label class="switch ${x.ativo ? 'on' : ''}" style="display:inline-block" onclick="__toggleForma(${x.id},${!x.ativo})"></label></td>
         <td style="text-align:right">${del('__delForma', x.id)}</td></tr>`).join('');
   }
-  window.__toggleForma = async (id, ativo) => { const f = (await Bora.formasPagamento()).find(x => x.id === id); if (!f) return;
-    await Bora.salvarForma({ id, descricao: f.descricao, comTroco: f.comTroco, online: f.online, ativo, ordem: f.ordem }); loadFormas(); };
-  window.__delForma = async id => { if (confirm('Remover forma de pagamento?')) { await Bora.excluirForma(id); loadFormas(); } };
-  $('addForma').addEventListener('click', async () => {
-    const descricao = $('fDesc').value.trim(); if (!descricao) return;
+  window.__toggleForma = seguro(async (id, ativo) => { const f = (await Bora.formasPagamento()).find(x => x.id === id); if (!f) return;
+    await Bora.salvarForma({ id, descricao: f.descricao, comTroco: f.comTroco, online: f.online, ativo, ordem: f.ordem }); await loadFormas(); });
+  window.__delForma = seguro(async id => { if (confirm('Remover forma de pagamento?')) { await Bora.excluirForma(id); await loadFormas(); } });
+  $('addForma').addEventListener('click', seguro(async () => {
+    const descricao = $('fDesc').value.trim(); if (!descricao) { alert('Informe o nome da forma de pagamento.'); return; }
     await Bora.salvarForma({ descricao, comTroco: $('fTroco').checked, online: $('fOnline').checked, ativo: true });
-    $('fDesc').value = ''; $('fTroco').checked = false; $('fOnline').checked = false; loadFormas();
-  });
+    $('fDesc').value = ''; $('fTroco').checked = false; $('fOnline').checked = false; await loadFormas();
+  }));
 
   // ---- Horário ----
   let horarios = [];
@@ -56,7 +59,7 @@
   window.__togDia = dia => { const h = horarios.find(x => x.dia === dia); h.aberto = !h.aberto; loadRenderHorarioToggle(dia, h.aberto); };
   function loadRenderHorarioToggle(dia, on) { const rows = $('horarioBody').children; const r = [...rows].find(x => x.querySelector('span').textContent === DIAS[dia]); if (r) r.querySelector('.switch').classList.toggle('on', on); }
   window.__setH = (dia, campo, v) => { const h = horarios.find(x => x.dia === dia); h[campo] = v; };
-  $('salvarHorario').addEventListener('click', async () => { await Bora.salvarHorarios(horarios); $('hMsg').textContent = '✓ Salvo'; setTimeout(() => $('hMsg').textContent = '', 1500); });
+  $('salvarHorario').addEventListener('click', seguro(async () => { await Bora.salvarHorarios(horarios); $('hMsg').textContent = '✓ Salvo'; setTimeout(() => $('hMsg').textContent = '', 1500); }));
 
   // ---- Motivos ----
   async function loadMotivos() {
@@ -64,9 +67,9 @@
     $('motivosBody').innerHTML = m.map(x =>
       `<tr><td><b>${esc(x.descricao)}</b></td><td>${chk(x.ativo)}</td><td style="text-align:right">${del('__delMotivo', x.id)}</td></tr>`).join('');
   }
-  window.__delMotivo = async id => { if (confirm('Remover motivo?')) { await Bora.excluirMotivo(id); loadMotivos(); } };
-  $('addMotivo').addEventListener('click', async () => { const d = $('mDesc').value.trim(); if (!d) return;
-    await Bora.salvarMotivo({ descricao: d, ativo: true }); $('mDesc').value = ''; loadMotivos(); });
+  window.__delMotivo = seguro(async id => { if (confirm('Remover motivo?')) { await Bora.excluirMotivo(id); await loadMotivos(); } });
+  $('addMotivo').addEventListener('click', seguro(async () => { const d = $('mDesc').value.trim(); if (!d) { alert('Informe o motivo.'); return; }
+    await Bora.salvarMotivo({ descricao: d, ativo: true }); $('mDesc').value = ''; await loadMotivos(); }));
 
   // ---- Tabs ----
   $('tabs').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return;
@@ -76,6 +79,6 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     loadTaxas().catch(e => $('taxasBody').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${e.message}</td></tr>`);
-    loadFormas(); loadHorario(); loadMotivos();
+    [loadFormas, loadHorario, loadMotivos].forEach(f => f().catch(e => alert('Não consegui carregar parte desta tela: ' + e.message)));
   });
 })();

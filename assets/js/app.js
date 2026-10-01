@@ -68,7 +68,7 @@ let _boraAudioCtx=null;
 function boraBeep(){
   try{
     _boraAudioCtx=_boraAudioCtx||new (window.AudioContext||window.webkitAudioContext)();
-    const ctx=_boraAudioCtx; const t=ctx.currentTime;
+    const ctx=_boraAudioCtx; if(ctx.state==='suspended') ctx.resume(); const t=ctx.currentTime;
     [880,1320].forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();
       o.type='sine';o.frequency.value=f;o.connect(g);g.connect(ctx.destination);
       const s=t+i*0.18;g.gain.setValueAtTime(0.0001,s);g.gain.exponentialRampToValueAtTime(0.25,s+0.02);
@@ -85,27 +85,29 @@ function boraToast(msg,tipo){
 
 // ---- Impressão de comanda/cupom (cozinha ou cliente) ----
 function boraPrintComanda(p){
+  const e=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=v=>'R$ '+Number(v||0).toFixed(2).replace('.',',');
-  const loja=(JSON.parse(localStorage.getItem('boraTheme')||'{}').name)||'BoraHapp';
-  const itens=(p.itens||[]).map(i=>`<tr><td>${i.quantidade||1}x</td><td>${i.descricao||''}</td></tr>`).join('')||'<tr><td colspan="2">—</td></tr>';
-  const end=[p.clienteEndereco,p.clienteBairro].filter(Boolean).join(' - ');
+  const loja=e((JSON.parse(localStorage.getItem('boraTheme')||'{}').name)||'BoraHapp');
+  const itens=(p.itens||[]).map(i=>`<tr><td>${e(i.quantidade||1)}x</td><td>${e(i.descricao)}</td></tr>`).join('')||'<tr><td colspan="2">—</td></tr>';
+  const end=e([p.clienteEndereco,p.clienteBairro].filter(Boolean).join(' - '));
   const w=window.open('','_print','width=320,height=600');
-  w.document.write(`<html><head><title>Comanda ${p.codigo||p.id}</title><style>
+  if(!w){ boraToast('O navegador bloqueou a janela de impressão. Libere pop-ups para este site e clique em imprimir de novo.','erro'); return; }
+  w.document.write(`<html><head><title>Comanda ${e(p.codigo||p.id)}</title><style>
     *{font-family:'Courier New',monospace;font-size:13px;margin:0}body{padding:8px;width:280px}
     h2{text-align:center;font-size:16px;margin:4px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}
     table{width:100%}td{padding:2px 0;vertical-align:top}.r{text-align:right}.b{font-weight:bold}.c{text-align:center}
     .big{font-size:18px;font-weight:bold}</style></head><body>
     <h2>${loja}</h2>
-    <div class="c">COMANDA ${p.canalExterno?('• '+(p.origem||'')):''}</div>
-    <hr><div class="big">#${p.codigo||p.id}</div>
+    <div class="c">COMANDA ${p.canalExterno?('• '+e(p.origem)):''}</div>
+    <hr><div class="big">#${e(p.codigo||p.id)}</div>
     <div>${new Date(p.criadoEm||Date.now()).toLocaleString('pt-BR')}</div>
-    <hr><div class="b">${p.clienteNome||'Cliente avulso'}</div>
-    ${p.clienteTelefone?`<div>${p.clienteTelefone}</div>`:''}${end?`<div>${end}</div>`:''}
+    <hr><div class="b">${e(p.clienteNome)||'Cliente avulso'}</div>
+    ${p.clienteTelefone?`<div>${e(p.clienteTelefone)}</div>`:''}${end?`<div>${end}</div>`:''}
     <hr><table>${itens}</table><hr>
-    ${p.observacao?`<div>OBS: ${p.observacao}</div><hr>`:''}
+    ${p.observacao?`<div>OBS: ${e(p.observacao)}</div><hr>`:''}
     <table><tr><td class="b">TOTAL</td><td class="r big">${money(p.valorTotal)}</td></tr>
-    <tr><td>Pagamento</td><td class="r">${p.formaPagamento||'-'}</td></tr></table>
-    <hr><div class="c">BoraHapp • ${p.origem||''}</div>
+    <tr><td>Pagamento</td><td class="r">${e(p.formaPagamento)||'-'}</td></tr></table>
+    <hr><div class="c">BoraHapp • ${e(p.origem)}</div>
     </body></html>`);
   w.document.close();w.focus();setTimeout(()=>{w.print();},250);
 }
@@ -128,7 +130,7 @@ async function renderLojaSwitcher(){
     sel.style.cssText = 'display:block;margin:8px 12px 4px;width:calc(100% - 24px);padding:7px 8px;border-radius:8px;border:1px solid #cbd5e1;background:#fff;color:#111;font-weight:600;font-size:13px;cursor:pointer';
     sel.innerHTML =
       (suporte ? `<option value="" ${lojas.some(l=>l.atual) ? '' : 'selected'}>🏢 Plataforma (sem loja)</option>` : '') +
-      lojas.map(l => `<option value="${l.id}" ${l.atual ? 'selected' : ''}>🏪 ${l.nome}${l.ativo === false ? ' (inativa)' : ''}</option>`).join('');
+      lojas.map(l => `<option value="${l.id}" ${l.atual ? 'selected' : ''}>🏪 ${String(l.nome==null?'':l.nome).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}${l.ativo === false ? ' (inativa)' : ''}</option>`).join('');
     sel.onchange = async () => {
       try{
         // O suporte entra pela porta da plataforma (/acessar), que registra quem entrou em qual
@@ -138,7 +140,7 @@ async function renderLojaSwitcher(){
                               : await Bora.trocarLoja(Number(sel.value));
         Bora.setSession(r);
         localStorage.removeItem('boraTheme');
-        boraToast(r.lojaId ? ('Agora você está na loja <b>' + (r.lojaNome || '') + '</b>')
+        boraToast(r.lojaId ? ('Agora você está na loja <b>' + String(r.lojaNome || '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) + '</b>')
                            : 'Você voltou para a <b>plataforma</b>');
         setTimeout(() => location.reload(), 400);
       }catch(e){

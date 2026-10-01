@@ -18,6 +18,7 @@
   const isVenda = p => p.status !== 'CANCELADO';
 
   async function promoRelampago() {
+    if (!confirm('Abrir o cupom BORA15 (15% de desconto, 3 horas, até 20 usos) no seu cardápio agora?')) return;
     const agora = new Date(), fim = new Date(agora.getTime() + 3 * 3600 * 1000);
     try {
       await Bora.criarPromocao({ tipo: 'RELAMPAGO', descricao: 'Cupom relâmpago — 15% por 3h',
