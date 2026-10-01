@@ -1,6 +1,17 @@
 // Cliente de API do Bora — auth via JWT (Bearer), multi-tenant pelo token.
-// Permite apontar a API por ?api=<url> (uso em link de teste/túnel); fica salvo p/ as próximas telas.
-(function () { try { const p = new URLSearchParams(location.search).get('api'); if (p) localStorage.setItem('boraApiUrl', p.replace(/\/+$/, '')); } catch (e) {} })();
+// ?api=<url> aponta a API para outro endereço — serve ao link de teste por túnel. SÓ vale em ambiente
+// de teste: na produção isso era phishing pronto. O link borahapp.com.br/login.html?api=<site do golpista>
+// fazia o painel mandar o e-mail e a senha digitados para o golpista, e o desvio ficava salvo no
+// navegador da vítima. Em qualquer host que não seja de teste, apagamos um desvio já plantado.
+(function () {
+  try {
+    const h = location.hostname;
+    const ehTeste = h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h.endsWith('.trycloudflare.com');
+    if (!ehTeste) { localStorage.removeItem('boraApiUrl'); return; }
+    const p = new URLSearchParams(location.search).get('api');
+    if (p) localStorage.setItem('boraApiUrl', p.replace(/\/+$/, ''));
+  } catch (e) {}
+})();
 const BORA_API = localStorage.getItem('boraApiUrl') || window.location.origin;
 
 const Bora = {
