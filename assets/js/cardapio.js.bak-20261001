@@ -81,7 +81,6 @@
 
   // ---- Checkout online: pedido criado no sistema; PIX na conta Asaas do lojista ----
   let pixDisponivel = false, pollTimer = null, cupomOk = false, saldoCashback = 0;
-  let bairros = [], descontoCupom = 0;
   const $ = id => document.getElementById(id);
 
   function itensCarrinho() {
@@ -98,32 +97,8 @@
     $('ckResumo').textContent = itensCarrinho().reduce((n, i) => n + i.quantidade, 0) + ' itens · ' + money(totalCarrinho());
     $('ckOpPix').hidden = !pixDisponivel;
     if (!pixDisponivel) document.querySelector('input[name="ckForma"][value="ENTREGA"]').checked = true;
-    // A escolha entre entrega e retirada so aparece quando a loja cadastrou bairro: sem tabela de
-    // frete, perguntar o bairro so atrapalharia e nao mudaria preco nenhum.
-    $('ckTipoWrap').hidden = !bairros.length;
-    atualizarEntrega();
     atualizarCpf();
     $('checkout').hidden = false;
-  }
-
-  function ehRetirada() {
-    return document.querySelector('input[name="ckTipo"]:checked')?.value === 'RETIRADA';
-  }
-  function freteEscolhido() {
-    if (!bairros.length || ehRetirada()) return 0;
-    const b = bairros.find(x => x.bairro === $('ckBairro').value);
-    return b ? (Number(b.taxa) || 0) : 0;
-  }
-  /** Mostra bairro e endereco so quando fazem sentido, e refaz a conta na tela. */
-  function atualizarEntrega() {
-    const retira = ehRetirada();
-    $('ckBairroWrap').hidden = !bairros.length || retira;
-    $('ckEndWrap').hidden = retira;
-    const itens = totalCarrinho() - descontoCupom;
-    const frete = freteEscolhido();
-    $('ctItens').textContent = money(itens);
-    $('ctFrete').textContent = retira ? 'Retirada' : money(frete);
-    $('ctTotal').textContent = money(Math.max(0, itens) + frete);
   }
   function atualizarCpf() {
     const pix = document.querySelector('input[name="ckForma"]:checked')?.value === 'PIX';
@@ -161,8 +136,6 @@
         clienteNome: $('ckNome').value.trim(),
         telefone: $('ckTel').value.trim(),
         endereco: $('ckEnd').value.trim(),
-        tipoEntrega: ehRetirada() ? 'RETIRADA' : 'ENTREGA',
-        bairro: ehRetirada() ? '' : $('ckBairro').value,
         observacao: $('ckObs').value.trim(),
         cupom: cupomOk ? $('ckCupom').value.trim() : '',
         usarCashback: !!($('ckUsarCashback') && $('ckUsarCashback').checked && saldoCashback > 0),
@@ -212,17 +185,9 @@
         const c = await Bora.api('/public/loja/' + lojaId + '/cupom/' + encodeURIComponent(cod));
         const d = c.tipo === 'VALOR' ? money(c.valor) : Number(c.valor) + '%';
         cupomOk = true; msg.textContent = '✅ Cupom aplicado: ' + d + ' de desconto'; msg.style.color = '#15803d';
-        // Quem manda no desconto e o servidor; aqui so refletimos na conta da tela para o cliente
-        // nao confirmar achando um valor e ver outro.
-        descontoCupom = c.tipo === 'VALOR' ? (Number(c.valor) || 0)
-                                           : totalCarrinho() * ((Number(c.valor) || 0) / 100);
-        atualizarEntrega();
-      } catch (e) { descontoCupom = 0; atualizarEntrega();
-        msg.textContent = '❌ ' + (e.message || 'Cupom inválido'); msg.style.color = '#dc2626'; }
+      } catch (e) { msg.textContent = '❌ ' + (e.message || 'Cupom inválido'); msg.style.color = '#dc2626'; }
     });
     document.querySelectorAll('input[name="ckForma"]').forEach(r => r.addEventListener('change', atualizarCpf));
-    document.querySelectorAll('input[name="ckTipo"]').forEach(r => r.addEventListener('change', atualizarEntrega));
-    $('ckBairro').addEventListener('change', atualizarEntrega);
     $('ckTel').addEventListener('blur', verCashback);
     $('ckTel').addEventListener('change', verCashback);
     $('pxCopiar').addEventListener('click', () => { $('pxPayload').select(); document.execCommand('copy'); $('pxCopiar').textContent = 'Copiado ✓'; setTimeout(() => $('pxCopiar').textContent = 'Copiar código PIX', 2000); });
@@ -231,12 +196,6 @@
       document.getElementById('lojaNome').textContent = (data.loja && data.loja.nome) || 'Cardápio';
       document.title = (data.loja && data.loja.nome) || 'Cardápio Digital';
       pixDisponivel = !!data.pixDisponivel;
-      bairros = data.bairros || [];
-      if (bairros.length) {
-        $('ckBairro').innerHTML = '<option value="">Escolha o bairro…</option>' +
-          bairros.map(b => `<option value="${esc(b.bairro)}">${esc(b.bairro)} — ${money(Number(b.taxa) || 0)}`
-            + `${b.tempoMin ? ' · ~' + b.tempoMin + ' min' : ''}</option>`).join('');
-      }
       produtos = data.produtos || [];
       if (!produtos.length) { document.getElementById('menu').innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px">Cardápio em montagem.</p>'; return; }
       render();

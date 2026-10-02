@@ -38,23 +38,8 @@
       <input id="ckNome" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px">
       <label style="display:block;font-size:13px;margin:10px 0 4px">Telefone/WhatsApp</label>
       <input id="ckTel" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="(11) 99999-9999">
-      <div id="ckTipoWrap" hidden style="margin:12px 0 4px">
-        <div style="font-size:13px;font-weight:700;margin-bottom:6px">Como você quer receber?</div>
-        <label style="display:flex;gap:8px;align-items:center;padding:6px 0;cursor:pointer">
-          <input type="radio" name="ckTipo" value="ENTREGA" checked> 🛵 Entrega no meu endereço
-        </label>
-        <label style="display:flex;gap:8px;align-items:center;padding:6px 0;cursor:pointer">
-          <input type="radio" name="ckTipo" value="RETIRADA"> 🏪 Vou retirar no balcão
-        </label>
-      </div>
-      <div id="ckBairroWrap" hidden>
-        <label style="display:block;font-size:13px;margin:10px 0 4px">Bairro da entrega *</label>
-        <select id="ckBairro" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px"></select>
-      </div>
-      <div id="ckEndWrap">
-        <label style="display:block;font-size:13px;margin:10px 0 4px">Endereço de entrega</label>
-        <input id="ckEnd" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="Rua, número, complemento">
-      </div>
+      <label style="display:block;font-size:13px;margin:10px 0 4px">Endereço de entrega</label>
+      <input id="ckEnd" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="Rua, número, bairro">
       <label style="display:block;font-size:13px;margin:10px 0 4px">Observação</label>
       <input id="ckObs" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="Ex.: sem cebola">
       <label style="display:block;font-size:13px;margin:10px 0 4px">Cupom de desconto</label>
@@ -83,11 +68,6 @@
         <label style="display:block;font-size:13px;margin:6px 0 4px">CPF (necessário para o PIX) *</label>
         <input id="ckCpf" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="Somente números">
       </div>
-      <div id="ckConta" style="margin-top:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;font-size:14px">
-        <div style="display:flex;justify-content:space-between"><span>Itens</span><b id="ctItens">R$ 0,00</b></div>
-        <div id="ctFreteLinha" style="display:flex;justify-content:space-between;margin-top:4px"><span>Entrega</span><b id="ctFrete">R$ 0,00</b></div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:16px"><span><b>Total</b></span><b id="ctTotal">R$ 0,00</b></div>
-      </div>
       <div id="ckErr" style="color:#dc2626;font-size:13px;margin-top:10px"></div>
       <button id="ckEnviar" style="width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:var(--primary,#7c3aed);color:#fff;font-weight:800;font-size:16px;cursor:pointer">Confirmar pedido</button>
       <button id="ckFechar" style="width:100%;margin-top:8px;padding:10px;border:none;border-radius:10px;background:#f1f5f9;color:#334155;font-weight:600;cursor:pointer">Voltar</button>
@@ -107,5 +87,5 @@
     </div>
   </div>
 </div>
-<script src="assets/js/api.js?v=20260930"></script><script src="assets/js/cardapio.js?v=20261001"></script>
+<script src="assets/js/api.js?v=20260930"></script><script src="assets/js/cardapio.js?v=20260828"></script>
 </body></html>
