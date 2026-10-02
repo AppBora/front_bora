@@ -118,6 +118,20 @@
         <b>0</b> para isentar — os fundadores foram vendidos sem taxa por pedido.
       </p>
       <div id="iaLojas" style="font-size:14px">Carregando lojas…</div>
+      <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
+      <h3 style="margin:0 0 6px">🧾 Faturamento do mês — e o que ainda está sem nota</h3>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 10px">
+        Cada mensalidade recebida vira uma linha aqui, com o CNPJ do cliente. Emita a nota no
+        <b>Nota Fácil Sorocaba</b> e traga o número de volta: assim o mês fecha sabendo o que ficou
+        sem nota. Antes disto, saber o que entrou só olhando o painel do Asaas.
+      </p>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
+        <label style="font-size:13px">Mês<br>
+          <input id="ftMes" type="month" style="padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+        <button class="btn" id="ftBuscar">Ver mês</button>
+      </div>
+      <div id="ftResumo" style="font-size:14px;margin-bottom:10px"></div>
+      <div id="ftLista" style="font-size:14px">Carregando…</div>
     </div>
     <!-- Módulo IA (aparece apenas para lojas com o add-on liberado) -->
     <div class="card" id="cardIA" hidden style="margin-top:16px">
@@ -441,6 +455,73 @@
 
   if (verArquivadas) verArquivadas.onchange = carregarLojas;
   carregarLojas();
+
+  // Faturamento do mes: o que entrou de mensalidade e o que ainda esta sem nota fiscal.
+  // Os nomes das lojas passam por esc() porque quem digita o nome e o lojista, nao nos.
+  const ftMes = document.getElementById('ftMes');
+  const ftLista = document.getElementById('ftLista');
+  const ftResumo = document.getElementById('ftResumo');
+  const ftValor = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // O dia do pagamento e dia de CALENDARIO (o Asaas manda "2026-10-01"), nao um instante. Passar isso
+  // por new Date() faz o navegador converter de UTC para Brasilia e VOLTAR UM DIA: pagamento do dia 1
+  // aparecia como dia 30 do mes anterior, dentro de uma lista que se chama "faturamento do mes".
+  const ftData = v => (v ? String(v).slice(0, 10).split('-').reverse().join('/') : '—');
+  // Ja a emissao da nota e um instante nosso: aqui o horario local e o certo.
+  const ftInstante = v => { if (!v) return '—'; const d = new Date(v); return isNaN(d) ? '—' : d.toLocaleDateString('pt-BR'); };
+
+  async function carregarFaturamento() {
+    if (!ftLista) return;
+    ftLista.textContent = 'Carregando…';
+    try {
+      const r = await Bora.api('/admin-bora/faturamento' + (ftMes && ftMes.value ? '?mes=' + ftMes.value : ''));
+      ftResumo.innerHTML = `<b>${r.quantidade}</b> mensalidade(s) · recebido <b>${ftValor(r.total)}</b>`
+        + (Number(r.totalSemNota) > 0
+            ? ` · <span style="color:#b45309">sem nota: <b>${ftValor(r.totalSemNota)}</b></span>`
+            : ' · <span style="color:#166534">todas com nota ✓</span>');
+      if (!r.itens.length) {
+        ftLista.innerHTML = '<p style="color:var(--muted);font-size:13px;margin:0">Nenhuma mensalidade recebida neste mês.</p>';
+        return;
+      }
+      ftLista.innerHTML = r.itens.map(i => `
+        <div style="padding:10px 0;border-top:1px solid #f1f5f9;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div style="flex:1 1 220px">
+            <b>${esc(i.loja) || 'Loja #' + i.lojaId}</b><br>
+            <span style="color:var(--muted);font-size:13px">${esc(i.documento) || 'sem CNPJ cadastrado'} · pago em ${ftData(i.pagoEm)}</span>
+          </div>
+          <div style="font-weight:600;min-width:100px">${ftValor(i.valor)}</div>
+          <div style="flex:1 1 260px">
+            ${i.notaNumero
+              ? `<span style="color:#166534;font-size:13px">nota <b>${esc(i.notaNumero)}</b> · ${ftInstante(i.notaEmitidaEm)}</span>`
+              : `<input data-nota="${i.id}" placeholder="nº da nota emitida"
+                        style="padding:7px;border:1px solid #e2e8f0;border-radius:6px;width:150px">
+                 <button class="btn" data-salvarnota="${i.id}" style="padding:7px 12px">Salvar</button>
+                 <span data-notamsg="${i.id}" style="font-size:13px;margin-left:6px"></span>`}
+          </div>
+        </div>`).join('');
+
+      ftLista.querySelectorAll('[data-salvarnota]').forEach(b => b.onclick = async () => {
+        const id = b.dataset.salvarnota;
+        const campo = ftLista.querySelector(`[data-nota="${id}"]`);
+        const m = ftLista.querySelector(`[data-notamsg="${id}"]`);
+        const numero = (campo.value || '').trim();
+        if (!numero) { m.style.color = '#dc2626'; m.textContent = 'informe o número'; return; }
+        b.disabled = true;
+        try {
+          await Bora.api('/admin-bora/faturamento/' + id + '/nota',
+            { method: 'PUT', body: JSON.stringify({ numero }) });
+          await carregarFaturamento();
+        } catch (e) { b.disabled = false; m.style.color = '#dc2626'; m.textContent = e.message; }
+      });
+    } catch (e) {
+      ftLista.textContent = 'Erro: ' + e.message;
+    }
+  }
+  if (ftMes) {
+    const hoje = new Date();
+    ftMes.value = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+    document.getElementById('ftBuscar').onclick = carregarFaturamento;
+    carregarFaturamento();
+  }
 
   // Cadastro de loja nova pela plataforma (POST /admin-bora/lojas) — o unico caminho que grava o CNPJ.
   const nl = id => document.getElementById(id);
