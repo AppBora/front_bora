@@ -33,7 +33,14 @@
       <label>E-mail</label>
       <input type="email" id="email" required autocomplete="username" placeholder="voce@loja.com">
       <label>Senha</label>
-      <input type="password" id="senha" required autocomplete="new-password" placeholder="mínimo 6 caracteres">
+      <input type="password" id="senha" required autocomplete="new-password" placeholder="mínimo 8 caracteres">
+      <label style="display:flex;gap:10px;align-items:flex-start;margin:16px 0 4px;cursor:pointer;font-weight:400">
+        <input type="checkbox" id="aceite" required style="width:20px;height:20px;margin-top:2px;flex:0 0 auto">
+        <span style="font-size:13.5px;line-height:1.45;color:#475569">
+          Li e aceito os <a href="https://borahapp.com.br/termos.html" target="_blank" rel="noopener">Termos de Uso</a>
+          e a <a href="https://borahapp.com.br/privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.
+        </span>
+      </label>
       <button type="submit" id="btn">Criar conta grátis</button>
       <div class="login-err" id="err"></div>
       <div class="login-foot">Já tem conta? <a href="login.html">Entrar</a><br>
@@ -54,7 +61,10 @@
           nomeLoja: document.getElementById('nomeLoja').value.trim(),
           adminNome: document.getElementById('adminNome').value.trim(),
           adminEmail: email,
-          adminSenha: senha
+          adminSenha: senha,
+          // Vai junto para o servidor guardar a prova do aceite (data e versao), nao so a caixinha
+          // marcada na tela: sem registro, nao ha contrato aceito por ninguem.
+          aceiteTermos: document.getElementById('aceite').checked
         })});
         // já entra direto (auto-login); se a loja foi vinculada a uma conta existente, entra já nela
         const resp = await Bora.login(email, senha);

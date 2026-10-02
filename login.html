@@ -29,6 +29,7 @@
       <input type="password" id="senha" required autocomplete="current-password" placeholder="••••••">
       <button type="submit" id="btn">Entrar</button>
       <div class="login-err" id="err"></div>
+      <div class="login-foot" style="margin-bottom:6px"><a href="#" id="esqueci" style="color:var(--primary,#7c3aed);font-weight:600;text-decoration:none">Esqueci minha senha</a></div>
       <div class="login-foot" style="margin-bottom:6px">Não tem conta? <a href="cadastro.html" style="color:var(--primary,#7c3aed);font-weight:600;text-decoration:none">Criar grátis</a></div>
       <div class="login-foot">BoraHapp · SaaS para pequenos deliveries</div>
     </form>
@@ -36,6 +37,19 @@
   <script src="assets/js/api.js?v=20260930"></script>
   <script>
     if (Bora.token()) location.href = 'dashboard.html';
+    // Nao existe envio de e-mail no sistema, entao "esqueci a senha" nao pode virar um link magico
+    // por e-mail. O caminho que resolve hoje: o administrador da loja redefine em Usuarios, e quem
+    // nao tem a quem recorrer fala com o suporte - ja com o e-mail preenchido na mensagem.
+    document.getElementById('esqueci').addEventListener('click', (ev) => {
+      ev.preventDefault();
+      const email = (document.getElementById('email').value || '').trim();
+      const texto = 'Oi! Esqueci a senha do BoraHapp.' + (email ? ' Meu e-mail de acesso e ' + email + '.' : '')
+        + ' Pode me ajudar a redefinir?';
+      if (confirm('Quem redefine a senha e o administrador da sua loja, na tela Usuarios. Se voce E o administrador, ou nao tem a quem pedir, abrimos o WhatsApp do suporte. Continuar?')) {
+        window.open('https://wa.me/5515998602332?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+      }
+    });
+
     document.getElementById('form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('btn'), err = document.getElementById('err');

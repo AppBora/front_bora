@@ -51,6 +51,18 @@ O efeito é imediato: se ela estiver `
     return chips + '<br>' + add;
   }
 
+  /** Redefine a senha de alguem da equipe. O admin escolhe a nova e combina com a pessoa. */
+  window.__senha = async (id, nome) => {
+    const nova = prompt('Nova senha para ' + nome + ' (minimo 8 caracteres). Combine com a pessoa e peca para ela trocar depois, em Configuracoes.');
+    if (nova === null) return;
+    if (nova.trim().length < 8) { alert('A senha precisa ter ao menos 8 caracteres.'); return; }
+    try {
+      await Bora.api('/api/usuarios/' + id + '/senha', { method: 'PUT', body: JSON.stringify({ novaSenha: nova.trim() }) });
+      if (typeof boraToast === 'function') boraToast('Senha de <b>' + esc(nome) + '</b> redefinida ✓', 'ok');
+      else alert('Senha redefinida.');
+    } catch (e) { alert('Nao foi possivel redefinir: ' + e.message); }
+  };
+
   async function lista() {
     const tb = $('lista');
     try {
