@@ -324,16 +324,40 @@
             <span style="color:var(--muted);font-size:13px">%</span>
             ${acoes(c)}
             <span data-splitmsg="${c.id}" style="font-size:12px"></span>
+            <span data-iamsg="${c.id}" style="font-size:12px;flex-basis:100%;padding-left:26px"></span>
           </div>
           <div style="color:var(--muted);font-size:12px;margin-top:4px;padding-left:26px">${ficha(c)}</div>
         </div>`;
       wrap.innerHTML = [...grupos.values()].map(ls => cabecalhoEmpresa(ls) + ls.map(linhaLoja).join('')).join('')
         || 'Nenhum cliente ainda.';
       wrap.querySelectorAll('button[data-empacao]').forEach(b => b.onclick = () => executarAcaoEmpresa(b));
+      // O add-on custa R$ 99/mes. A tela ignorava a resposta do servidor: o administrador marcava o
+      // visto e nao via nem a mensalidade nova, nem se a cobranca do cliente tinha mesmo mudado --
+      // que e justamente o erro que ja aconteceu antes (recurso ligado e nunca cobrado).
       wrap.querySelectorAll('input[data-ia]').forEach(cb => cb.onchange = async () => {
-        try { await Bora.api('/admin-bora/lojas/' + cb.dataset.ia + '/modulo-ia',
-          { method: 'PUT', body: JSON.stringify({ habilitado: cb.checked }) }); }
-        catch (e) { cb.checked = !cb.checked; alert('Erro: ' + e.message); }
+        const m = wrap.querySelector('[data-iamsg="' + cb.dataset.ia + '"]');
+        cb.disabled = true;
+        if (m) { m.style.color = 'var(--muted)'; m.textContent = 'salvando…'; }
+        try {
+          const r = await Bora.api('/admin-bora/lojas/' + cb.dataset.ia + '/modulo-ia',
+            { method: 'PUT', body: JSON.stringify({ habilitado: cb.checked }) });
+          if (m) {
+            const preco = 'mensalidade agora: ' + ftValor(r.mensalidade);
+            // "nao atualizou" tem causas bem diferentes: loja que nem assinou e caso de cliente usando
+            // o add-on de graca. Misturar as duas numa frase so esconde a segunda.
+            const recado = {
+              ATUALIZADA:          [' · cobrança do cliente já atualizada ✓', '#166534'],
+              SEM_ASSINATURA:      [' · esta loja ainda não assinou — vale quando ela assinar', '#b45309'],
+              SEM_ID_NO_ASAAS:     [' · ATENÇÃO: a assinatura não tem cobrança no Asaas, confira lá', '#dc2626'],
+              ASAAS_NAO_CONFIGURADO: [' · ATENÇÃO: cobrança não configurada, ajuste no Asaas à mão', '#dc2626']
+            }[r.situacaoCobranca] || [' · não foi possível confirmar a cobrança', '#dc2626'];
+            m.style.color = recado[1];
+            m.textContent = preco + recado[0];
+          }
+        } catch (e) {
+          cb.checked = !cb.checked;
+          if (m) { m.style.color = '#dc2626'; m.textContent = 'Erro: ' + e.message; }
+        } finally { cb.disabled = false; }
       });
       wrap.querySelectorAll('input[data-split]').forEach(inp => inp.onchange = async () => {
         const id = inp.dataset.split;
