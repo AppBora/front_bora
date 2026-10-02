@@ -48,7 +48,14 @@ const Bora = {
       try { const b = await res.json(); msg = b.message || b.error || msg; } catch {}
       throw new Error(msg);
     }
-    return res.status === 204 ? null : res.json();
+    // 204 ja vem sem corpo, mas um 200 com corpo vazio tambem acontece (endpoint que devolve nulo) --
+    // e ai o res.json() estourava "Unexpected end of JSON input", derrubando a tela inteira. Foi o que
+    // impedia a loja sem assinatura de ver o botao de assinar.
+    if (res.status === 204) return null;
+    const texto = await res.text();
+    if (!texto) return null;
+    try { return JSON.parse(texto); }
+    catch { throw new Error('Resposta inesperada do servidor'); }
   },
 
   // Atalhos
