@@ -62,8 +62,9 @@
                 ? 'Sua assinatura foi cancelada. Reative para voltar a usar o BoraHapp.'
                 : 'Há uma fatura em aberto. Regularize para não perder o acesso.')
              : 'Sua cobrança ainda não está ativa. Ative para manter o plano após o período de cortesia.'}</p>
-           <label style="font-size:13px">CPF/CNPJ do responsável<br>
-             <input id="cpf" placeholder="Somente números" style="padding:9px 10px;border:1px solid #e2e8f0;border-radius:6px;min-width:220px"></label>
+           <label style="font-size:13px">CPF/CNPJ do responsável
+             <span style="color:var(--muted)">(em branco = o CNPJ cadastrado da loja)</span><br>
+             <input id="cpf" placeholder="deixe em branco para usar o da loja" style="padding:9px 10px;border:1px solid #e2e8f0;border-radius:6px;min-width:260px"></label>
            <button class="btn" id="btnAssinar" style="margin-left:8px">${precisaReativar ? 'Reativar assinatura' : 'Ativar assinatura'}</button>
            <div id="assErr" style="color:var(--danger);font-size:13px;margin-top:8px"></div>`;
         document.getElementById('btnAssinar').onclick = ativarAssinatura;
