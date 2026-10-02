@@ -181,9 +181,13 @@
     const caixa = $('ckCashback');
     if (!caixa) return;
     const tel = ($('ckTel').value || '').replace(/\D/g, '');
-    if (tel.length < 10) { caixa.hidden = true; saldoCashback = 0; return; }
+    const nome = ($('ckNome').value || '').trim();
+    // O servidor so revela o saldo para quem informa o telefone E o nome do cadastro: telefone de
+    // cliente nao e segredo, e so com ele dava para consultar e gastar o cashback dos outros.
+    if (tel.length < 10 || !nome) { caixa.hidden = true; saldoCashback = 0; return; }
     try {
-      const r = await Bora.api('/public/loja/' + lojaId + '/cashback?telefone=' + encodeURIComponent(tel));
+      const r = await Bora.api('/public/loja/' + lojaId + '/cashback?telefone=' + encodeURIComponent(tel)
+        + '&nome=' + encodeURIComponent(nome));
       saldoCashback = Number(r && r.saldo) || 0;
       if (saldoCashback > 0) {
         $('ckSaldo').textContent = money(saldoCashback);
@@ -271,6 +275,9 @@
     $('ckBairro').addEventListener('change', atualizarEntrega);
     $('ckTel').addEventListener('blur', verCashback);
     $('ckTel').addEventListener('change', verCashback);
+    // O nome agora faz parte da identificacao, entao mudar o nome refaz a consulta.
+    $('ckNome').addEventListener('blur', verCashback);
+    $('ckNome').addEventListener('change', verCashback);
     $('pxCopiar').addEventListener('click', () => { $('pxPayload').select(); document.execCommand('copy'); $('pxCopiar').textContent = 'Copiado ✓'; setTimeout(() => $('pxCopiar').textContent = 'Copiar código PIX', 2000); });
     try {
       const data = await Bora.cardapioPublico(lojaId);
