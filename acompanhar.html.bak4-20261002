@@ -11,10 +11,10 @@
   .passo::before{content:"";position:absolute;left:16px;top:34px;bottom:0;width:2px;background:#e2e8f0}
   .passo:last-child::before{display:none}
   .passo.ok .bola{background:#dcfce7}
-  .passo.atual .bola{background:var(--marca,#7c3aed);color:#fff;animation:pulsa 1.6s infinite}
+  .passo.atual .bola{background:#7c3aed;color:#fff;animation:pulsa 1.6s infinite}
   .passo.ok::before{background:#86efac}
   .t{font-weight:700;font-size:15px}.s{color:#94a3b8;font-size:13px}
-  .passo.atual .t{color:var(--marca,#7c3aed)}
+  .passo.atual .t{color:#7c3aed}
   @keyframes pulsa{0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,.35)}50%{box-shadow:0 0 0 10px rgba(124,58,237,0)}}
   .cancel{background:#fef2f2;color:#991b1b;border-radius:12px;padding:14px;font-weight:700;margin-top:6px}
   .rodape{margin-top:22px;color:#cbd5e1;font-size:12px}
@@ -23,27 +23,12 @@
   <h1 id="loja">Carregando…</h1>
   <div class="cod" id="cod"></div>
   <div id="timeline"></div>
-  <div class="rodape" id="rodape">Atualiza sozinho</div>
+  <div class="rodape">Atualiza sozinho · BoraHapp</div>
 </div>
 <script>
 (function(){
   const q = new URLSearchParams(location.search);
   const lojaId = q.get('loja'), pedidoId = q.get('pedido');
-  // A tela que o cliente final fica olhando enquanto espera o pedido era roxa do Bora e assinada
-  // "BoraHapp", em qualquer loja. Quem esta esperando o pedido e cliente da LOJA.
-  (async function vestirMarca() {
-    try {
-      const m = await (await fetch(location.origin + '/public/loja/' + lojaId + '/marca')).json();
-      if (m.corPrimaria) document.documentElement.style.setProperty('--marca', m.corPrimaria);
-      // O h1 e preenchido pela resposta do proprio pedido (linha do 'd.loja'); nao mexemos nele
-      // aqui para as duas partes nao brigarem pelo mesmo lugar.
-      document.title = (m.nome ? m.nome + ' · ' : '') + 'Acompanhar pedido';
-      if (m.logoUrl) { const ic = document.querySelector('link[rel="icon"]'); if (ic) ic.href = m.logoUrl; }
-      const rod = document.getElementById('rodape');
-      if (rod && m.mostrarMarcaBora !== false) rod.textContent = 'Atualiza sozinho · BoraHapp';
-    } catch (e) { /* sem marca, segue com o padrao: nunca deixar a tela de pedido quebrar por isso */ }
-  })();
-
   if (!lojaId || !pedidoId || !/^https?:/.test(location.protocol)) {
     document.getElementById('loja').textContent = 'Link incompleto';
     document.getElementById('timeline').innerHTML =

@@ -10,14 +10,11 @@
 </script></head><body style="background:#f6f7fb">
 <div class="menu-wrap">
   <div class="menu-hero">
-    <div class="lg" id="lojaLogo">🛍️</div>
+    <div class="lg">🍦</div>
     <h1 id="lojaNome">Carregando…</h1>
-    <p id="lojaSub">Cardápio digital</p>
+    <p>Cardápio digital · peça online e pague com PIX</p>
   </div>
   <div id="menu"></div>
-  <p id="rodapeMarca" hidden style="text-align:center;color:#94a3b8;font-size:12px;padding:18px 0 8px">
-    feito com <b>BoraHapp</b>
-  </p>
 </div>
 <div class="menu-bar hidden" id="bar">
   <div class="info"><div class="ct" id="barTotal">R$ 0,00</div><div class="cs" id="barQtd">0 itens</div></div>

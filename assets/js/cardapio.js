@@ -92,6 +92,52 @@
     return cart.reduce((t, l) => t + l.unit * l.quantidade, 0);
   }
 
+
+  /**
+   * Veste o cardapio com a marca da LOJA.
+   *
+   * O site promete em dois lugares que o cliente final ve a marca do lojista, e ate agora via o roxo
+   * do Bora e um sorvete fixo em qualquer loja - fosse pizzaria, acaiteria ou marmitaria. Como o CSS
+   * inteiro ja usa --primary e --secondary, trocar as duas variaveis veste a tela toda: capa, botoes,
+   * caixa de PIX. Loja sem cor cadastrada continua no roxo de antes, entao ninguem fica sem cara.
+   */
+  function aplicarMarca(marca, loja) {
+    const nome = (marca && marca.nome) || (loja && loja.nome) || 'Cardápio';
+    document.getElementById('lojaNome').textContent = nome;
+    document.title = nome;
+
+    if (marca) {
+      const raiz = document.documentElement.style;
+      if (marca.corPrimaria) raiz.setProperty('--primary', marca.corPrimaria);
+      if (marca.corSecundaria) raiz.setProperty('--secondary', marca.corSecundaria);
+
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta && marca.corPrimaria) meta.setAttribute('content', marca.corPrimaria);
+
+      if (marca.logoUrl) {
+        const caixa = document.getElementById('lojaLogo');
+        if (caixa) {
+          caixa.textContent = '';
+          const img = document.createElement('img');
+          img.src = marca.logoUrl;
+          img.alt = nome;
+          img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit';
+          caixa.appendChild(img);
+        }
+        const icone = document.querySelector('link[rel="icon"]');
+        if (icone) icone.setAttribute('href', marca.logoUrl);
+      }
+
+      // O rodape "feito com BoraHapp" so aparece se o lojista deixou. E decisao dele, nao nossa.
+      const rodape = document.getElementById('rodapeMarca');
+      if (rodape) rodape.hidden = marca.mostrarMarcaBora === false;
+    }
+
+    // O "app" que o cliente instala no celular tambem e da loja.
+    const man = document.querySelector('link[rel="manifest"]');
+    if (man && loja && loja.id) man.setAttribute('href', '/public/loja/' + loja.id + '/manifest');
+  }
+
   function abrirCheckout() {
     if (!itensCarrinho().length) return;
     $('ckForm').hidden = false; $('ckPix').hidden = true; $('ckOk').hidden = true; $('ckErr').textContent = '';
@@ -228,8 +274,7 @@
     $('pxCopiar').addEventListener('click', () => { $('pxPayload').select(); document.execCommand('copy'); $('pxCopiar').textContent = 'Copiado ✓'; setTimeout(() => $('pxCopiar').textContent = 'Copiar código PIX', 2000); });
     try {
       const data = await Bora.cardapioPublico(lojaId);
-      document.getElementById('lojaNome').textContent = (data.loja && data.loja.nome) || 'Cardápio';
-      document.title = (data.loja && data.loja.nome) || 'Cardápio Digital';
+      aplicarMarca(data.marca, data.loja);
       pixDisponivel = !!data.pixDisponivel;
       bairros = data.bairros || [];
       // Loja fechada: avisa no topo e desliga o botao de finalizar, em vez de deixar o cliente
