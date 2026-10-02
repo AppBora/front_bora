@@ -32,6 +32,17 @@ const Bora = {
     // recarregava a tela de login e engolia a mensagem (e, na troca de senha, derrubava quem errou a atual).
     const ehCredencial = path.startsWith('/auth/login') || path.startsWith('/auth/trocar-senha');
     if (res.status === 401 && !ehCredencial) { this.logout(); throw new Error('Sessão expirada'); }
+    // 402 = o prazo de acesso da loja venceu. O servidor deixa passar so o caminho da assinatura,
+    // entao levamos o lojista para la em vez de mostrar erro em tela que ele nao pode usar.
+    if (res.status === 402) {
+      let recado = 'O período de uso desta loja terminou.';
+      try { const c = await res.clone().json(); if (c && c.message) recado = c.message; } catch (e) {}
+      if (!/planos\.html/.test(location.pathname)) {
+        sessionStorage.setItem('boraAvisoAssinatura', recado);
+        location.href = 'planos.html';
+      }
+      throw new Error(recado);
+    }
     if (!res.ok) {
       let msg = 'Erro ' + res.status;
       try { const b = await res.json(); msg = b.message || b.error || msg; } catch {}

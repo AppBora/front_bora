@@ -43,12 +43,28 @@
     const el = document.getElementById('assinatura');
     try {
       const a = await Bora.assinatura();
-      if (!a) {
+      // Quem chegou aqui empurrado pelo bloqueio precisa entender por que, logo de cara.
+      const aviso = sessionStorage.getItem('boraAvisoAssinatura');
+      if (aviso) {
+        sessionStorage.removeItem('boraAvisoAssinatura');
+        el.insertAdjacentHTML('beforebegin',
+          `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:14px;margin-bottom:14px">
+             <b>Acesso bloqueado.</b> ${String(aviso).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+           </div>`);
+      }
+      // Assinatura cancelada ou em atraso tambem precisa de botao: antes a tela so mostrava o status
+      // e o lojista nao tinha como voltar a pagar por conta propria.
+      const precisaReativar = a && (a.status === 'CANCELADA' || a.status === 'INADIMPLENTE');
+      if (!a || precisaReativar) {
         el.innerHTML =
-          `<p style="margin:0 0 10px">Sua cobrança ainda não está ativa. Ative para manter o plano após o período de cortesia.</p>
+          `<p style="margin:0 0 10px">${precisaReativar
+             ? (a.status === 'CANCELADA'
+                ? 'Sua assinatura foi cancelada. Reative para voltar a usar o BoraHapp.'
+                : 'Há uma fatura em aberto. Regularize para não perder o acesso.')
+             : 'Sua cobrança ainda não está ativa. Ative para manter o plano após o período de cortesia.'}</p>
            <label style="font-size:13px">CPF/CNPJ do responsável<br>
              <input id="cpf" placeholder="Somente números" style="padding:9px 10px;border:1px solid #e2e8f0;border-radius:6px;min-width:220px"></label>
-           <button class="btn" id="btnAssinar" style="margin-left:8px">Ativar assinatura</button>
+           <button class="btn" id="btnAssinar" style="margin-left:8px">${precisaReativar ? 'Reativar assinatura' : 'Ativar assinatura'}</button>
            <div id="assErr" style="color:var(--danger);font-size:13px;margin-top:8px"></div>`;
         document.getElementById('btnAssinar').onclick = ativarAssinatura;
       } else {

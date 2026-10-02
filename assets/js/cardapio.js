@@ -232,6 +232,16 @@
       document.title = (data.loja && data.loja.nome) || 'Cardápio Digital';
       pixDisponivel = !!data.pixDisponivel;
       bairros = data.bairros || [];
+      // Loja fechada: avisa no topo e desliga o botao de finalizar, em vez de deixar o cliente
+      // montar o pedido inteiro para levar um erro no fim.
+      if (data.aberta === false) {
+        const barra = document.createElement('div');
+        barra.style.cssText = 'background:#fef3c7;border:1px solid #fcd34d;color:#92400e;border-radius:10px;padding:12px;margin:12px 0;text-align:center;font-weight:600';
+        barra.textContent = '🕒 Estamos fechados agora. Você pode ver o cardápio, mas o pedido só entra no horário de funcionamento.';
+        document.getElementById('menu').insertAdjacentElement('beforebegin', barra);
+        const b = document.getElementById('send');
+        if (b) { b.disabled = true; b.style.opacity = '.55'; b.textContent = 'Fechado agora'; }
+      }
       if (bairros.length) {
         $('ckBairro').innerHTML = '<option value="">Escolha o bairro…</option>' +
           bairros.map(b => `<option value="${esc(b.bairro)}">${esc(b.bairro)} — ${money(Number(b.taxa) || 0)}`
