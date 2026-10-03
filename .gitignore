@@ -3,4 +3,5 @@ node_modules/
 .DS_Store
 
 # copias de seguranca feitas antes de mexer numa tela: ficam no disco, nao no repositorio
-*.bak-*
+# padrao aberto: a lista fechada ja deixou passar um ".bak4-"
+*.bak*
