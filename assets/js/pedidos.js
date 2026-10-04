@@ -109,6 +109,7 @@
       <div class="cli">${esc(p.clienteNome) || 'Cliente avulso'}</div>
       ${p.clienteTelefone ? `<div class="line">${TEL}${esc(p.clienteTelefone)}</div>` : ''}
       ${endereco ? `<div class="line">${PIN}${esc(endereco)}</div>` : ''}
+      ${p.aguardandoPagamento ? `<div class="late-tag" style="background:#fffbeb;color:#92400e;border-color:#fde68a">⏳ Esperando o PIX — não prepare ainda</div>` : ''}
       <div class="itens">${itensTxt}</div>
       ${p.observacao ? `<div class="obs">📝 ${esc(p.observacao)}</div>` : ''}
       ${atrasado ? `<div class="late-tag">⚠ Atrasado — SLA ${sla}min (${tempoTxt(mins)})</div>` : ''}

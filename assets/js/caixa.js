@@ -41,7 +41,11 @@
     try {
       const board = await Bora.board();
       const hoje = board.filter(p => ehHoje(p.criadoEm));
-      const vendas = hoje.filter(p => p.status !== 'CANCELADO');
+      // PIX que ninguem pagou nao e venda. O fechamento contava como faturamento do dia: o lojista
+      // fechava o caixa com um dinheiro que nunca entrou, e so descobria conferindo a conta do banco.
+      // O servidor ja ignorava esse pedido na receita; aqui nao, e os dois numeros nao fechavam.
+      const vendas = hoje.filter(p => p.status !== 'CANCELADO' && !p.aguardandoPagamento);
+      const esperandoPix = hoje.filter(p => p.aguardandoPagamento);
       const fat = vendas.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
       const ticket = vendas.length ? fat / vendas.length : 0;
       const canc = hoje.filter(p => p.status === 'CANCELADO').length;
@@ -55,7 +59,13 @@
       });
 
       resumo = { fat, ped: vendas.length, ticket, canc, pag, can };
-      $('sub').textContent = 'Resumo de ' + new Date().toLocaleDateString('pt-BR');
+      // Tirar o PIX pendente da conta sem dizer nada deixaria o lojista procurando o dinheiro que
+      // "sumiu" do fechamento. Melhor mostrar, separado, que aquilo ainda nao entrou.
+      const aviso = esperandoPix.length
+        ? ' · ' + esperandoPix.length + ' pedido(s) esperando PIX ('
+          + money(esperandoPix.reduce((t, p) => t + Number(p.valorTotal || 0), 0)) + ') fora desta conta'
+        : '';
+      $('sub').textContent = 'Resumo de ' + new Date().toLocaleDateString('pt-BR') + aviso;
       $('kFat').textContent = money(fat);
       $('kPed').textContent = vendas.length;
       $('kTicket').textContent = money(ticket);

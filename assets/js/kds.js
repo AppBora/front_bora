@@ -23,6 +23,7 @@
     return `<div class="kdscard ${cls}" onclick="__avancar(${p.id},'${p.status}')">
       <div class="kh"><span class="kcod">${esc(p.codigo) || '#' + p.id}</span><span class="ktime" data-t="${p.atualizadoEm || p.criadoEm}">${mmss(p.atualizadoEm || p.criadoEm)}</span></div>
       <div class="kcli">${esc(p.clienteNome) || 'Balcão'}${p.origem ? ' · ' + esc(p.origem) : ''} · SLA ${sla}min</div>
+      ${p.aguardandoPagamento ? `<div style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:4px 6px;margin:4px 0;font-weight:700;font-size:12px">⏳ Esperando o PIX — não prepare ainda</div>` : ''}
       <ul>${itens}</ul>
       <div class="kgo">${ROTULO[PROXIMO[p.status]] || 'Avançar'} ▸</div>
     </div>`;
