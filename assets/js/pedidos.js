@@ -198,6 +198,6 @@
     ligarControlesDeDia();
     carregar();
     // dia fechado não muda mais: só o dia corrente fica se atualizando sozinho
-    setInterval(() => { if (diaEscolhido() === hojeISO()) carregar(); }, 8000);
+    Bora.repetir(() => { if (diaEscolhido() === hojeISO()) carregar(); }, 8000);
   });
 })();

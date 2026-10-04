@@ -73,5 +73,5 @@
     } catch (e) { document.getElementById('rotas').innerHTML = `<div class="panel"><p style="color:var(--danger)">${e.message}</p></div>`; }
   }
 
-  document.addEventListener('DOMContentLoaded', () => { carregar(); setInterval(carregar, 10000); });
+  document.addEventListener('DOMContentLoaded', () => { carregar(); Bora.repetir(carregar, 10000); });
 })();

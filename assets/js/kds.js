@@ -62,7 +62,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     carregar(); tick();
-    setInterval(carregar, 6000); // recarrega dados
+    Bora.repetir(carregar, 6000); // recarrega dados, so com a aba a vista
     setInterval(tick, 1000);     // cronômetros vivos
   });
 })();

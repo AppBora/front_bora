@@ -61,6 +61,6 @@
       document.querySelectorAll('#periodo .chip').forEach(x => x.classList.remove('active'));
       b.classList.add('active'); periodo = b.dataset.d; render();
     });
-    carregar(); setInterval(carregar, 12000);
+    carregar(); Bora.repetir(carregar, 12000);
   });
 })();

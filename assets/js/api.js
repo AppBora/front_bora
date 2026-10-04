@@ -121,5 +121,22 @@ const Bora = {
   statusLabel(s) {
     return ({ RECEBIDO: 'Recebido', CONFIRMADO: 'Confirmado', EM_PREPARO: 'Em preparo', PRONTO: 'Pronto',
       SAIU_PARA_ENTREGA: 'Saiu para entrega', ENTREGUE: 'Entregue', CANCELADO: 'Cancelado' }[s] || s);
+  },
+
+  /**
+   * Repete uma tarefa enquanto a aba estiver VISÍVEL.
+   *
+   * As telas do painel recarregam sozinhas a cada 6 a 15 segundos — e continuavam recarregando com a
+   * aba escondida atrás de outra. O lojista deixa o painel aberto o dia inteiro: era consulta ao
+   * servidor sem ninguém olhando, multiplicada por cada aba e cada loja.
+   *
+   * Ao voltar para a aba, roda na hora: ninguém pode encontrar a cozinha mostrando pedido velho
+   * porque o relógio estava esperando o próximo ciclo.
+   */
+  repetir(tarefa, ms) {
+    const rodar = () => { if (!document.hidden) tarefa(); };
+    const id = setInterval(rodar, ms);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) tarefa(); });
+    return id;
   }
 };

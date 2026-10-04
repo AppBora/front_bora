@@ -63,6 +63,6 @@
       } catch (ex) { $('msg').textContent = ex.message; }
     });
     carregar().catch(e => $('lista').innerHTML = `<p style="color:var(--danger)">${e.message}</p>`);
-    setInterval(() => carregar().catch(() => {}), 12000);
+    Bora.repetir(() => carregar().catch(() => {}), 12000);
   });
 })();

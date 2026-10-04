@@ -142,6 +142,6 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     carregar();
-    setInterval(carregar, 8000); // "tempo real" por polling — barato (FinOps)
+    Bora.repetir(carregar, 8000); // "tempo real" por polling, e so com a aba a vista
   });
 })();

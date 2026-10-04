@@ -67,6 +67,6 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     $('imprimir').addEventListener('click', () => window.__imprimirFechamento());
-    carregar(); setInterval(carregar, 15000);
+    carregar(); Bora.repetir(carregar, 15000);
   });
 })();
