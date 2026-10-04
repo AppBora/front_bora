@@ -81,10 +81,19 @@ O efeito é imediato: se ela estiver `
       tb.innerHTML = us.map(u => {
         const badge = u.ativo ? '<span class="badge b-entregue">Ativo</span>' : '<span class="badge b-cancelado">Inativo</span>';
         const toggle = `<button class="btn ghost" style="background:#e5e7eb;color:#111;padding:4px 8px;margin-left:6px" onclick="__ativo(${u.id},${!u.ativo})">${u.ativo ? 'Desativar' : 'Ativar'}</button>`;
+        // O botao faltava: a funcao e o endpoint existiam, ninguem chamava. A tela de login manda a
+        // pessoa procurar justamente isto, e nao havia nada para clicar -- todo esquecimento de senha
+        // virava chamado no WhatsApp. Vai por data-attribute, nao por onclick com o nome dentro: nome
+        // com aspas quebraria a tela, e foi assim que o XSS entrou nas outras telas.
+        const novaSenha = `<button class="btn ghost" data-senha="${u.id}" data-nome="${esc(u.nome || u.email)}"
+            style="background:#eef2ff;color:#3730a3;padding:4px 8px;margin-left:6px"
+            title="Definir uma nova senha para esta pessoa">Nova senha</button>`;
         const comLojas = Object.assign({}, u, porId[u.id] || {});
         return `<tr><td>${esc(u.nome) || '—'}</td><td>${esc(u.email)}</td><td>${PAPEL[u.papel] || esc(u.papel)}</td>`
-          + `<td>${celulaLojas(comLojas)}</td><td>${badge}${toggle}</td></tr>`;
+          + `<td>${celulaLojas(comLojas)}</td><td>${badge}${toggle}${novaSenha}</td></tr>`;
       }).join('') || '<tr><td colspan="5" style="color:#94a3b8">Nenhum usuário.</td></tr>';
+      tb.querySelectorAll('button[data-senha]').forEach(b =>
+        b.onclick = () => window.__senha(Number(b.dataset.senha), b.dataset.nome));
     } catch (e) {
       const m = e.message.includes('403') || /perfil|restrita/i.test(e.message) ? 'Apenas administradores da loja acessam esta tela.' : e.message;
       tb.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${esc(m)}</td></tr>`;
