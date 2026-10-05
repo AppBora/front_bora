@@ -67,6 +67,8 @@ const Bora = {
   mudarStatus(id, status, motivo) { let u = `/api/pedidos/${id}/status?status=${status}`; if (motivo) u += '&motivo=' + encodeURIComponent(motivo); return this.api(u, { method: 'PATCH' }); },
   definirEntregador(id, nome) { return this.api(`/api/pedidos/${id}/entregador${nome ? '?nome=' + encodeURIComponent(nome) : ''}`, { method: 'PATCH' }); },
   cardapioPublico(lojaId) { return this.api('/public/loja/' + lojaId + '/cardapio'); },
+  termos() { return this.api('/api/termos'); },
+  aceitarTermos() { return this.api('/api/termos/aceitar', { method: 'POST' }); },
   resumo() { return this.api('/api/dashboard/resumo'); },
   clientes() { return this.api('/api/clientes'); },
   entregadores() { return this.api('/api/entregadores'); },

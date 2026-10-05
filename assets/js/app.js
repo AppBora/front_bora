@@ -186,3 +186,85 @@ document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();rende
     else if (main) main.insertBefore(faixa, main.firstChild);
   });
 })();
+
+// ---- Aceite dos Termos de quem ja usava o sistema ---------------------------------------------
+// O aceite nasceu junto com a tela de cadastro, entao so quem se cadastrou pelo site tem registro.
+// As lojas que ja existiam -- e as que a plataforma cria pelo painel administrativo, que nao pede
+// aceite -- ficaram sem contrato aceito nenhum, num texto que fala de pagamento, suspensao e
+// reembolso. Com o corte por falta de pagamento ligado, suspender quem nunca aceitou nada e pior.
+//
+// Faixa fixa, sem botao de fechar: incomoda ate aceitar, mas NAO bloqueia o painel. Decisao do dono
+// em 04/10 -- travar a tela no meio do movimento custaria venda da loja dele.
+(function pedirAceiteDosTermos(){
+  if (typeof Bora === 'undefined' || !Bora.token()) return;
+  var u = Bora.user();
+  // Sem loja no contexto, /api/termos responde 409: a plataforma ja tem a propria faixa de aviso.
+  if (!u || !u.lojaId) return;
+
+  // "2026-10-04" e identificador interno; o lojista le "4 de outubro de 2026".
+  function dataLegivel(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || ''));
+    if (!m) return 'hoje';
+    var meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro',
+                 'outubro','novembro','dezembro'];
+    return Number(m[3]) + ' de ' + meses[Number(m[2]) - 1] + ' de ' + m[1];
+  }
+
+  function faixa(html, cor) {
+    var d = document.createElement('div');
+    d.id = 'boraTermos';
+    d.style.cssText = 'background:' + (cor || '#fdf0dc') + ';border-left:4px solid #b45309;color:#7c2d12;'
+      + 'padding:12px 16px;margin:0 0 14px;border-radius:0 8px 8px 0;font-size:14px;line-height:1.6';
+    d.innerHTML = html;
+    var main = document.querySelector('.main');
+    if (!main) return null;
+    var header = main.querySelector('.top');
+    var antiga = document.getElementById('boraTermos');
+    if (antiga) antiga.remove();
+    if (header && header.nextSibling) main.insertBefore(d, header.nextSibling);
+    else main.insertBefore(d, main.firstChild);
+    return d;
+  }
+
+  async function aceitar(botao) {
+    botao.disabled = true;
+    var texto = botao.textContent;
+    botao.textContent = 'Registrando...';
+    try {
+      var r = await Bora.aceitarTermos();
+      var ok = faixa('<b>Termos aceitos.</b> Registramos o seu aceite da versão de '
+        + dataLegivel(r && r.versaoVigente) + '. Obrigado!', '#ecfdf5');
+      // faixa() devolve null em tela sem .main; sem esta guarda o sucesso estourava num null.
+      if (ok) ok.style.cssText += ';border-left-color:#059669;color:#065f46';
+    } catch (e) {
+      botao.disabled = false;
+      botao.textContent = texto;
+      var aviso = document.getElementById('boraTermosErro');
+      if (aviso) aviso.textContent = 'Não deu para registrar: ' + e.message + '. Tente de novo.';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async function(){
+    var s;
+    try { s = await Bora.termos(); } catch (e) { return; } // nunca derrubar a tela por causa da faixa
+    if (!s || !s.pendente) return;
+
+    var oQue = s.primeiroAceite
+      ? 'Ainda não temos o seu aceite dos Termos de Uso e da Política de Privacidade.'
+      : 'Os Termos de Uso foram atualizados em ' + dataLegivel(s.versaoVigente)
+        + ', depois do seu último aceite.';
+    var links = '<a href="https://borahapp.com.br/termos.html" target="_blank" rel="noopener" style="color:#7c2d12">'
+      + '<b>Ler os Termos de Uso</b></a> · <a href="https://borahapp.com.br/privacidade.html" target="_blank" '
+      + 'rel="noopener" style="color:#7c2d12"><b>Política de Privacidade</b></a>';
+
+    if (s.podeAceitar) {
+      var d = faixa('<b>' + oQue + '</b><br>' + links
+        + '<div style="margin-top:10px"><button id="boraAceitarTermos" class="btn" '
+        + 'style="background:#b45309;color:#fff">Li e aceito os Termos</button>'
+        + '<span id="boraTermosErro" style="margin-left:10px;color:#991b1b"></span></div>');
+      if (d) d.querySelector('#boraAceitarTermos').addEventListener('click', function(){ aceitar(this); });
+    } else {
+      faixa('<b>' + oQue + '</b> ' + (s.recado || '') + '<br>' + links);
+    }
+  });
+})();
