@@ -100,6 +100,7 @@ function boraPrintComanda(p){
     <h2>${loja}</h2>
     <div class="c">COMANDA ${p.canalExterno?('• '+e(p.origem)):''}</div>
     <hr><div class="big">#${e(p.codigo||p.id)}</div>
+    ${p.idExterno?`<div class="c" style="font-size:11px">${e(p.origem||'Marketplace')}: ${e(p.idExterno)}</div>`:''}
     <div>${new Date(p.criadoEm||Date.now()).toLocaleString('pt-BR')}</div>
     <hr><div class="b">${e(p.clienteNome)||'Cliente avulso'}</div>
     ${p.clienteTelefone?`<div>${e(p.clienteTelefone)}</div>`:''}${end?`<div>${end}</div>`:''}
