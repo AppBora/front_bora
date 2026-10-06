@@ -202,6 +202,19 @@
     }
     if (i.status === 'CONECTADO') {
       const quando = i.ultimoPollingEm ? new Date(i.ultimoPollingEm).toLocaleTimeString('pt-BR') : '—';
+      // Conectado NAO e o mesmo que recebendo. Sem o ID da loja no marketplace, a busca de pedidos
+      // sai na primeira linha e nunca traz nada -- sem erro e sem log. O card ficava verde dizendo
+      // "os pedidos chegam sozinhos" com a Ultima sync em branco para sempre, e o lojista ficaria
+      // esperando pedido que nunca vem. Quando falta esse ID, a tela diz isso em vez de prometer.
+      if (!i.merchantId) {
+        return `<div class="oficial-box" style="background:#fffbeb;border-color:#fde68a">
+          <b>🟡 Autorizado, mas ainda não recebendo</b>
+          <p>A conexão com o ${esc(i.label)} foi autorizada, só falta dizer <b>qual é a sua loja lá</b>.
+          Informe o <b>${esc(i.label === 'iFood' ? 'Merchant ID' : 'ID da loja')}</b> no campo abaixo e salve —
+          sem ele os pedidos não chegam.</p>
+          ${i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : ''}
+        </div>`;
+      }
       return `<div class="oficial-box ok">
         <b>🟢 Conectado — os pedidos chegam sozinhos</b>
         <p>Última consulta ao ${esc(i.label)}: ${quando}. A loja fica online no aplicativo enquanto esta consulta acontecer.</p>
