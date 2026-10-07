@@ -60,6 +60,31 @@
       lista.forEach(c => { credApp[c.canal] = c; });
     } catch (e) { credApp = {}; }
   }
+  /**
+   * Credencial que vale SO para esta loja, vencendo a da plataforma.
+   *
+   * Os campos ja existiam (oc-/os-, lidos pelo __salvar), mas so eram desenhados quando a credencial
+   * da plataforma estava AUSENTE. Com ela configurada, nao havia onde pôr credencial de uma loja so —
+   * e quem precisasse disso acabava salvando no bloco da plataforma, que vale para TODAS. Foi o que
+   * aconteceu em 06/10/2026: a credencial de producao de um cliente derrubou a loja de teste, que
+   * ficou minutos fora do ar com "User is forbidden to access".
+   */
+  function boxCredencialDaLoja(i) {
+    const [rotId, rotSec] = ROTULOS_APP[i.canal] || ['Client ID', 'Client Secret'];
+    const tem = i.clientId && String(i.clientId).trim();
+    return `<details class="oficial-box" style="border:1px dashed #cbd5e1;background:#fff" ${tem ? 'open' : ''}>
+      <summary style="cursor:pointer;font-weight:700">🏪 Credencial só desta loja ${tem ? '<span style="color:#059669">· em uso ✓</span>' : '<span style="color:#64748b">· usando a da plataforma</span>'}</summary>
+      <p style="font-size:12px;color:#64748b;margin:6px 0 8px">Preencha <b>só</b> quando esta loja precisar de um aplicativo diferente do da plataforma —
+      por exemplo, uma loja real num aplicativo de produção enquanto as outras seguem no de teste.
+      Em branco, ela usa a credencial da plataforma. <b>O que você salvar aqui não afeta nenhuma outra loja.</b></p>
+      <div class="field"><label>${rotId} desta loja</label>
+        <input id="oc-${i.canal}" value="${esc(i.clientId || '')}" autocomplete="off" placeholder="em branco = usa o da plataforma"></div>
+      <div class="field"><label>${rotSec} desta loja ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label>
+        <input id="os-${i.canal}" type="password" autocomplete="new-password" placeholder="${i.temSecret ? '•••••• salvo (em branco mantém)' : 'cole o segredo aqui'}"></div>
+      <p style="font-size:12px;color:#64748b">Depois de salvar, clique em <b>Conectar</b> para validar com o ${esc(i.label)}.</p>
+    </details>`;
+  }
+
   function boxCredencialApp(i) {
     const c = credApp[i.canal];
     if (!c) return '';
@@ -142,6 +167,9 @@
       </div>
       <div class="intbody ${open}" id="body-${i.canal}">
         ${i.oficial && ehPlataforma ? boxCredencialApp(i) : ''}
+        ${/* so quando a credencial da plataforma EXISTE: sem ela, o corpoOficial ja desenha os
+             mesmos campos oc-/os-, e dois elementos com o mesmo id fariam o __salvar ler o errado */
+          i.oficial && ehPlataforma && i.appConfigurado ? boxCredencialDaLoja(i) : ''}
         ${i.oficial ? corpoOficial(i) : ''}
         ${zap ? '' : `<div class="field"><label>${i.canal === 'NOVE_NOVE' ? 'App Shop ID (o código desta loja que você cadastrou no portal da 99)' : 'Merchant ID (ID da loja no ' + esc(i.label) + ')'}</label><input id="m-${i.canal}" value="${esc(i.merchantId || '')}" placeholder="${i.canal === 'NOVE_NOVE' ? 'ex.: zira-acaiteria' : 'ex.: 123e4567-...'}" ${i.oficial && !ehPlataforma ? 'readonly style="background:#f1f5f9"' : ''}>${i.oficial && !ehPlataforma ? '<small style="color:#64748b">Definido pelo suporte do BoraHapp — é o código que liga esta loja aos pedidos dela no ' + esc(i.label) + '.</small>' : ''}</div>`}
         ${i.oficial ? '' : `<div class="field"><label>${zap ? 'Phone Number ID (Meta)' : 'Client ID'}</label><input id="c-${i.canal}" value="${esc(i.clientId || '')}" placeholder="${zap ? 'ex.: 123456789012345' : 'chave de aplicação'}"></div>
