@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" href="assets/img/icone-bora.svg">
+<style>:root{padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Guia da Operação Zirá</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Coluna única de leitura; os simuladores são molduras largas dentro dela. */
+:root{
+  --acai:#4A1D6A; --acai-claro:#7B3FA8; --polpa:#C2185B; --creme:#FFF7FA;
+  --bg:#FBF7FB; --surf:#FFFFFF; --linha:#E8DEEC; --fg:#2A1733; --fg2:#6B5873;
+  --ok:#0F7B4F; --ok-bg:#E8F6EF; --alerta:#9A5B00; --alerta-bg:#FFF4E0; --perigo:#A31B2A; --perigo-bg:#FDECEE;
+  --tela:#F4F1F6; --tela-barra:#2E1540;
+  --display:'Bricolage Grotesque',Georgia,serif; --corpo:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --acai:#C9A3E0; --acai-claro:#9D6BC4; --polpa:#F06292; --creme:#2A1733;
+  --bg:#17101C; --surf:#211729; --linha:#3A2A45; --fg:#F2EAF6; --fg2:#B9A6C6;
+  --ok:#5FD4A0; --ok-bg:#133227; --alerta:#F0C070; --alerta-bg:#3A2B14; --perigo:#FF9BA6; --perigo-bg:#3B1B20;
+  --tela:#1B1322; --tela-barra:#120B18; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --acai:#C9A3E0; --acai-claro:#9D6BC4; --polpa:#F06292; --creme:#2A1733;
+  --bg:#17101C; --surf:#211729; --linha:#3A2A45; --fg:#F2EAF6; --fg2:#B9A6C6;
+  --ok:#5FD4A0; --ok-bg:#133227; --alerta:#F0C070; --alerta-bg:#3A2B14; --perigo:#FF9BA6; --perigo-bg:#3B1B20;
+  --tela:#1B1322; --tela-barra:#120B18; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--corpo);line-height:1.6;margin:0}
+.wrap{max-width:860px;margin:0 auto;padding-inline:16px;padding-block:0 64px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(28px,6vw,46px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(22px,4.2vw,31px);font-weight:700;margin-top:8px}
+h3{font-size:clamp(17px,3vw,21px);font-weight:700}
+p{margin:.6em 0}
+a{color:var(--polpa)}
+.capa{background:linear-gradient(160deg,var(--acai),var(--acai-claro));color:#fff;padding:36px 16px 30px;margin-bottom:28px}
+.capa .wrap{padding-block:0}
+.capa h1{color:#fff}
+.capa p{color:#F3E6FA;max-width:52ch}
+.selo{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  background:rgba(255,255,255,.18);color:#fff;padding:5px 10px;border-radius:999px;margin-bottom:14px}
+section{margin-block:46px;scroll-margin-top:16px}
+.olho{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--polpa);margin-bottom:6px}
+.sub{color:var(--fg2);max-width:62ch}
+.grade{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));margin-top:18px}
+.cartao{background:var(--surf);border:1px solid var(--linha);border-radius:var(--r);padding:16px;min-width:0}
+.cartao h3{margin-bottom:4px;font-size:17px}
+.cartao p{margin:0;font-size:14px;color:var(--fg2)}
+.ic{font-size:22px;line-height:1;display:block;margin-bottom:8px}
+.aviso{border-left:4px solid var(--alerta);background:var(--alerta-bg);color:var(--alerta);
+  padding:12px 14px;border-radius:0 10px 10px 0;margin:16px 0}
+.bom{border-left-color:var(--ok);background:var(--ok-bg);color:var(--ok)}
+.ruim{border-left-color:var(--perigo);background:var(--perigo-bg);color:var(--perigo)}
+/* ---------- simulador ---------- */
+.sim{background:var(--surf);border:1px solid var(--linha);border-radius:18px;overflow:hidden;margin-top:18px}
+.sim-cab{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--linha);flex-wrap:wrap}
+.sim-cab strong{font-family:var(--display);font-size:16px}
+.sim-cab .canal{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--creme);color:var(--acai);border:1px solid var(--linha);padding:3px 8px;border-radius:999px}
+.sim-tela{background:var(--tela);padding:14px;min-height:272px;position:relative}
+.barra{background:var(--tela-barra);color:#fff;font-size:12px;padding:7px 11px;border-radius:9px 9px 0 0;
+  display:flex;justify-content:space-between;align-items:center;font-weight:600;gap:8px}
+.corpo{background:var(--surf);border:1px solid var(--linha);border-top:0;border-radius:0 0 9px 9px;padding:12px}
+.legenda{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-top:1px solid var(--linha);min-height:70px}
+.num{flex:0 0 auto;width:23px;height:23px;border-radius:50%;background:var(--acai);color:#fff;
+  font-family:var(--mono);font-size:12px;display:grid;place-items:center;margin-top:1px}
+.legenda p{margin:0;font-size:14.5px}
+.sim-pe{display:flex;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid var(--linha);flex-wrap:wrap}
+.btn{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--linha);background:var(--surf);color:var(--fg);
+  padding:7px 13px;border-radius:9px;cursor:pointer}
+.btn:hover{border-color:var(--acai-claro)}
+.btn.pri{background:var(--acai);border-color:var(--acai);color:#fff}
+.btn:focus-visible,.ponto:focus-visible{outline:2px solid var(--polpa);outline-offset:2px}
+.pontos{display:flex;gap:5px;margin-left:auto}
+.ponto{width:8px;height:8px;border-radius:50%;background:var(--linha);border:0;padding:0;cursor:pointer}
+.ponto[aria-current="true"]{background:var(--polpa);transform:scale(1.25)}
+/* peças das telas simuladas */
+.linha-item{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--linha);font-size:13.5px}
+.linha-item:last-child{border-bottom:0}
+.vazio{font-size:11px;color:var(--fg2);text-align:center;padding:10px 0}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--linha);background:var(--creme);color:var(--acai)}
+.pill.v{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.pill.r{background:var(--perigo-bg);color:var(--perigo);border-color:transparent}
+.kan{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.kan-col{background:var(--tela);border-radius:8px;padding:7px;min-width:0}
+.kan-col h4{margin:0 0 6px;font-size:10.5px;font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--fg2)}
+.kan-card{background:var(--surf);border:1px solid var(--linha);border-radius:7px;padding:7px;font-size:11.5px;margin-bottom:6px}
+.kan-card b{display:block;font-size:12px}
+.kan-card.novo{border-color:var(--polpa);box-shadow:0 0 0 3px color-mix(in srgb,var(--polpa) 18%,transparent)}
+.tarja{border-radius:5px;padding:3px 6px;font-weight:700;font-size:10px;margin:4px 0;
+  background:var(--alerta-bg);color:var(--alerta)}
+.tarja.atraso{background:var(--perigo-bg);color:var(--perigo)}
+.botao-tela{display:inline-block;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:7px;background:var(--acai);color:#fff}
+.botao-tela.sec{background:transparent;color:var(--fg2);border:1px solid var(--linha)}
+.botao-tela.vd{background:var(--ok)}
+.botao-tela.off{background:transparent;color:var(--fg2);border:1px solid var(--linha);opacity:.55}
+.toque{position:absolute;width:30px;height:30px;border-radius:50%;border:2px solid var(--polpa);
+  background:color-mix(in srgb,var(--polpa) 22%,transparent);pointer-events:none;opacity:0;transition:opacity .2s}
+.toque.on{opacity:1;animation:pulsa 1.1s ease-out infinite}
+@keyframes pulsa{0%{transform:scale(.8)}70%{transform:scale(1.35);opacity:.15}100%{transform:scale(.8);opacity:1}}
+.total{display:flex;justify-content:space-between;font-weight:700;font-size:16px;padding-top:9px;margin-top:4px;border-top:2px solid var(--linha)}
+.grid-prod{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.prod{background:var(--surf);border:1px solid var(--linha);border-radius:8px;padding:8px;font-size:11.5px;text-align:center}
+.prod.sel{border-color:var(--acai);background:var(--creme)}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:9px}
+.kpi div{background:var(--surf);border:1px solid var(--linha);border-radius:8px;padding:8px;text-align:center}
+.kpi b{display:block;font-size:15px;font-family:var(--mono)}
+.kpi span{font-size:10px;color:var(--fg2)}
+.mini{width:100%;border-collapse:collapse;font-size:11.5px}
+.mini th{font-size:9.5px;letter-spacing:.06em;color:var(--fg2);text-align:left;padding:4px 5px;border-bottom:1px solid var(--linha)}
+.mini td{padding:5px;border-bottom:1px solid var(--linha)}
+.falso-select{display:inline-block;border:1px solid var(--linha);border-radius:6px;padding:2px 16px 2px 6px;background:var(--surf);font-size:11px}
+table.doc{width:100%;border-collapse:collapse;font-size:14px}
+table.doc th,table.doc td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--linha);vertical-align:top}
+table.doc th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg2)}
+table.doc td b{white-space:nowrap}
+.rolar{overflow-x:auto;margin-top:14px}
+details{background:var(--surf);border:1px solid var(--linha);border-radius:12px;padding:13px 15px;margin-bottom:9px}
+details[open]{border-color:var(--acai-claro)}
+summary{cursor:pointer;font-weight:600;font-family:var(--display);font-size:16.5px}
+summary::marker{color:var(--polpa)}
+details p{font-size:14.5px}
+details p:last-child{margin-bottom:0}
+ol.rotina{counter-reset:p;list-style:none;padding:0;margin:16px 0 0;display:grid;gap:9px}
+ol.rotina li{counter-increment:p;background:var(--surf);border:1px solid var(--linha);border-radius:12px;
+  padding:13px 15px 13px 48px;position:relative;font-size:14.5px}
+ol.rotina li::before{content:counter(p);position:absolute;left:14px;top:12px;width:22px;height:22px;border-radius:50%;
+  background:var(--creme);color:var(--acai);font-family:var(--mono);font-size:12px;display:grid;place-items:center;border:1px solid var(--linha)}
+.fim{border-top:2px solid var(--linha);margin-top:52px;padding-top:20px;color:var(--fg2);font-size:14px}
+@media (max-width:620px){
+  .pdv-cols{grid-template-columns:1fr!important}
+  .kan{grid-template-columns:repeat(2,1fr)}
+  .kpi{grid-template-columns:repeat(2,1fr)}
+  .grid-prod{grid-template-columns:repeat(2,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="capa">
+  <div class="wrap">
+    <span class="selo">Açaí Zirá · Montreal</span>
+    <h1>Guia da Operação</h1>
+    <p>Tudo o que você precisa para atender no balcão, tocar a cozinha e dar conta dos pedidos que chegam
+    sozinhos do cardápio digital, do iFood e do 99Food. As telas aqui dentro se mexem: aperte
+    <b>Começar</b> e veja a operação acontecendo passo a passo.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <div class="olho">Comece por aqui</div>
+  <h2>As telas que você usa</h2>
+  <p class="sub">O sistema tem bem mais que isso — produtos, estoque, relatórios, configurações. Essas são da
+  gerência. No dia a dia você vive nestas sete — mais a Ajuda, que fica dentro do sistema.</p>
+  <div class="grade">
+    <div class="cartao"><span class="ic">🧾</span><h3>Pedidos</h3><p>O quadro com todos os pedidos do dia, venham de onde vierem. É a sua tela principal.</p></div>
+    <div class="cartao"><span class="ic">💳</span><h3>Frente de Caixa</h3><p>Para registrar a venda de quem está na sua frente, no balcão.</p></div>
+    <div class="cartao"><span class="ic">🍳</span><h3>KDS Cozinha</h3><p>Tela grande para quem monta o açaí. Toca no card e o pedido anda.</p></div>
+    <div class="cartao"><span class="ic">🛵</span><h3>Entregas</h3><p>Os pedidos prontos agrupados por bairro, para despachar a rota de uma vez.</p></div>
+    <div class="cartao"><span class="ic">🏍️</span><h3>Entregadores</h3><p>O cadastro dos motoboys e quantas entregas cada um fez.</p></div>
+    <div class="cartao"><span class="ic">📡</span><h3>Canais</h3><p>De onde vieram as vendas: balcão, cardápio, iFood, 99Food.</p></div>
+    <div class="cartao"><span class="ic">💰</span><h3>Fechar Caixa</h3><p>No fim do expediente: quanto entrou, por forma de pagamento e por canal.</p></div>
+    <div class="cartao"><span class="ic">🆘</span><h3>Ajuda</h3><p>A Central de Ajuda dentro do próprio sistema, com respostas rápidas e o contato do suporte.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="olho">De onde vem o pedido</div>
+  <h2>Quatro portas, um lugar só</h2>
+  <p class="sub">Não importa por onde o cliente pediu: todo pedido aparece no mesmo quadro, a tela de
+  <b>Pedidos</b>, e todo pedido nasce no mesmo estado — esperando o seu <b>✓ Aceitar</b>. O que muda é só
+  como ele entra.</p>
+  <div class="rolar">
+    <table class="doc">
+      <tr><th>Canal</th><th>Como entra</th><th>O que você faz</th></tr>
+      <tr><td><b>🏪 Balcão</b></td><td>Você digita na Frente de Caixa</td><td>Registra a venda e aceita no quadro</td></tr>
+      <tr><td><b>🌐 Cardápio digital</b><br><span style="color:var(--fg2);font-size:13px">QR da mesa, link, Instagram</span></td><td>O cliente monta sozinho e o pedido cai no quadro</td><td>Aceita. Se for PIX, espera o pagamento antes</td></tr>
+      <tr><td><b>💬 WhatsApp</b></td><td>O robô responde e manda o link do cardápio</td><td>Nada de diferente: o pedido entra como cardápio</td></tr>
+      <tr><td><b>🔴 iFood</b> e <b>🟡 99Food</b></td><td>Chega sozinho, com som de alerta</td><td>Aceitar ou recusar — e rápido</td></tr>
+    </table>
+  </div>
+  <div class="aviso"><b>Sobre o WhatsApp:</b> o robô não anota pedido. Ele atende, responde o básico e manda
+  o cliente para o cardápio digital, que é onde o pedido e o pagamento acontecem. Se alguém insistir em pedir
+  pelo WhatsApp, registre na Frente de Caixa como se fosse balcão.</div>
+</section>
+
+<section id="sim-balcao">
+  <div class="olho">Simulação 1</div>
+  <h2>Venda no balcão, do início ao fim</h2>
+  <p class="sub">Cliente na sua frente, um copo de 500 ml com dois adicionais.</p>
+  <div class="sim" data-sim="balcao"></div>
+</section>
+
+<section id="sim-cardapio">
+  <div class="olho">Simulação 2</div>
+  <h2>Pedido do cardápio digital com PIX</h2>
+  <p class="sub">Este é o caso que mais gera confusão. Preste atenção na tarja amarela.</p>
+  <div class="sim" data-sim="cardapio"></div>
+  <div class="aviso ruim"><b>A regra mais importante do guia:</b> pedido com
+  <b>⏳ Esperando o PIX — não prepare ainda</b> não vai para a cozinha. Enquanto o cliente não paga, o dinheiro
+  não entrou — e se ele desistir, o açaí já estaria feito. Sem pagamento em 30 minutos, o próprio sistema
+  cancela e devolve os ingredientes ao estoque.</div>
+</section>
+
+<section id="sim-ifood">
+  <div class="olho">Simulação 3</div>
+  <h2>Pedido do iFood ou do 99Food</h2>
+  <p class="sub">Entra sozinho, com som. O relógio deles começa a correr na hora.</p>
+  <div class="sim" data-sim="ifood"></div>
+</section>
+
+<section id="sim-kds">
+  <div class="olho">Simulação 4</div>
+  <h2>A cozinha com o KDS</h2>
+  <p class="sub">A tela que fica ligada perto da bancada. Não precisa de mouse: toca no card e pronto.</p>
+  <div class="sim" data-sim="kds"></div>
+</section>
+
+<section id="sim-entregas">
+  <div class="olho">Simulação 5</div>
+  <h2>Montar e despachar a rota</h2>
+  <p class="sub">Quando há vários prontos para o mesmo lado, a tela Entregas resolve de uma vez.</p>
+  <div class="sim" data-sim="entregas"></div>
+</section>
+
+<section id="sim-caixa">
+  <div class="olho">Simulação 6</div>
+  <h2>Fechar o caixa</h2>
+  <p class="sub">Fim do expediente. Cinco minutos e o dia está conferido.</p>
+  <div class="sim" data-sim="caixa"></div>
+</section>
+
+<section>
+  <div class="olho">A esteira</div>
+  <h2>As quatro colunas e o que cada botão faz</h2>
+  <p class="sub">O pedido anda da esquerda para a direita, e você empurra ele com um botão só. O card sempre
+  mostra o botão da próxima etapa — nunca precisa escolher o status numa lista.</p>
+  <div class="rolar">
+    <table class="doc">
+      <tr><th>Coluna</th><th>Significa</th><th>Botão no card</th></tr>
+      <tr><td>🍳 <b>Cozinha</b></td><td>Chegou, foi aceito e está sendo montado</td><td><span class="botao-tela vd">✓ Aceitar</span> <span class="botao-tela sec">Recusar</span> → depois <span class="botao-tela">Preparar →</span> → <span class="botao-tela">Pronto →</span></td></tr>
+      <tr><td>📦 <b>Aguardando entrega</b></td><td>Pronto no balcão, esperando o motoboy ou o cliente</td><td><span class="botao-tela">Despachar →</span></td></tr>
+      <tr><td>🛵 <b>Saiu para entrega</b></td><td>Está na rua</td><td><span class="botao-tela">Entregar →</span></td></tr>
+      <tr><td>✓ <b>Entregue</b></td><td>Acabou. Entra no caixa do dia</td><td><span class="botao-tela off">Concluído</span></td></tr>
+    </table>
+  </div>
+  <div class="grade">
+    <div class="cartao"><span class="ic">🖨</span><h3>Imprimir comanda</h3><p>Sai o papel para a cozinha com os itens, as observações e, em pedido de aplicativo, o número dele lá.</p></div>
+    <div class="cartao"><span class="ic">✕</span><h3>Cancelar</h3><p>Só aparece depois de aceito. Pede o motivo, e é obrigatório — sem motivo o sistema não cancela.</p></div>
+    <div class="cartao"><span class="ic">⏱</span><h3>O relógio do card</h3><p>Conta desde que o pedido chegou. Passou do tempo do canal, aparece a tarja <b>⚠ Atrasado</b>.</p></div>
+  </div>
+
+  <h3 style="margin-top:28px">Quanto tempo cada canal espera</h3>
+  <p class="sub">É esse número que dispara a tarja de atraso. Repare que o balcão é o mais apertado: o cliente
+  está ali, olhando.</p>
+  <div class="rolar">
+    <table class="doc">
+      <tr><th>Canal</th><th>Tempo</th><th>Canal</th><th>Tempo</th></tr>
+      <tr><td>🏪 Balcão</td><td><b>12 min</b></td><td>🛵 Delivery próprio</td><td><b>35 min</b></td></tr>
+      <tr><td>💬 WhatsApp · 📷 Instagram · 📞 Telefone</td><td><b>25 min</b></td><td>🔴 iFood · 🟡 99Food</td><td><b>40 min</b></td></tr>
+      <tr><td>🌐 Cardápio digital</td><td><b>30 min</b></td><td>Outros</td><td><b>30 min</b></td></tr>
+    </table>
+  </div>
+  <div class="aviso bom">A tarja de atraso só aparece nas colunas <b>Cozinha</b> e <b>Aguardando entrega</b> —
+  ou seja, enquanto o atraso ainda é seu. Depois que saiu para a rua, o relógio é do entregador.</div>
+</section>
+
+<section>
+  <div class="olho">Rotina</div>
+  <h2>O dia, do começo ao fim</h2>
+  <ol class="rotina">
+    <li>Abra a tela <b>Pedidos</b> num computador ou tablet e deixe aberta. É ela que toca o alarme de pedido novo.</li>
+    <li>Ligue o <b>KDS Cozinha</b> na tela da bancada. Confira se o som está ligado.</li>
+    <li>Durante o expediente, mantenha o quadro limpo: todo pedido que saiu precisa ser marcado como entregue, senão ele fica preso na coluna e atrapalha a conferência no fim do dia.</li>
+    <li>Quando juntar pedido pronto para o mesmo lado, use <b>Entregas</b> e despache a rota inteira.</li>
+    <li>No fim do expediente, abra <b>Fechar Caixa</b>, confira forma de pagamento por forma de pagamento e imprima.</li>
+    <li>Olhe os pedidos que sobraram no quadro. Se tiver algo parado sem explicação, avise a gerência antes de ir embora.</li>
+  </ol>
+</section>
+
+<section>
+  <div class="olho">Quando acontecer</div>
+  <h2>Perguntas que todo mundo faz</h2>
+  <p class="sub">Clique para abrir. Se a sua dúvida não estiver aqui, chame o suporte.</p>
+
+  <details><summary>Chegou um pedido e eu não vi. Como percebo?</summary>
+  <p>A tela de Pedidos toca um som e mostra um aviso no canto sempre que entra pedido novo — com o código, o
+  nome do cliente, o valor e o canal. O KDS também avisa, com <b>🔔 Novo pedido na cozinha</b>. Por isso a tela
+  de Pedidos precisa ficar aberta o dia inteiro: minimizada, ela não avisa.</p></details>
+
+  <details><summary>O pedido está com "⏳ Esperando o PIX". Preparo ou não?</summary>
+  <p><b>Não prepare.</b> Essa tarja quer dizer que o cliente gerou o PIX mas ainda não pagou. Quando o
+  pagamento cai, a tarja some sozinha e o pedido vira um pedido normal — você não precisa fazer nada para
+  isso acontecer.</p>
+  <p>Se ele não pagar em 30 minutos, o sistema cancela com o motivo <i>"PIX não pago em 30 minutos"</i> e
+  devolve os ingredientes ao estoque. Esse pedido também fica <b>fora do faturamento</b> do dia — por isso o
+  Fechar Caixa mostra o valor dele separado, para você não achar que sumiu dinheiro.</p></details>
+
+  <details><summary>Por que preciso aceitar um pedido que eu mesmo acabei de digitar no balcão?</summary>
+  <p>Porque todo pedido nasce igual no sistema, venha de onde vier. No balcão o <b>✓ Aceitar</b> é só um toque
+  a mais — mas é ele que manda o pedido para a cozinha. Enquanto não aceitar, o KDS não mostra.</p></details>
+
+  <details><summary>Aceitei um pedido do iFood sem querer. E agora?</summary>
+  <p>Use o <b>✕ Cancelar</b> no card e escreva o motivo. O sistema cancela <b>primeiro no aplicativo</b> e só
+  depois aqui: se o iFood recusar, o erro aparece na tela e o pedido continua ativo dos dois lados. Nesse
+  caso, prepare e avise a gerência.</p></details>
+
+  <details><summary>O cliente cancelou pelo aplicativo. Preciso fazer alguma coisa?</summary>
+  <p>Não. O sistema responde sozinho: enquanto o pedido está em <b>Cozinha</b>, ele aceita o cancelamento e
+  devolve o estoque. Depois que já está <b>Pronto</b> ou na rua, ele <b>nega</b> o cancelamento — o açaí já foi
+  feito. Nos dois casos você só vê o resultado no quadro.</p></details>
+
+  <details><summary>O cliente quer mudar o pedido depois de feito</summary>
+  <p>Não dá para editar um pedido que já entrou. Cancele com o motivo (<i>"cliente trocou o sabor"</i>) e
+  registre outro na Frente de Caixa. Se ele já estava em preparo, avise a gerência: aí os ingredientes já
+  usados não voltam ao estoque.</p></details>
+
+  <details><summary>O estoque volta quando cancelo?</summary>
+  <p>Depende de onde o pedido estava. Cancelou <b>antes</b> da cozinha começar: volta tudo, ingredientes
+  inclusive. Cancelou com o pedido <b>em preparo, pronto ou na rua</b>: o que já foi consumido não volta — e é
+  certo que não volte, porque de fato foi gasto.</p></details>
+
+  <details><summary>Acabou um ingrediente no meio do dia</summary>
+  <p>Avise a gerência para tirar o item do cardápio. Enquanto isso não acontece, o cliente consegue pedir e
+  você vai ter que cancelar — então quanto mais rápido avisar, menos cancelamento.</p></details>
+
+  <details><summary>Como escolho a forma de pagamento no balcão?</summary>
+  <p>Os botões de pagamento são as formas que a <b>sua loja cadastrou</b> — por isso podem mudar. A primeira
+  já vem selecionada; se o cliente pagar de outro jeito, toque na certa antes de finalizar. A forma escolhida
+  é o que vai aparecer na conferência do Fechar Caixa, então vale conferir.</p></details>
+
+  <details><summary>O cliente vai pagar em dinheiro e precisa de troco</summary>
+  <p>No balcão o sistema <b>não calcula troco</b>: ele só registra que a venda foi em dinheiro. A conta do
+  troco é sua, na gaveta.</p>
+  <p>Já em pedido de aplicativo com pagamento na entrega, o troco vem escrito no card e na comanda, assim:
+  <b>"Dinheiro na entrega — troco para R$ 60,00"</b>. Separe o troco antes de mandar o motoboy.</p></details>
+
+  <details><summary>O cliente tem cashback. Como uso?</summary>
+  <p>Na Frente de Caixa, o campo <b>Cliente</b> começa em "Cliente avulso (balcão)". Escolha o cliente na
+  lista: se ele tiver saldo, aparece a opção de usar o cashback, com o valor. Marque e finalize — o desconto
+  entra e o saldo é debitado. Cliente que não está na lista precisa ser cadastrado antes, na tela de Clientes.</p></details>
+
+  <details><summary>Como marco qual motoboy levou o pedido?</summary>
+  <p>Na tela <b>Entregas</b>, não no card do quadro. Cada linha tem uma listinha de entregadores: escolha o
+  nome e depois use <b>🛵 Despachar</b>. Se vários pedidos são do mesmo bairro, dá para usar
+  <b>🛵 Despachar rota</b> e mandar todos de uma vez.</p></details>
+
+  <details><summary>Quem é que fecha o pedido do iFood e do 99Food?</summary>
+  <p>Depende do aplicativo. O <b>99Food</b> avisa o sistema quando o entregador pega e quando entrega, e o
+  pedido fecha sozinho no quadro. O <b>iFood</b> não manda esse aviso: lá você mesmo marca
+  <b>Despachar →</b> e <b>Entregar →</b> quando acontecer. Nos dois casos, se o pedido for cancelado no
+  aplicativo, o sistema fica sabendo e cancela aqui.</p></details>
+
+  <details><summary>O açaí saiu para entrega mas o cliente diz que não recebeu</summary>
+  <p>Fale com o entregador primeiro. Se o pedido veio do iFood ou do 99Food, não cancele por conta própria:
+  esses casos passam pelo atendimento deles. Avise a gerência.</p></details>
+
+  <details><summary>Quero ver quanto já vendi hoje, antes de fechar</summary>
+  <p>Abra <b>Fechar Caixa</b> a qualquer momento. Os números são do dia e se atualizam sozinhos. Para ver de
+  onde está vindo a venda, use <b>Canais</b> — ele mostra o ranking e dá para filtrar hoje, 7 dias ou 30 dias.</p></details>
+
+  <details><summary>Tem um botão 🗑 no card. Posso usar?</summary>
+  <p>Esse botão só aparece para gerente e dono, e serve para apagar pedido de <b>teste</b> ou lançado errado:
+  ele some das vendas e dos relatórios e não dá para desfazer. Pedido de verdade que não vai sair se resolve
+  com <b>✕ Cancelar</b>, nunca com o 🗑.</p></details>
+
+  <details><summary>A tela travou ou os pedidos pararam de aparecer</summary>
+  <p>Atualize a página (F5). O sistema busca pedidos novos sozinho a cada poucos segundos; se mesmo depois de
+  atualizar nada aparecer por mais de cinco minutos em horário de movimento, chame o suporte.</p></details>
+
+  <details><summary>Apareceu uma faixa pedindo para aceitar os Termos de Uso</summary>
+  <p>Essa faixa é para o administrador da loja, não para você — e ela não trava nada, pode seguir
+  trabalhando. Avise a gerência que apareceu.</p></details>
+
+  <details><summary>A loja aparece como "fechada" e não entra pedido de aplicativo</summary>
+  <p>Loja fechada no iFood ou no 99Food não recebe pedido nenhum, e isso é controlado no portal de cada
+  aplicativo, não aqui. Se o movimento do app sumiu do nada, é a primeira coisa a conferir com a gerência.</p></details>
+</section>
+
+<div class="fim">
+  <p><b>Suporte BoraHapp</b> — chame no WhatsApp quando travar. É melhor perguntar do que deixar pedido parado.</p>
+  <p>Guia das telas de operação. Produtos, estoque, relatórios, usuários e configurações são da gerência e não
+  entram aqui.</p>
+</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var e = function(s){ return String(s==null?'':s); };
+
+  /* ---------- telas desenhadas ---------- */
+  function barra(titulo, dir){ return '<div class="barra"><span>'+e(titulo)+'</span><span style="opacity:.8;font-weight:500">'+e(dir||'')+'</span></div>'; }
+
+  function telaPdv(itens, total, destaque, cliente, pag, finalizar){
+    var prods = ['Copo 300ml','Copo 500ml','Copo 770ml','Pote 1L','Guaraná lata','Água'];
+    var grid = prods.map(function(p){ return '<div class="prod'+(destaque===p?' sel':'')+'">'+e(p)+'</div>'; }).join('');
+    var lista = itens.length
+      ? itens.map(function(i){ return '<div class="linha-item"><span>'+e(i[0])+'</span><b>R$ '+e(i[1])+'</b></div>'; }).join('')
+      : '<div class="vazio">Comanda vazia</div>';
+    return barra('💳 Frente de Caixa','Zirá · Montreal') + '<div class="corpo">'
+      + '<div class="pdv-cols" style="display:grid;grid-template-columns:1.1fr .9fr;gap:10px">'
+      + '<div><div style="font-size:11px;color:var(--fg2);margin-bottom:5px">Buscar produto…</div><div class="grid-prod">'+grid+'</div></div>'
+      + '<div><div style="font-size:12px;font-weight:700;margin-bottom:4px">🛒 Comanda</div>'+lista
+      + '<div class="total"><span>Total</span><span>R$ '+total.toFixed(2).replace('.',',')+'</span></div>'
+      + '<div style="margin-top:7px;font-size:11px;color:var(--fg2)">Cliente <span data-alvo="cliente" class="falso-select">'+e(cliente||'Cliente avulso (balcão)')+'</span></div>'
+      + (cliente ? '<div style="margin-top:5px;font-size:11px;color:var(--ok);font-weight:700">☑ Usar cashback — R$ 4,00</div>' : '')
+      + '<div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">'
+      + '<span data-alvo="pix" class="botao-tela '+(pag==='pix'?'':'sec')+'">Pix</span>'
+      + '<span class="botao-tela sec">Cartão</span><span class="botao-tela sec">Dinheiro</span></div>'
+      + '<div style="margin-top:8px"><span data-alvo="fim" class="botao-tela'+(finalizar?' vd':'')+'" style="width:100%;text-align:center;display:block">Finalizar venda</span></div>'
+      + '</div></div></div>';
+  }
+
+  function telaAdicionais(){
+    return barra('Copo de Açaí 500 ml','R$ 19,90') + '<div class="corpo">'
+      + '<div style="font-size:12px;font-weight:700;margin-bottom:5px">4 Adicionais Grátis <span class="pill r">escolha de 1 a 4</span></div>'
+      + '<div class="linha-item"><span>☑ Granola</span><b>grátis</b></div>'
+      + '<div class="linha-item"><span>☑ Leite em pó</span><b>grátis</b></div>'
+      + '<div style="font-size:12px;font-weight:700;margin:9px 0 5px">Adicionais Extras <span class="pill">opcional</span></div>'
+      + '<div class="linha-item"><span>☑ Leite condensado</span><b>R$ 2,00</b></div>'
+      + '<div class="linha-item"><span>☑ Creme de avelã</span><b>R$ 3,50</b></div>'
+      + '<div class="linha-item"><span>☐ Morango</span><b>R$ 3,00</b></div>'
+      + '<div class="total"><span>Com adicionais</span><span>R$ 25,40</span></div>'
+      + '<div style="margin-top:8px"><span class="botao-tela">Adicionar ao pedido</span></div></div>';
+  }
+
+  /* p = {n, c, i, s, v, obs, atraso, tag} ; coluna = 0..3 */
+  function telaQuadro(p, coluna, destacar){
+    var titulos = ['🍳 Cozinha','📦 Aguardando','🛵 Saiu','✓ Entregue'];
+    var acoes = {
+      aceitar:'<span data-alvo="acao" class="botao-tela vd">✓ Aceitar</span> <span class="botao-tela sec">Recusar</span>',
+      novo:'<span data-alvo="acao" class="botao-tela">Preparar →</span>',
+      preparo:'<span data-alvo="acao" class="botao-tela">Pronto →</span>',
+      pronto:'<span data-alvo="acao" class="botao-tela">Despachar →</span>',
+      rua:'<span data-alvo="acao" class="botao-tela">Entregar →</span>',
+      fim:'<span class="botao-tela off">Concluído</span>'
+    };
+    var html = barra('🧾 Pedidos','Hoje') + '<div class="corpo"><div class="kan">';
+    for (var idx = 0; idx < 4; idx++){
+      html += '<div class="kan-col"><h4>'+titulos[idx]+'</h4>';
+      if (idx === coluna){
+        html += '<div class="kan-card'+(destacar?' novo':'')+'">'
+          + '<div style="display:flex;justify-content:space-between;gap:4px"><b>'+e(p.n)+'</b>'
+          + '<span style="font-family:var(--mono);color:var(--fg2)">⏱ '+e(p.t||'1 min')+'</span></div>'
+          + '<span style="color:var(--fg2)">'+e(p.c)+'</span>'
+          + (p.s==='pix' ? '<div class="tarja">⏳ Esperando o PIX — não prepare ainda</div>' : '')
+          + '<div style="margin:4px 0">'+e(p.i)+'</div>'
+          + (p.obs ? '<div style="color:var(--fg2);margin-bottom:3px">📝 '+e(p.obs)+'</div>' : '')
+          + (p.atraso ? '<div class="tarja atraso">⚠ Atrasado — SLA 40min</div>' : '')
+          + '<div style="font-weight:700;margin-bottom:5px">'+e(p.v)+'</div>'
+          + '<div style="display:flex;gap:3px;flex-wrap:wrap;align-items:center">'
+          + (acoes[p.s] || acoes.novo)
+          + (p.s==='aceitar'||p.s==='fim' ? '' : ' <span class="botao-tela sec">✕</span>')
+          + ' <span class="botao-tela sec">🖨</span></div></div>';
+      } else {
+        html += '<div class="vazio">Nenhum pedido aqui</div>';
+      }
+      html += '</div>';
+    }
+    return html + '</div></div>';
+  }
+
+  function telaKds(modo){
+    function card(cod, itens, min, cor, pix, rotulo){
+      return '<div class="kan-card" data-alvo="card" style="border-left:4px solid '+cor+'">'
+        + '<div style="display:flex;justify-content:space-between"><b>'+e(cod)+'</b>'
+        + '<span class="pill" style="font-family:var(--mono)">'+e(min)+'</span></div>'
+        + (pix ? '<div class="tarja">⏳ Esperando o PIX — não prepare ainda</div>' : '')
+        + '<div style="margin:4px 0">'+e(itens)+'</div>'
+        + '<div style="font-weight:700;font-size:11px;color:var(--acai)">'+e(rotulo)+' ▸</div></div>';
+    }
+    var esq = '', dir = '<div class="vazio">Nada pronto</div>';
+    if (modo==='fila'){ esq = card('CD-105','1× Pote 1L + granola','2:14','var(--ok)',false,'Iniciar preparo')
+                            + card('#4455','2× Copo 300 ml','9:40','var(--alerta)',false,'Iniciar preparo'); }
+    if (modo==='pix'){ esq = card('CD-106','1× Copo 770 ml','0:35','var(--ok)',true,'Iniciar preparo')
+                           + card('#4455','2× Copo 300 ml','9:40','var(--alerta)',false,'Iniciar preparo'); }
+    if (modo==='toque'){ esq = card('CD-105','1× Pote 1L + granola','2:50','var(--ok)',false,'Iniciar preparo'); }
+    if (modo==='preparando'){ esq = card('CD-105','1× Pote 1L + granola','3:20','var(--ok)',false,'Marcar pronto'); }
+    if (modo==='pronto'){ esq = '<div class="vazio">Sem pedidos na fila 🎉</div>';
+                          dir = card('CD-105','1× Pote 1L + granola','4:02','var(--acai)',false,'Despachar'); }
+    return barra('🍳 KDS Cozinha','19:42') + '<div class="corpo">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">'
+      + '<div class="kan-col"><h4>A fazer</h4>'+esq+'</div>'
+      + '<div class="kan-col"><h4>Pronto</h4>'+dir+'</div></div></div>';
+  }
+
+  function telaEntregas(modo){
+    function linha(cod, nome, end, val, ent, esp, acao, alvo){
+      return '<tr><td><b>'+e(cod)+'</b></td><td>'+e(nome)+'<br><span style="color:var(--fg2)">'+e(end)+'</span></td>'
+        + '<td>'+e(val)+'</td><td><span'+(alvo?' data-alvo="sel"':'')+' class="falso-select">'+e(ent)+'</span></td>'
+        + '<td>'+e(esp)+'</td><td style="text-align:right">'+acao+'</td></tr>';
+    }
+    var cab = '<thead><tr><th>Cód.</th><th>Cliente / Endereço</th><th>Valor</th><th>Entregador</th><th>Espera</th><th></th></tr></thead>';
+    var despachar = '<span class="botao-tela">🛵 Despachar</span>';
+    var entregue = '<span class="botao-tela vd">✓ Entregue</span>';
+    if (modo === 'rua'){
+      return barra('🛵 Entregas & Roteirização','Em rota') + '<div class="corpo">'
+        + '<div style="font-size:12px;font-weight:700;margin-bottom:6px">🛵 Em rota · 2 pedido(s)</div>'
+        + '<table class="mini">'+cab+'<tbody>'
+        + linha('CD-105','Bruno Carvalho','Rua das Flores, 180','R$ 34,00','Jorge','1 min',entregue)
+        + linha('CD-108','Marina Dias','Rua das Flores, 940','R$ 22,50','Jorge','1 min',entregue)
+        + '</tbody></table></div>';
+    }
+    var sel = modo === 'semEntregador' ? '— escolher —' : 'Jorge';
+    return barra('🛵 Entregas & Roteirização','Prontos para sair') + '<div class="corpo">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">'
+      + '<span style="font-size:12px;font-weight:700">📍 Centro · 2 pedido(s)</span>'
+      + '<span data-alvo="rota" class="botao-tela">🛵 Despachar rota</span></div>'
+      + '<table class="mini">'+cab+'<tbody>'
+      + linha('CD-105','Bruno Carvalho','Rua das Flores, 180','R$ 34,00',sel,'6 min',despachar, modo==='semEntregador')
+      + linha('CD-108','Marina Dias','Rua das Flores, 940','R$ 22,50',sel,'4 min',despachar)
+      + '</tbody></table>'
+      + '<div style="font-size:11px;color:var(--fg2);margin-top:8px">📍 Vila Hortência · 1 pedido(s)</div></div>';
+  }
+
+  function telaCaixa(comPix, foco){
+    var aviso = comPix ? '<div class="tarja" style="margin:0 0 8px">1 pedido esperando PIX (R$ 34,00) fora desta conta</div>' : '';
+    var extra = '';
+    if (foco==='pag') extra = '<div style="margin-top:9px;font-size:12px;font-weight:700">Por forma de pagamento</div>'
+      + '<div class="linha-item"><span>💵 Dinheiro</span><b>R$ 318,40</b></div>'
+      + '<div class="linha-item"><span>⚡ Pix</span><b>R$ 642,10</b></div>'
+      + '<div class="linha-item"><span>💳 Cartão</span><b>R$ 509,30</b></div>';
+    if (foco==='canal') extra = '<div style="margin-top:9px;font-size:12px;font-weight:700">Por canal</div>'
+      + '<div class="linha-item"><span>🏪 Balcão</span><b>R$ 596,80</b></div>'
+      + '<div class="linha-item"><span>🌐 Cardápio</span><b>R$ 431,00</b></div>'
+      + '<div class="linha-item"><span>🔴 iFood</span><b>R$ 442,00</b></div>';
+    if (foco==='print') extra = '<div style="margin-top:10px;text-align:center"><span data-alvo="print" class="botao-tela">🖨 Imprimir fechamento</span></div>';
+    return barra('💰 Fechar Caixa','Resumo de hoje') + '<div class="corpo">' + aviso
+      + '<div class="kpi"><div><b>R$ 1.469,80</b><span>Faturamento</span></div><div><b>58</b><span>Pedidos</span></div>'
+      + '<div><b>R$ 25,34</b><span>Ticket médio</span></div><div><b>2</b><span>Cancelados</span></div></div>' + extra + '</div>';
+  }
+
+  /* ---------- roteiros ---------- */
+  var ITENS = [['Copo de Açaí 500 ml','19,90'],['+ Leite condensado','2,00'],['+ Creme de avelã','3,50']];
+  var SIMS = {
+    balcao: { titulo:'Frente de Caixa', canal:'Balcão', passos:[
+      { t: telaPdv([],0,null,null), l:'Abra <b>Frente de Caixa</b>. A comanda começa vazia. Use a busca ou toque direto no produto.' },
+      { t: telaPdv([],0,'Copo 500ml',null), l:'Toque no <b>Copo de Açaí 500 ml</b>. Como ele tem adicionais, abre a tela de escolhas.', alvo:'.prod.sel' },
+      { t: telaAdicionais(), l:'Marque o que o cliente pediu. O grupo obrigatório fica em vermelho até você escolher.' },
+      { t: telaPdv(ITENS,25.40,null,null), l:'O item entra na comanda com os adicionais somados. Repita para os outros produtos.' },
+      { t: telaPdv(ITENS,25.40,null,'Bruno Carvalho'), l:'Em <b>Cliente</b> escolha o nome na lista. Se ele tiver cashback, aparece a opção de usar o saldo.', alvo:'[data-alvo="cliente"]' },
+      { t: telaPdv(ITENS,21.40,null,'Bruno Carvalho','pix'), l:'Toque na forma de pagamento. Os botões são as formas que a sua loja cadastrou.', alvo:'[data-alvo="pix"]' },
+      { t: telaPdv(ITENS,21.40,null,'Bruno Carvalho','pix',true), l:'<b>Finalizar venda</b>. O pedido é criado e vai para o quadro.', alvo:'[data-alvo="fim"]' },
+      { t: telaQuadro({n:'CD-104',c:'🏪 Balcão',i:'1× Copo 500 ml',v:'R$ 21,40',s:'aceitar',t:'0 min'},0,true),
+        l:'Ele aparece em <b>Cozinha</b> esperando o <b>✓ Aceitar</b> — igual a qualquer outro pedido.', alvo:'[data-alvo="acao"]' },
+      { t: telaQuadro({n:'CD-104',c:'🏪 Balcão',i:'1× Copo 500 ml',v:'R$ 21,40',s:'novo',t:'0 min'},0),
+        l:'Aceito. Agora ele aparece no KDS e o botão já mostra a próxima etapa: <b>Preparar →</b>.' }
+    ]},
+
+    cardapio: { titulo:'Pedidos', canal:'Cardápio digital', passos:[
+      { t: telaQuadro({n:'CD-105',c:'🌐 Cardápio',i:'1× Pote 1L + granola',v:'R$ 34,00',s:'pix',t:'1 min'},0,true),
+        l:'Entrou um pedido do cardápio. Repare na tarja amarela: <b>⏳ Esperando o PIX</b>.' },
+      { t: telaQuadro({n:'CD-105',c:'🌐 Cardápio',i:'1× Pote 1L + granola',v:'R$ 34,00',s:'pix',t:'4 min'},0),
+        l:'<b>Não prepare ainda.</b> O cliente gerou o PIX mas não pagou. Se fizer agora e ele desistir, o açaí foi perdido.' },
+      { t: telaQuadro({n:'CD-105',c:'🌐 Cardápio',i:'1× Pote 1L + granola',v:'R$ 34,00',s:'aceitar',t:'5 min'},0),
+        l:'O pagamento caiu: a tarja some sozinha. Agora sim — <b>✓ Aceitar</b>.', alvo:'[data-alvo="acao"]' },
+      { t: telaQuadro({n:'CD-105',c:'🌐 Cardápio',i:'1× Pote 1L + granola',v:'R$ 34,00',s:'novo',t:'5 min'},0),
+        l:'<b>Preparar →</b> manda para a cozinha. A partir daqui o KDS assume.', alvo:'[data-alvo="acao"]' },
+      { t: telaQuadro({n:'CD-105',c:'🌐 Cardápio',i:'1× Pote 1L + granola',v:'R$ 34,00',s:'pronto',t:'14 min'},1),
+        l:'Pronto, o card passou para <b>Aguardando entrega</b>. Agora é esperar o motoboy.' },
+      { t: telaQuadro({n:'CD-105',c:'🌐 Cardápio',i:'1× Pote 1L + granola',v:'R$ 34,00',s:'rua',t:'18 min'},2),
+        l:'<b>Despachar →</b> quando o entregador sair com o pedido.' },
+      { t: telaQuadro({n:'CD-105',c:'🌐 Cardápio',i:'1× Pote 1L + granola',v:'R$ 34,00',s:'fim',t:'31 min'},3),
+        l:'<b>Entregar →</b> fecha o pedido. Só agora ele entra no caixa do dia.' }
+    ]},
+
+    ifood: { titulo:'Pedidos', canal:'iFood e 99Food', passos:[
+      { t: telaQuadro({n:'#4455',c:'🔴 iFood',i:'2× Copo 300 ml',v:'R$ 51,00',s:'aceitar',t:'0 min',obs:'Dinheiro na entrega — troco para R$ 60,00'},0,true),
+        l:'Tocou o alarme e o card entrou com a borda destacada. Pedido novo de aplicativo.' },
+      { t: telaQuadro({n:'#4455',c:'🔴 iFood',i:'2× Copo 300 ml',v:'R$ 51,00',s:'aceitar',t:'1 min',obs:'Dinheiro na entrega — troco para R$ 60,00'},0),
+        l:'Leia a observação <b>antes</b> de aceitar: pode ter "sem banana", troco a separar, ou ser retirada no balcão.' },
+      { t: telaQuadro({n:'#4455',c:'🔴 iFood',i:'2× Copo 300 ml',v:'R$ 51,00',s:'novo',t:'1 min',obs:'Dinheiro na entrega — troco para R$ 60,00'},0),
+        l:'<b>✓ Aceitar</b>. O aplicativo é avisado na hora e o relógio deles para.', alvo:'[data-alvo="acao"]' },
+      { t: telaQuadro({n:'#4455',c:'🔴 iFood',i:'2× Copo 300 ml',v:'R$ 51,00',s:'preparo',t:'12 min',obs:'Dinheiro na entrega — troco para R$ 60,00'},0),
+        l:'Daqui em diante é igual a qualquer pedido: Preparar, Pronto, Despachar.' },
+      { t: telaQuadro({n:'#4455',c:'🔴 iFood',i:'2× Copo 300 ml',v:'R$ 51,00',s:'preparo',t:'42 min',atraso:true,obs:'Dinheiro na entrega — troco para R$ 60,00'},0),
+        l:'Passou dos 40 minutos que o iFood espera e aparece <b>⚠ Atrasado</b>. É o aviso para dar prioridade.' },
+      { t: telaQuadro({n:'#4455',c:'🔴 iFood',i:'2× Copo 300 ml',v:'R$ 51,00',s:'pronto',t:'44 min'},1),
+        l:'No <b>iFood</b> você mesmo marca Despachar e Entregar. No <b>99Food</b> não precisa: ele avisa quando o entregador pega e quando entrega, e o pedido fecha sozinho.' }
+    ]},
+
+    kds: { titulo:'KDS Cozinha', canal:'Tela da bancada', passos:[
+      { t: telaKds('fila'), l:'O KDS mostra só o que interessa à cozinha: <b>A fazer</b> de um lado, <b>Pronto</b> do outro.' },
+      { t: telaKds('fila'), l:'O cronômetro conta desde que o pedido chegou. A faixa colorida na lateral do card vai de verde a vermelho conforme demora.' },
+      { t: telaKds('pix'), l:'Card com <b>⏳ Esperando o PIX</b>: não monte. Vale a mesma regra do quadro.' },
+      { t: telaKds('toque'), l:'Toque no card para avançar. O primeiro toque é <b>Iniciar preparo</b>.', alvo:'[data-alvo="card"]' },
+      { t: telaKds('preparando'), l:'O card agora mostra <b>Marcar pronto</b>. Toque de novo quando o açaí estiver montado.', alvo:'[data-alvo="card"]' },
+      { t: telaKds('pronto'), l:'Ele passa para <b>Pronto</b> e a fila esvazia. Quem está no balcão vê o pedido pronto na tela de Pedidos.' }
+    ]},
+
+    entregas: { titulo:'Entregas & Roteirização', canal:'Rota', passos:[
+      { t: telaEntregas('semEntregador'), l:'A tela junta os pedidos prontos <b>por bairro</b>, com o endereço e quanto tempo cada um já está esperando.' },
+      { t: telaEntregas('semEntregador'), l:'Primeiro escolha o entregador na listinha de cada pedido. Os nomes vêm do cadastro em <b>Entregadores</b>.', alvo:'[data-alvo="sel"]' },
+      { t: telaEntregas('comEntregador'), l:'Com o motoboy escolhido, <b>🛵 Despachar</b> manda um pedido. Para mandar o bairro inteiro de uma vez, use <b>🛵 Despachar rota</b>.', alvo:'[data-alvo="rota"]' },
+      { t: telaEntregas('rua'), l:'Os dois saíram juntos e agora aparecem em <b>Em rota</b>. Quando o Jorge confirmar, você marca <b>✓ Entregue</b>.' }
+    ]},
+
+    caixa: { titulo:'Fechar Caixa', canal:'Fim do dia', passos:[
+      { t: telaCaixa(false), l:'Abra <b>Fechar Caixa</b>. Os números são do dia de hoje e se atualizam sozinhos.' },
+      { t: telaCaixa(false), l:'Confira <b>Faturamento</b>, <b>Pedidos</b>, <b>Ticket médio</b> e <b>Cancelados</b>.' },
+      { t: telaCaixa(true), l:'Se houver PIX não pago, aparece este aviso: aquele valor <b>não está</b> no faturamento.' },
+      { t: telaCaixa(true,'pag'), l:'Role e veja a divisão <b>por forma de pagamento</b>. É o número de Dinheiro que você confere com a gaveta.' },
+      { t: telaCaixa(true,'canal'), l:'E <b>por canal</b>: quanto veio do balcão, do cardápio e dos aplicativos.' },
+      { t: telaCaixa(true,'print'), l:'<b>Imprimir</b> gera o cupom de fechamento. Guarde com a gerência.', alvo:'[data-alvo="print"]' }
+    ]}
+  };
+
+  /* ---------- motor ---------- */
+  function montar(box){
+    var sim = SIMS[box.getAttribute('data-sim')];
+    if (!sim) return;
+    var i = 0, tocando = false, timer = null;
+
+    box.innerHTML =
+      '<div class="sim-cab"><strong>'+e(sim.titulo)+'</strong><span class="canal">'+e(sim.canal)+'</span>'
+      + '<span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--fg2)" data-cont></span></div>'
+      + '<div class="sim-tela" data-tela><div class="toque" data-toque></div></div>'
+      + '<div class="legenda"><span class="num" data-num>1</span><p data-leg></p></div>'
+      + '<div class="sim-pe"><button class="btn pri" data-play>▶ Começar</button>'
+      + '<button class="btn" data-ant>Voltar</button><button class="btn" data-prox>Avançar</button>'
+      + '<span class="pontos" data-pontos></span></div>';
+
+    var elTela = box.querySelector('[data-tela]'), elToque = box.querySelector('[data-toque]'),
+        elLeg = box.querySelector('[data-leg]'), elNum = box.querySelector('[data-num]'),
+        elCont = box.querySelector('[data-cont]'), elPlay = box.querySelector('[data-play]'),
+        elPontos = box.querySelector('[data-pontos]');
+
+    sim.passos.forEach(function(_, idx){
+      var b = document.createElement('button');
+      b.className = 'ponto'; b.type = 'button';
+      b.setAttribute('aria-label', 'Passo ' + (idx+1) + ' de ' + sim.passos.length);
+      b.addEventListener('click', function(){ parar(); ir(idx); });
+      elPontos.appendChild(b);
+    });
+
+    function desenhar(){
+      var p = sim.passos[i];
+      elTela.innerHTML = p.t;
+      elTela.appendChild(elToque);
+      elLeg.innerHTML = p.l;
+      elNum.textContent = String(i+1);
+      elCont.textContent = (i+1) + ' de ' + sim.passos.length;
+      elToque.className = 'toque';
+      if (p.alvo){
+        // Ancora o anel no elemento de verdade: posição em % errava o botão quando a tela estreitava.
+        var alvo = elTela.querySelector(p.alvo);
+        if (alvo){
+          var a = alvo.getBoundingClientRect(), t = elTela.getBoundingClientRect();
+          elToque.style.left = (a.left - t.left + a.width/2 - 15) + 'px';
+          elToque.style.top = (a.top - t.top + a.height/2 - 15) + 'px';
+          elToque.className = 'toque on';
+        }
+      }
+      Array.prototype.forEach.call(elPontos.children, function(b, idx){
+        b.setAttribute('aria-current', idx === i ? 'true' : 'false');
+      });
+    }
+    function ir(n){ i = Math.max(0, Math.min(sim.passos.length-1, n)); desenhar(); }
+    function parar(){ tocando = false; clearTimeout(timer);
+      elPlay.textContent = i >= sim.passos.length-1 ? '↻ Repetir' : '▶ Continuar'; }
+    function tocar(){
+      tocando = true; elPlay.textContent = '❚❚ Pausar';
+      clearTimeout(timer);
+      timer = setTimeout(function passo(){
+        if (!tocando) return;
+        if (i >= sim.passos.length-1){ parar(); return; }
+        ir(i+1);
+        timer = setTimeout(passo, 3600);
+      }, 3600);
+    }
+
+    elPlay.addEventListener('click', function(){
+      if (tocando) { parar(); return; }
+      if (i >= sim.passos.length-1) ir(0);
+      tocar();
+    });
+    box.querySelector('[data-ant]').addEventListener('click', function(){ parar(); ir(i-1); });
+    box.querySelector('[data-prox]').addEventListener('click', function(){ parar(); ir(i+1); });
+
+    window.addEventListener('resize', desenhar);
+    desenhar();
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sim]'), montar);
+})();
+</script>
+
+</body>
+</html>
