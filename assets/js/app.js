@@ -32,6 +32,7 @@ const BORA_NAV = [
   { href:'caixa.html',         label:'Fechar Caixa',    ic:'💰' },
   { href:'kds.html',           label:'KDS Cozinha',     ic:'🍳' },
   { href:'canais.html',        label:'Canais',          ic:'📡' },
+  { href:'respostas-whatsapp.html', label:'Respostas WhatsApp', ic:'💬' },
   { href:'integracoes.html',   label:'Integrações',     ic:'🔌' },
   { href:'entregas.html',      label:'Entregas',        ic:'🛵' },
   { href:'entregadores.html',  label:'Entregadores',    ic:'🏍️' },
