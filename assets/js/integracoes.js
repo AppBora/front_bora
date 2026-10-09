@@ -78,7 +78,8 @@
       por exemplo, uma loja real num aplicativo de produção enquanto as outras seguem no de teste.
       Em branco, ela usa a credencial da plataforma. <b>O que você salvar aqui não afeta nenhuma outra loja.</b></p>
       <div class="field"><label>${rotId} desta loja</label>
-        <input id="oc-${i.canal}" value="${esc(i.clientId || '')}" autocomplete="off" placeholder="em branco = usa o da plataforma"></div>
+        <input id="oc-${i.canal}" value="${esc(i.clientId || '')}" autocomplete="off" placeholder="em branco = usa o da plataforma">
+        <small style="color:#64748b">Só o ${esc(rotId)}. O código da loja é juntado automaticamente — não precisa escrever o sublinhado.</small></div>
       <div class="field"><label>${rotSec} desta loja ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label>
         <input id="os-${i.canal}" type="password" autocomplete="new-password" placeholder="${i.temSecret ? '•••••• salvo (em branco mantém)' : 'cole o segredo aqui'}"></div>
       <p style="font-size:12px;color:#64748b">Depois de salvar, clique em <b>Conectar</b> para validar com o ${esc(i.label)}.</p>
