@@ -21,7 +21,11 @@
   function waRepetir(tel, nome, link) {
     const n = (tel || '').replace(/\D/g, ''); if (!n || !link) return null;
     const num = n.length <= 11 ? '55' + n : n;
-    const msg = `Oi ${nome ? nome.split(' ')[0] : ''}! Que tal repetir o seu último pedido? É só tocar aqui: ${link}`;
+    // "Oi !" quando o cliente nao tem nome cadastrado.
+    const ola = nome ? 'Oi ' + nome.split(' ')[0] + '!' : 'Oi!';
+    // Nao promete "um toque": um toque abre o carrinho montado, mas o cliente ainda confere,
+    // escolhe o pagamento e finaliza.
+    const msg = `${ola} 😋 Bora repetir o seu último pedido? Já deixei tudo montado: toque no link, confira e finalize. ${link}`;
     return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
   }
 
@@ -30,7 +34,8 @@
       const clientes = await Bora.clientes();
       // Numa chamada só, e não uma por linha. Se falhar, o CRM continua: o botão de repetir
       // some e o de chamar fica — melhor perder um botão que perder a tela.
-      const links = await Bora.linksRepetir().catch(() => ({}));
+      let falhouLinks = false;
+      const links = await Bora.linksRepetir().catch(e => { falhouLinks = true; console.warn('links de repetir:', e); return {}; });
       let novos = 0, rec = 0, sumidos = 0;
       clientes.forEach(c => {
         const qp = c.qtdPedidos || 0, d = diasDesde(c.ultimoPedido);
@@ -56,12 +61,20 @@
           <td><span class="cashtag">${money(c.cashback)}</span></td>
           <td>${dataTxt(c.ultimoPedido)}</td>
           <td style="text-align:right;white-space:nowrap">
-            ${rep ? `<a class="btn" style="padding:7px 12px;background:#7c3aed;margin-right:6px" href="${rep}" target="_blank" title="Manda o link que já remonta o último pedido dele no carrinho">🔁 Pedir de novo</a>` : ''}
-            ${wa ? `<a class="btn" style="padding:7px 12px;background:#25d366" href="${wa}" target="_blank">📲 Chamar</a>` : ''}
+            ${rep ? `<a class="btn" style="display:inline-block;padding:12px;min-height:44px;background:#7c3aed;margin-right:6px" href="${rep}" target="_blank" rel="noopener" title="Abre o WhatsApp com a mensagem pronta e o link que monta o último pedido dele no carrinho">🔁 Mandar o último pedido</a>` : ''}
+            ${wa ? `<a class="btn" style="display:inline-block;padding:12px;min-height:44px;background:#128c4a" href="${wa}" target="_blank" rel="noopener">📲 Chamar</a>` : ''}
           </td>
         </tr>`;
       }).join('') : '<tr><td colspan="7" style="color:#94a3b8">Nenhum cliente cadastrado ainda.</td></tr>';
-    } catch (e) { document.getElementById('rank').innerHTML = `<tr><td colspan="7" style="color:var(--danger)">${e.message}</td></tr>`; }
+
+      // Sem isto, o lojista nao sabe se o botao sumiu porque o cliente nunca pediu ou porque a
+      // chamada falhou.
+      if (falhouLinks) {
+        document.getElementById('rank').insertAdjacentHTML('afterbegin',
+          '<tr><td colspan="7" style="background:#fef3c7;color:#92400e;font-size:13px">'
+          + 'Não consegui carregar os links de "Mandar o último pedido" agora. Atualize a página para tentar de novo.</td></tr>');
+      }
+    } catch (e) { document.getElementById('rank').innerHTML = `<tr><td colspan="7" style="color:var(--danger)">${esc(e.message || 'falha')}</td></tr>`; }
   }
 
   document.addEventListener('DOMContentLoaded', carregar);

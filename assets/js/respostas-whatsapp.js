@@ -16,6 +16,18 @@
   // Semana começando na segunda: é como o lojista fala ("de segunda a sexta"), não como o banco guarda.
   const ORDEM = [1, 2, 3, 4, 5, 6, 0];
 
+  /**
+   * O horario que o servidor semeia quando a loja nunca mexeu: 7 dias, 18h as 23h, tudo aberto.
+   *
+   * <p>GET /api/horarios NAO devolve vazio — se nao houver nada, ele grava esse padrao e devolve.
+   * Entao o ramo "loja sem horario cadastrado" nunca disparava, e a loja saia prometendo ao cliente
+   * um horario que ninguem escolheu. Zira Centro e Zira Zona Norte estao exatamente assim.</p>
+   */
+  function ehOPadraoDoSistema(horarios) {
+    if (!horarios || horarios.length !== 7) return false;
+    return horarios.every(h => h.aberto !== false && h.abre === '18:00' && h.fecha === '23:00');
+  }
+
   /** "18:00" -> "18h" ; "23:30" -> "23h30" ; "09:00" -> "9h". Ninguém escreve "09h" no WhatsApp. */
   function hora(h) {
     const m = /^(\d{1,2}):(\d{2})$/.exec(String(h || '').trim());
@@ -109,31 +121,50 @@
     return blocos;
   }
 
-  function caixaDeTexto(id, texto) {
+  function caixaDeTexto(id, texto, rotulo) {
     const n = texto.length;
     // O contador existe porque os campos do WhatsApp Business têm limite e o lojista costuma editar
     // o texto depois de colar. Acima de 200 ele avisa, em vez de o app cortar na cara do cliente.
     const cor = n > 200 ? '#b91c1c' : '#64748b';
-    return `<textarea id="t-${id}" readonly rows="3"
+    const linhas = Math.min(8, Math.max(3, Math.ceil(n / 38))); // 3 linhas cortavam o link em 390px
+    return `<textarea id="t-${id}" readonly rows="${linhas}" aria-label="${esc(rotulo)}"
         style="width:100%;font:inherit;font-size:14px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;resize:vertical;background:#f8fafc">${esc(texto)}</textarea>
       <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn" onclick="__copiar('t-${id}', this)">Copiar texto</button>
+        <button class="btn" style="min-height:44px" onclick="__copiarResposta('t-${id}', this)">Copiar texto</button>
+        <span id="st-t-${id}" role="status" aria-live="polite" style="font-size:12.5px;color:#065f46;font-weight:600"></span>
         <span style="font-size:12px;color:${cor}">${n} caracteres${n > 200 ? ' — pode ser longo demais para o campo' : ''}</span>
       </div>`;
   }
 
-  window.__copiar = async (idCampo, botao) => {
+  // Renomeado de __copiar: cardapio-qr.js define outro __copiar com assinatura diferente, e o dia
+  // em que as duas telas carregarem juntas um sobrescreve o outro.
+  window.__copiarResposta = async (idCampo, botao) => {
     const el = document.getElementById(idCampo);
     if (!el) return;
+    el.focus();
+    el.setSelectionRange(0, el.value.length); // select() sozinho nao seleciona no iPhone
+
+    let copiou = false;
     try {
       await navigator.clipboard.writeText(el.value);
+      copiou = true;
     } catch (e) {
-      // clipboard bloqueado (http, permissão negada): seleciona para o lojista copiar na mão
-      el.focus(); el.select();
+      // clipboard bloqueado: http, navegador dentro de aplicativo, permissao negada.
+      try { copiou = document.execCommand('copy'); } catch (e2) { copiou = false; }
     }
-    const antes = botao.textContent;
-    botao.textContent = '✓ Copiado';
-    setTimeout(() => { botao.textContent = antes; }, 1600);
+
+    // O rotulo original fica no proprio botao: ler o texto atual fazia o clique duplo gravar
+    // "✓ Copiado" como original, e o botao nunca mais voltava ao normal.
+    if (!botao.dataset.rotulo) botao.dataset.rotulo = botao.textContent;
+    clearTimeout(botao._volta);
+    // Mentir aqui e pior que falhar: o lojista cola e nao vem nada.
+    botao.textContent = copiou ? '✓ Copiado' : 'Selecionado — toque e segure para copiar';
+    const status = document.getElementById('st-' + idCampo);
+    if (status) status.textContent = copiou ? 'Texto copiado.' : 'Não consegui copiar: o texto está selecionado.';
+    botao._volta = setTimeout(() => {
+      botao.textContent = botao.dataset.rotulo;
+      if (status) status.textContent = '';
+    }, copiou ? 1600 : 4000);
   };
 
   function desenhar(blocos) {
@@ -146,9 +177,9 @@
           ? b.rapidas.map(r => `
               <div style="margin-bottom:16px">
                 <div style="font-size:13px;font-weight:700;margin-bottom:5px">Atalho: <code style="background:#f1f5f9;padding:2px 7px;border-radius:5px">${esc(r.atalho)}</code></div>
-                ${caixaDeTexto(b.id + '-' + r.atalho, r.texto)}
+                ${caixaDeTexto(b.id + '-' + r.atalho, r.texto, 'Resposta rápida: ' + r.atalho)}
               </div>`).join('')
-          : caixaDeTexto(b.id, b.texto)}
+          : caixaDeTexto(b.id, b.texto, b.titulo)}
       </div>`).join('');
   }
 
@@ -170,11 +201,13 @@
 
       const nome = (pub && pub.loja && pub.loja.nome) || (cfg && cfg.nomeExibicao) || 'nossa loja';
       const temPix = !!(pub && pub.pixDisponivel);
+      const padrao = ehOPadraoDoSistema(horarios);
       const horario = horarioLegivel(horarios);
       const link = location.origin + '/cardapio.html?loja=' + lojaId;
 
       const avisos = [];
-      if (!horario) avisos.push('Esta loja ainda não tem <b>horário de funcionamento</b> cadastrado, então os textos não prometem horário. Cadastre em <b>Ajustes Operação</b> e volte aqui que eu reescrevo.');
+      if (!horario) avisos.push('Esta loja não tem <b>horário de funcionamento</b> cadastrado, então os textos não prometem horário. Cadastre em <b>Ajustes Operação</b> e volte aqui que eu reescrevo.');
+      else if (padrao) avisos.push('O horário abaixo (<b>' + esc(horario) + '</b>) é o <b>padrão do sistema</b>, não um horário que alguém escolheu. Confira em <b>Ajustes Operação</b> antes de colar — senão a sua loja promete ao cliente um horário que não é o dela.');
       if (!temPix) avisos.push('Esta loja ainda não recebe <b>PIX online</b>, então o texto de pagamento fala só em pagar na entrega.');
       $('aviso').innerHTML = avisos.length
         ? `<div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;border-radius:10px;padding:12px;margin-top:14px;font-size:13.5px">

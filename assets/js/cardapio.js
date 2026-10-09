@@ -91,9 +91,12 @@
       const r = await Bora.api('/public/loja/' + lojaId + '/pedido/' + encodeURIComponent(pedidoId)
         + '/repetir?t=' + encodeURIComponent(assinatura));
 
+      const avisos = (r.avisos || []).slice();
       (r.itens || []).forEach(it => {
         const p = produtos.find(x => x.id == it.produtoId);
-        if (!p) return; // sumiu entre a resposta e o cardápio carregado: o aviso já cobre
+        // Some entre a resposta e o cardápio carregado (corrida, ou produto que o servidor aceita e
+        // a lista não traz). Ficar em silêncio faria o cliente levar menos do que pediu sem saber.
+        if (!p) { avisos.push((it.nome || 'Um item') + ' não está disponível agora'); return; }
         const ids = (it.complementos || []).map(Number);
         // Preço e rótulo saem do cardápio de HOJE, não do pedido antigo: é o que o cliente vai pagar.
         let extra = 0; const nomes = [];
@@ -101,27 +104,39 @@
           if (ids.indexOf(Number(i.id)) >= 0) { extra += Number(i.preco || 0); nomes.push(i.nome); }
         }));
         const rotulo = p.nome + (nomes.length ? ' (' + nomes.join(', ') + ')' : '');
-        const vezes = Math.max(1, Number(it.quantidade) || 1);
+        // Teto de 99 porque o cardapio recusa mais que isso no fim: repetir um pedido de balcao
+        // de 120 unidades montaria um carrinho impossivel de fechar.
+        const vezes = Math.min(99, Math.max(1, Number(it.quantidade) || 1));
         for (let n = 0; n < vezes; n++) addLinha(p, ids, extra, rotulo);
       });
 
       const quantos = cart.reduce((n, l) => n + l.quantidade, 0);
-      const avisos = r.avisos || [];
       const cx = document.createElement('div');
-      cx.style.cssText = 'border-radius:10px;padding:12px;margin:12px 0;font-size:14px;'
-        + (quantos ? 'background:#ecfdf5;border:1px solid #6ee7b7;color:#065f46'
-                   : 'background:#fef3c7;border:1px solid #fcd34d;color:#92400e');
+      cx.setAttribute('role', 'status');
+      // Verde só quando deu tudo certo. Com qualquer aviso a caixa fica âmbar: verde com um item
+      // faltando lá embaixo faz o cliente ler o título e ignorar o que importa.
+      const tudoCerto = quantos > 0 && avisos.length === 0;
+      cx.style.cssText = 'border-radius:10px;padding:12px;margin:12px 16px;font-size:14px;'
+        + (tudoCerto ? 'background:#ecfdf5;border:1px solid #6ee7b7;color:#065f46'
+                     : 'background:#fef3c7;border:1px solid #fcd34d;color:#92400e');
       cx.innerHTML = (quantos
-          ? '<b>🔁 Montamos o seu pedido de novo.</b> Confira antes de finalizar.'
+          ? (tudoCerto ? '<b>🔁 Seu pedido de antes já está no carrinho.</b> Confira e finalize.'
+                       : '<b>⚠ Seu pedido está quase igual ao de antes, mas algo mudou:</b>')
           : '<b>Não deu para repetir o pedido automaticamente.</b> Monte pelo cardápio abaixo.')
         + (avisos.length ? '<ul style="margin:8px 0 0;padding-left:20px">'
             + avisos.map(a => '<li>' + esc(a) + '</li>').join('') + '</ul>' : '');
       document.getElementById('menu').insertAdjacentElement('beforebegin', cx);
     } catch (e) {
-      // Link velho, assinatura errada ou pedido apagado: o cardápio continua funcionando normal.
+      // Dizer "não encontrei o pedido" quando foi a internet que caiu faz o cliente achar que o
+      // pedido dele sumiu. São problemas diferentes e merecem recados diferentes.
+      console.warn('repetir pedido:', e);
+      const semRede = /failed to fetch|networkerror|load failed/i.test(String(e && e.message));
       const cx = document.createElement('div');
-      cx.style.cssText = 'background:#fef3c7;border:1px solid #fcd34d;color:#92400e;border-radius:10px;padding:12px;margin:12px 0;font-size:14px';
-      cx.textContent = 'Não encontrei esse pedido para repetir. Monte o seu pedido pelo cardápio abaixo.';
+      cx.setAttribute('role', 'status');
+      cx.style.cssText = 'background:#fef3c7;border:1px solid #fcd34d;color:#92400e;border-radius:10px;padding:12px;margin:12px 16px;font-size:14px';
+      cx.textContent = semRede
+        ? 'Sem conexão para montar o seu pedido de antes. Atualize a página ou monte pelo cardápio abaixo.'
+        : 'Esse link de pedido não vale mais. Sem problema: escolha o que quiser no cardápio abaixo.';
       document.getElementById('menu').insertAdjacentElement('beforebegin', cx);
     }
   }
