@@ -79,6 +79,53 @@
     document.getElementById('compCancelar').onclick = () => { wrap.hidden = true; };
   }
 
+  // ---- Repetir o último pedido (link assinado que a loja manda no WhatsApp) ----
+  //
+  // O servidor já filtrou o que não existe mais e devolveu os avisos prontos. Aqui só remontamos o
+  // carrinho e contamos ao cliente o que mudou — carrinho diferente do que ele pediu, sem avisar,
+  // seria pior que não repetir nada.
+  async function repetirPedidoAnterior() {
+    const pedidoId = params.get('repetir'), assinatura = params.get('t');
+    if (!pedidoId || !assinatura) return;
+    try {
+      const r = await Bora.api('/public/loja/' + lojaId + '/pedido/' + encodeURIComponent(pedidoId)
+        + '/repetir?t=' + encodeURIComponent(assinatura));
+
+      (r.itens || []).forEach(it => {
+        const p = produtos.find(x => x.id == it.produtoId);
+        if (!p) return; // sumiu entre a resposta e o cardápio carregado: o aviso já cobre
+        const ids = (it.complementos || []).map(Number);
+        // Preço e rótulo saem do cardápio de HOJE, não do pedido antigo: é o que o cliente vai pagar.
+        let extra = 0; const nomes = [];
+        (p.complementos || []).forEach(g => (g.itens || []).forEach(i => {
+          if (ids.indexOf(Number(i.id)) >= 0) { extra += Number(i.preco || 0); nomes.push(i.nome); }
+        }));
+        const rotulo = p.nome + (nomes.length ? ' (' + nomes.join(', ') + ')' : '');
+        const vezes = Math.max(1, Number(it.quantidade) || 1);
+        for (let n = 0; n < vezes; n++) addLinha(p, ids, extra, rotulo);
+      });
+
+      const quantos = cart.reduce((n, l) => n + l.quantidade, 0);
+      const avisos = r.avisos || [];
+      const cx = document.createElement('div');
+      cx.style.cssText = 'border-radius:10px;padding:12px;margin:12px 0;font-size:14px;'
+        + (quantos ? 'background:#ecfdf5;border:1px solid #6ee7b7;color:#065f46'
+                   : 'background:#fef3c7;border:1px solid #fcd34d;color:#92400e');
+      cx.innerHTML = (quantos
+          ? '<b>🔁 Montamos o seu pedido de novo.</b> Confira antes de finalizar.'
+          : '<b>Não deu para repetir o pedido automaticamente.</b> Monte pelo cardápio abaixo.')
+        + (avisos.length ? '<ul style="margin:8px 0 0;padding-left:20px">'
+            + avisos.map(a => '<li>' + esc(a) + '</li>').join('') + '</ul>' : '');
+      document.getElementById('menu').insertAdjacentElement('beforebegin', cx);
+    } catch (e) {
+      // Link velho, assinatura errada ou pedido apagado: o cardápio continua funcionando normal.
+      const cx = document.createElement('div');
+      cx.style.cssText = 'background:#fef3c7;border:1px solid #fcd34d;color:#92400e;border-radius:10px;padding:12px;margin:12px 0;font-size:14px';
+      cx.textContent = 'Não encontrei esse pedido para repetir. Monte o seu pedido pelo cardápio abaixo.';
+      document.getElementById('menu').insertAdjacentElement('beforebegin', cx);
+    }
+  }
+
   // ---- Checkout online: pedido criado no sistema; PIX na conta Asaas do lojista ----
   let pixDisponivel = false, pollTimer = null, cupomOk = false, saldoCashback = 0;
   let bairros = [], descontoCupom = 0;
@@ -302,6 +349,7 @@
       produtos = data.produtos || [];
       if (!produtos.length) { document.getElementById('menu').innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px">Cardápio em montagem.</p>'; return; }
       render();
+      await repetirPedidoAnterior(); // depois do render: precisa dos produtos carregados
     } catch (e) { document.getElementById('menu').innerHTML = `<p style="text-align:center;color:var(--danger);padding:40px">${e.message}</p>`; }
   });
 })();

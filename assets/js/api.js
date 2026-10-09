@@ -71,6 +71,9 @@ const Bora = {
   aceitarTermos() { return this.api('/api/termos/aceitar', { method: 'POST' }); },
   resumo() { return this.api('/api/dashboard/resumo'); },
   clientes() { return this.api('/api/clientes'); },
+  // Mapa {clienteId: link de repetir o ultimo pedido}. A base vai junto para o link nascer no
+  // dominio de onde o painel esta aberto, e nao num dominio chutado pelo servidor.
+  linksRepetir() { return this.api('/api/clientes/links-repetir?base=' + encodeURIComponent(location.origin)); },
   entregadores() { return this.api('/api/entregadores'); },
   criarEntregador(b) { return this.api('/api/entregadores', { method: 'POST', body: JSON.stringify(b) }); },
   atualizarEntregador(id, b) { return this.api('/api/entregadores/' + id, { method: 'PUT', body: JSON.stringify(b) }); },
