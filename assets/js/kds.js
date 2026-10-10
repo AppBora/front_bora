@@ -53,7 +53,17 @@
       document.getElementById('pronto').innerHTML = pronto.map(card).join('') || '<p style="color:#475569">Nada pronto</p>';
       document.getElementById('cFazer').textContent = fazer.length;
       document.getElementById('cPronto').textContent = pronto.length;
-    } catch (e) { console.warn(e.message); }
+    } catch (e) {
+      // O erro SOBE de proposito. Quem avisa e o Bora.repetir, com a faixa de "sem conexao": engolir
+      // aqui era o que fazia a cozinha achar que nao tinha entrado pedido novo quando a API caia.
+      // Na primeira carga ainda nao ha nada na tela, entao dizemos o que aconteceu no lugar da fila.
+      if (!document.getElementById('fazer').innerHTML) {
+        document.getElementById('fazer').innerHTML =
+          '<p style="color:#b3341f;font-weight:700">Nao consegui falar com o servidor. '
+          + 'Tentando de novo a cada 6 segundos.</p>';
+      }
+      throw e;
+    }
   }
 
   function tick() {
@@ -62,7 +72,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    carregar(); tick();
+    carregar().catch(e => Bora._conexao(false, e)); tick();
     Bora.repetir(carregar, 6000); // recarrega dados, so com a aba a vista
     setInterval(tick, 1000);     // cronômetros vivos
   });

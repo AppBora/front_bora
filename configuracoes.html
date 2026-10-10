@@ -138,15 +138,20 @@
       <h2>🧠 Módulo IA <span class="badge b-entregue" style="font-size:11px">contratado</span></h2>
       <div style="display:grid;gap:14px;margin-top:10px">
         <div>
-          <b>🤖 Gerente Virtual</b> — resumo diário no seu WhatsApp às 8h.<br>
+          <b>🤖 Gerente Virtual</b> — o resumo do dia já é calculado e você vê aqui no botão abaixo.
+          O <b>envio automático no WhatsApp às 8h está em construção</b>: depende da API oficial da Meta
+          ligada ao número da sua loja. O campo abaixo guarda o número para quando isso ligar.<br>
           <input id="iaZapDono" placeholder="Seu WhatsApp (ex.: 5511999998888)" style="padding:9px;border:1px solid #e2e8f0;border-radius:6px;min-width:240px;margin-top:6px">
           <button class="btn" id="iaSalvarZap" style="margin-left:6px">Salvar</button>
           <button class="btn" id="iaVerResumo" style="margin-left:6px;background:#64748b">Ver resumo de hoje</button>
           <pre id="iaResumo" style="white-space:pre-wrap;background:#f8fafc;border-radius:8px;padding:10px;margin-top:8px;display:none;font-size:13px"></pre>
         </div>
         <div>
-          <b>💚 Recuperador de clientes</b> — contata sozinho quem sumiu há 21+ dias (roda todo dia).<br>
-          <button class="btn" id="iaRecuperar" style="margin-top:6px">Disparar agora</button>
+          <b>💚 Recuperador de clientes</b> — chamar sozinho quem sumiu há 21+ dias
+          <b>está em construção</b>: depende da mesma conta Meta, e hoje a mensagem não sai.
+          O que funciona agora é a tela de <b>Clientes</b>: ela mostra quem sumiu e abre o WhatsApp com
+          o texto pronto, para você apertar enviar.<br>
+          <button class="btn" id="iaRecuperar" style="margin-top:6px;background:#64748b">Disparar agora (teste)</button>
           <span id="iaRoi" style="margin-left:10px;color:var(--muted);font-size:13px"></span>
         </div>
         <div>
@@ -159,7 +164,7 @@
     </div>
   </main>
 </div>
-<script src="assets/js/api.js?v=20260930"></script><script src="assets/js/app.js?v=20260930"></script><script src="assets/js/whitelabel.js?v=20260630"></script><script src="assets/js/configuracoes.js?v=20260907&_=20260623"></script>
+<script src="assets/js/api.js?v=20260930"></script><script src="assets/js/app.js?v=20260930"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20260630"></script><script src="assets/js/configuracoes.js?v=20260907&_=20260623"></script>
 <script>
 // Troca da propria senha — disponivel para qualquer usuario logado.
 (function () {

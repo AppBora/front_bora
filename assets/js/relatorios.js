@@ -76,6 +76,9 @@
       $('kMargem').textContent = money(rel.margem) + (Number(rel.faturamento) ? ` · ${rel.margemPct}%` : '');
       $('kCmv').textContent = money(rel.cmv);
       $('kCanc').textContent = rel.cancelados;
+      // Pedido com PIX gerado e nao pago entrava na conta de CANCELADO (era `todos - vendas`, e
+      // `vendas` tira os dois). O lojista lia como venda perdida o pedido que ainda podia entrar.
+      $('kAguard').textContent = rel.aguardandoPagamento != null ? rel.aguardandoPagamento : '—';
       barras(rel.porDia); canalBarras(rel.porCanal); entregadores(rel.porEntregador); produtos(rel.porProduto);
     } catch (e) { $('kFat').textContent = '!'; console.warn(e.message); }
   }

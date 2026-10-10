@@ -2,9 +2,9 @@
 async function aplicarWhiteLabel() {
   try {
     const c = await Bora.configuracao();
-    const root = document.documentElement.style;
-    if (c.corPrimaria) root.setProperty('--primary', c.corPrimaria);
-    if (c.corSecundaria) root.setProperty('--secondary', c.corSecundaria);
+    // Cores da loja + as derivadas de contraste (ver assets/js/cores.js). O botao "Finalizar venda"
+    // da Frente de Caixa tinha texto branco fixo em cima da secundaria: na Zira isso dava 1,46:1.
+    BoraCores.aplicar(document.documentElement.style, c);
     if (c.nomeExibicao) document.querySelectorAll('[data-store]').forEach(e => e.textContent = c.nomeExibicao);
     if (c.logoUrl) document.querySelectorAll('.logo').forEach(e => {
       e.style.backgroundImage = `url(${c.logoUrl})`; e.style.backgroundSize = 'cover'; e.textContent = '';

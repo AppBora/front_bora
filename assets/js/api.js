@@ -140,9 +140,50 @@ const Bora = {
    * porque o relógio estava esperando o próximo ciclo.
    */
   repetir(tarefa, ms) {
-    const rodar = () => { if (!document.hidden) tarefa(); };
+    const rodar = async () => {
+      if (document.hidden) return;
+      try { await tarefa(); Bora._conexao(true); }
+      catch (e) { Bora._conexao(false, e); }
+    };
     const id = setInterval(rodar, ms);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) tarefa(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) rodar(); });
     return id;
+  },
+
+  /**
+   * Faixa de "sem conexão" nas telas que recarregam sozinhas.
+   *
+   * O KDS da cozinha recarrega a cada 6 segundos e, quando a API caía, ele não dizia nada: os cards
+   * ficavam na tela, os cronômetros continuavam correndo e o único sinal era um `console.warn`. Quem
+   * olha a TV da cozinha concluía que não tinha entrado pedido novo. O mesmo valia para Pedidos,
+   * Dashboard, Entregas e Caixa.
+   *
+   * Fica aqui, no `Bora.repetir`, porque é o caminho único das 9 telas que fazem polling — remendar
+   * cada uma deixaria a próxima de fora. Só avisa depois de DUAS falhas seguidas: um soluço de rede de
+   * um ciclo não precisa assustar ninguém no meio do movimento.
+   */
+  _falhas: 0,
+  _conexao(ok, erro) {
+    if (ok) {
+      this._falhas = 0;
+      const faixa = document.getElementById('boraSemConexao');
+      if (faixa) faixa.remove();
+      return;
+    }
+    this._falhas++;
+    if (typeof console !== 'undefined' && erro) console.warn('Bora: falha ao atualizar —', erro.message || erro);
+    if (this._falhas < 2) return;
+    let faixa = document.getElementById('boraSemConexao');
+    if (!faixa) {
+      faixa = document.createElement('div');
+      faixa.id = 'boraSemConexao';
+      faixa.setAttribute('role', 'status');
+      faixa.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#b3341f;color:#fff;'
+        + 'padding:11px 16px;font:700 14px/1.4 system-ui,sans-serif;text-align:center;'
+        + 'padding-top:calc(11px + env(safe-area-inset-top,0px));box-shadow:0 2px 10px rgba(0,0,0,.25)';
+      document.body.appendChild(faixa);
+    }
+    faixa.textContent = 'Sem conexão com o servidor — o que está na tela pode estar velho. '
+      + 'Tentando de novo…';
   }
 };

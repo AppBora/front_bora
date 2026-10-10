@@ -143,7 +143,10 @@
 
   // ---- Checkout online: pedido criado no sistema; PIX na conta Asaas do lojista ----
   let pixDisponivel = false, pollTimer = null, cupomOk = false, saldoCashback = 0;
-  let bairros = [], descontoCupom = 0;
+  // Guardamos o cupom APLICADO, nao o valor em reais: cupom percentual calculado uma vez, na hora
+  // do "Aplicar", ficava velho se o cliente voltasse e somasse item. O desconto e recalculado a
+  // cada atualizacao da conta, e o servidor recalcula de novo na criacao do pedido.
+  let bairros = [], cupomAplicado = null;
   const $ = id => document.getElementById(id);
 
   function itensCarrinho() {
@@ -169,9 +172,11 @@
     document.title = nome;
 
     if (marca) {
-      const raiz = document.documentElement.style;
-      if (marca.corPrimaria) raiz.setProperty('--primary', marca.corPrimaria);
-      if (marca.corSecundaria) raiz.setProperty('--secondary', marca.corSecundaria);
+      // As cores da loja entram por aqui, e junto com elas as derivadas de contraste. O preco de cada
+      // item e pintado com a secundaria: a Zira escolheu amarelo #FFD100, que sobre branco da 1,46:1 e
+      // deixava o preco ilegivel. Quem decide a cor do TEXTO e a conta, nao a escolha do lojista.
+      // Ver assets/js/cores.js.
+      BoraCores.aplicar(document.documentElement.style, marca);
 
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta && marca.corPrimaria) meta.setAttribute('content', marca.corPrimaria);
@@ -203,7 +208,8 @@
   function abrirCheckout() {
     if (!itensCarrinho().length) return;
     $('ckForm').hidden = false; $('ckPix').hidden = true; $('ckOk').hidden = true; $('ckErr').textContent = '';
-    $('ckResumo').textContent = itensCarrinho().reduce((n, i) => n + i.quantidade, 0) + ' itens · ' + money(totalCarrinho());
+    const qtdItens = itensCarrinho().reduce((n, i) => n + i.quantidade, 0);
+    $('ckResumo').textContent = qtdItens + (qtdItens === 1 ? ' item · ' : ' itens · ') + money(totalCarrinho());
     $('ckOpPix').hidden = !pixDisponivel;
     if (!pixDisponivel) document.querySelector('input[name="ckForma"][value="ENTREGA"]').checked = true;
     // A escolha entre entrega e retirada so aparece quando a loja cadastrou bairro: sem tabela de
@@ -223,11 +229,19 @@
     return b ? (Number(b.taxa) || 0) : 0;
   }
   /** Mostra bairro e endereco so quando fazem sentido, e refaz a conta na tela. */
+  /** Quanto o cupom aplicado abate do carrinho AGORA. Zero se nao ha cupom. */
+  function descontoDoCupom() {
+    if (!cupomAplicado) return 0;
+    const v = Number(cupomAplicado.valor) || 0;
+    const bruto = cupomAplicado.tipo === 'VALOR' ? v : totalCarrinho() * (v / 100);
+    return Math.min(bruto, totalCarrinho());
+  }
+
   function atualizarEntrega() {
     const retira = ehRetirada();
     $('ckBairroWrap').hidden = !bairros.length || retira;
     $('ckEndWrap').hidden = retira;
-    const itens = totalCarrinho() - descontoCupom;
+    const itens = totalCarrinho() - descontoDoCupom();
     const frete = freteEscolhido();
     $('ctItens').textContent = money(itens);
     $('ctFrete').textContent = retira ? 'Retirada' : money(frete);
@@ -319,17 +333,20 @@
     $('ckEnviar').addEventListener('click', confirmarPedido);
     $('ckAplicarCupom').addEventListener('click', async () => {
       const cod = $('ckCupom').value.trim(), msg = $('ckCupomMsg');
-      cupomOk = false; if (!cod) { msg.textContent = ''; return; }
+      cupomOk = false; cupomAplicado = null;
+      if (!cod) { msg.textContent = ''; atualizarEntrega(); return; }
       try {
-        const c = await Bora.api('/public/loja/' + lojaId + '/cupom/' + encodeURIComponent(cod));
-        const d = c.tipo === 'VALOR' ? money(c.valor) : Number(c.valor) + '%';
-        cupomOk = true; msg.textContent = '✅ Cupom aplicado: ' + d + ' de desconto'; msg.style.color = '#15803d';
-        // Quem manda no desconto e o servidor; aqui so refletimos na conta da tela para o cliente
-        // nao confirmar achando um valor e ver outro.
-        descontoCupom = c.tipo === 'VALOR' ? (Number(c.valor) || 0)
-                                           : totalCarrinho() * ((Number(c.valor) || 0) / 100);
+        // O total vai na consulta: promocao e cupom percentual dependem dele, e o servidor devolve o
+        // valor ja abatido. O endpoint atende cupom E promocao (o codigo do botao de promocao
+        // relampago do painel caia aqui e recebia "cupom invalido").
+        const c = await Bora.api('/public/loja/' + lojaId + '/cupom/' + encodeURIComponent(cod)
+          + '?total=' + encodeURIComponent(totalCarrinho().toFixed(2)));
+        cupomOk = true;
+        cupomAplicado = { codigo: c.codigo, tipo: c.tipo, valor: c.valor };
+        const d = c.desconto != null ? money(Number(c.desconto)) : (c.tipo === 'VALOR' ? money(c.valor) : Number(c.valor) + '%');
+        msg.textContent = '✅ Cupom aplicado: ' + d + ' de desconto'; msg.style.color = '#15803d';
         atualizarEntrega();
-      } catch (e) { descontoCupom = 0; atualizarEntrega();
+      } catch (e) { cupomAplicado = null; atualizarEntrega();
         msg.textContent = '❌ ' + (e.message || 'Cupom inválido'); msg.style.color = '#dc2626'; }
     });
     document.querySelectorAll('input[name="ckForma"]').forEach(r => r.addEventListener('change', atualizarCpf));

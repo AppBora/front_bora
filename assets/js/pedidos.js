@@ -41,7 +41,7 @@
   window.__aceitar = (id) => mudarStatus(id, 'CONFIRMADO');
   window.__recusar = (id) => { const m = prompt('Motivo da recusa do pedido:'); if (m && m.trim()) mudarStatus(id, 'CANCELADO', m.trim()); };
   window.__imprimir = (id) => { const p = cache.find(x => x.id === id); if (p && typeof boraPrintComanda === 'function') boraPrintComanda(p); };
-  window.__refresh = () => carregar();
+  window.__refresh = () => carregar().catch(e => Bora._conexao(false, e));
 
   // Excluir some com o pedido de vez (inclusive das vendas). Só gerente e dono, e só para teste ou
   // pedido lançado errado — o de verdade que não vai sair se cancela, e fica no histórico.
@@ -51,7 +51,7 @@
     const p = cache.find(x => x.id === id);
     const nome = p ? (p.codigo || '#' + p.id) : '#' + id;
     if (!confirm(`Excluir o pedido ${nome} de vez?\n\nUse só para pedido de TESTE ou lançado errado: ele some das vendas e dos relatórios e não dá para desfazer.\n\nPedido de verdade que não vai sair: use Cancelar.`)) return;
-    try { await Bora.api('/api/pedidos/' + id, { method: 'DELETE' }); carregar(); }
+    try { await Bora.api('/api/pedidos/' + id, { method: 'DELETE' }); await carregar(); }
     catch (e) { alert('Não foi possível excluir: ' + e.message); }
   };
 
@@ -158,7 +158,11 @@
       const lt = document.getElementById('liveTxt');
       if (lt) lt.textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     } catch (e) {
+      // Com o quadro ja carregado, o erro ficava invisivel: os cards antigos continuavam na tela e o
+      // "Atualizado hh:mm" congelava sem ninguem notar. O erro SOBE para o Bora.repetir, que mostra a
+      // faixa de "sem conexao". Na primeira carga nao ha o que mostrar, entao o aviso vai no quadro.
       if (!cache.length) board.innerHTML = `<p style="color:var(--danger)">${e.message}</p>`;
+      throw e;
     }
   }
 
@@ -197,8 +201,9 @@
       b.classList.add('active'); filtro = b.dataset.f; render();
     });
     ligarControlesDeDia();
-    carregar();
+    carregar().catch(e => Bora._conexao(false, e));
     // dia fechado não muda mais: só o dia corrente fica se atualizando sozinho
-    Bora.repetir(() => { if (diaEscolhido() === hojeISO()) carregar(); }, 8000);
+    // `return` e obrigatorio: sem ele o repetir nao recebe a promessa e nunca ve a falha de rede.
+    Bora.repetir(() => (diaEscolhido() === hojeISO() ? carregar() : null), 8000);
   });
 })();
