@@ -273,8 +273,14 @@
   function acoes(c) {
     if (c.situacao === 'ARQUIVADA') return botao('restaurar', c.id, 'Restaurar', '#0f766e');
     // Entrar na loja: o cadastro do cliente é feito por nós, e sem isto seria preciso a senha dele.
+    // "Recebi o pagamento": para quando o lojista paga FORA do Asaas (PIX direto na conta). Quem muda
+    // o estado da assinatura e o webhook do Asaas, e pagamento fora dele nao dispara webhook nenhum:
+    // sem isto o lojista paga, o sistema continua achando que nao, e o corte tira a loja do ar.
+    // Aparece so para quem tem assinatura e esta devendo — nao faz sentido em quem esta em dia.
+    const devendo = c.assinatura === 'INADIMPLENTE' || c.assinatura === 'PENDENTE';
     return botao('entrar', c.id, 'Entrar na loja', '#4f46e5') + ' '
       + botao('renomear', c.id, 'Renomear', '#0369a1') + ' '
+      + (devendo ? botao('pagamento', c.id, '💰 Recebi o pagamento', '#166534') + ' ' : '')
       + (c.situacao === 'SUSPENSA'
         ? botao('reativar', c.id, 'Reativar', '#166534')
         : botao('suspender', c.id, 'Suspender', '#b45309'))
@@ -400,6 +406,28 @@
           { method: 'PUT', body: JSON.stringify({ nome: novo.trim() }) });
         await carregarLojas();
         alert('Renomeada: "' + (r.nomeAnterior || '-') + '" para "' + r.nome + '"');
+      } catch (e) { alert('Erro: ' + e.message); btn.disabled = false; }
+      return;
+    }
+    if (acao === 'pagamento') {
+      const valor = prompt('Quanto você recebeu da loja ' + nome + '?\n\n'
+        + 'Use isto quando o lojista pagar FORA do Asaas (PIX direto na sua conta, dinheiro).\n'
+        + 'A cobrança aberta no Asaas é baixada junto — sem isso o aviso de atraso dele marca a '
+        + 'loja como inadimplente de novo em alguns dias.', '199.00');
+      if (valor === null || !String(valor).trim()) return;
+      const hoje = new Date();
+      const padrao = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0')
+        + '-' + String(hoje.getDate()).padStart(2, '0');
+      const quando = prompt('Em que dia o dinheiro entrou? (AAAA-MM-DD)', padrao);
+      if (quando === null) return;
+      const obs = prompt('Alguma observação? (opcional)\n\nEx.: PIX direto na conta', 'PIX direto na conta');
+      btn.disabled = true;
+      try {
+        const r = await Bora.api('/admin-bora/lojas/' + id + '/pagamento-recebido',
+          { method: 'POST', body: JSON.stringify({ valor: String(valor).trim(),
+                                                   pagoEm: quando.trim(), observacao: obs }) });
+        await carregarLojas();
+        alert(r.recado);
       } catch (e) { alert('Erro: ' + e.message); btn.disabled = false; }
       return;
     }
