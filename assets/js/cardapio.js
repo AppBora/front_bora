@@ -27,8 +27,49 @@
     const qtd = cart.reduce((n, l) => n + l.quantidade, 0);
     const total = cart.reduce((t, l) => t + l.unit * l.quantidade, 0);
     if (qtd > 0) { bar.classList.remove('hidden'); document.getElementById('barTotal').textContent = money(total);
-      document.getElementById('barQtd').textContent = qtd + (qtd === 1 ? ' item' : ' itens'); }
-    else bar.classList.add('hidden');
+      document.getElementById('barQtd').textContent = qtd + (qtd === 1 ? ' item' : ' itens')
+        + ' · toque para ver'; }
+    else { bar.classList.add('hidden'); fecharCarrinho(); }
+    desenharCarrinho();
+  }
+
+  /**
+   * A lista do carrinho, com − e remover.
+   *
+   * Nao existia: a tela so somava. Quem tocasse no produto errado, ou duas vezes sem querer, tinha que
+   * RECARREGAR A PAGINA para corrigir — e perdia tudo o que ja havia escolhido.
+   */
+  function desenharCarrinho() {
+    const caixa = document.getElementById('carrinhoItens');
+    if (!caixa) return;
+    caixa.innerHTML = cart.map((l, i) => `
+      <div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #f1f5f9">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${esc(l.rotulo)}</div>
+          <div style="color:#64748b;font-size:13px">${money(l.unit)} cada</div>
+        </div>
+        <button data-menos="${i}" aria-label="Tirar um"
+          style="min-width:44px;min-height:44px;border:1px solid #e2e8f0;background:#fff;border-radius:10px;
+                 font-size:18px;font-weight:800;cursor:pointer">−</button>
+        <b style="min-width:26px;text-align:center;font-variant-numeric:tabular-nums">${l.quantidade}</b>
+        <button data-mais="${i}" aria-label="Somar um"
+          style="min-width:44px;min-height:44px;border:1px solid #e2e8f0;background:#fff;border-radius:10px;
+                 font-size:18px;font-weight:800;cursor:pointer">+</button>
+        <button data-tira="${i}" aria-label="Remover do pedido"
+          style="min-width:44px;min-height:44px;border:0;background:#fbeae6;color:#b3341f;border-radius:10px;
+                 font-size:16px;cursor:pointer">✕</button>
+      </div>`).join('') || '<p style="color:#64748b;margin:6px 0">Seu pedido está vazio.</p>';
+  }
+
+  function abrirCarrinho() {
+    if (!cart.length) return;
+    desenharCarrinho();
+    document.getElementById('carrinhoLista').hidden = false;
+  }
+
+  function fecharCarrinho() {
+    const el = document.getElementById('carrinhoLista');
+    if (el) el.hidden = true;
   }
 
   function addLinha(p, complementos, extra, rotulo) {
@@ -277,10 +318,43 @@
     }
   }
 
+  /**
+   * O que a tela confere ANTES de enviar.
+   *
+   * As mesmas regras do servidor, so para o cliente nao ter que esperar a resposta para descobrir que
+   * faltou o endereco. Quem recusa de verdade e o servidor — isto aqui e cortesia, nao seguranca.
+   *
+   * Entrega sem endereco e sem telefone passava: so o nome era exigido, e o endereco nem tinha
+   * asterisco. A loja recebia um pedido para entregar e nao tinha para onde ir nem como ligar.
+   */
+  function oQueFaltaNoCheckout() {
+    const faltas = [];
+    if (!$('ckNome').value.trim()) faltas.push('seu nome');
+    const tel = ($('ckTel').value || '').replace(/\D/g, '');
+    if (tel.length < 10 || tel.length > 13) faltas.push('um telefone com DDD');
+    if (!ehRetirada()) {
+      if ($('ckEnd').value.trim().length < 8) faltas.push('o endereço com rua e número');
+      if (bairros.length && !$('ckBairro').value) faltas.push('o bairro da entrega');
+    }
+    const pix = document.querySelector('input[name="ckForma"]:checked')?.value === 'PIX' && pixDisponivel;
+    if (pix && ($('ckCpf').value || '').replace(/\D/g, '').length < 11) faltas.push('o CPF para o PIX');
+    return faltas;
+  }
+
   async function confirmarPedido() {
     const btn = $('ckEnviar'), err = $('ckErr');
     const forma = document.querySelector('input[name="ckForma"]:checked')?.value === 'PIX' && pixDisponivel ? 'PIX' : 'ENTREGA';
-    err.textContent = ''; btn.disabled = true; btn.textContent = 'Enviando…';
+    err.textContent = '';
+
+    const faltas = oQueFaltaNoCheckout();
+    if (faltas.length) {
+      err.textContent = 'Falta ' + (faltas.length === 1 ? faltas[0]
+        : faltas.slice(0, -1).join(', ') + ' e ' + faltas[faltas.length - 1]) + '.';
+      err.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Enviando…';
     try {
       const r = await Bora.api('/public/loja/' + lojaId + '/pedido', { method: 'POST', body: JSON.stringify({
         itens: itensCarrinho(),
@@ -341,6 +415,24 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     $('send').addEventListener('click', abrirCheckout);
+    // Delegacao: a lista e redesenhada a cada mudanca, entao o ouvinte fica no container.
+    document.getElementById('carrinhoItens').addEventListener('click', (ev) => {
+      const b = ev.target.closest('button'); if (!b) return;
+      const i = Number(b.dataset.menos ?? b.dataset.mais ?? b.dataset.tira);
+      if (!cart[i]) return;
+      if (b.dataset.tira !== undefined) cart.splice(i, 1);
+      else if (b.dataset.menos !== undefined) {
+        cart[i].quantidade -= 1;
+        if (cart[i].quantidade <= 0) cart.splice(i, 1);
+      } else if (cart[i].quantidade < 99) cart[i].quantidade += 1;
+      atualizarBarra();
+      if (!cart.length) fecharCarrinho();
+    });
+    document.getElementById('carrinhoFechar').addEventListener('click', fecharCarrinho);
+    document.getElementById('barInfo').addEventListener('click', () => {
+      const el = document.getElementById('carrinhoLista');
+      if (el.hidden) abrirCarrinho(); else fecharCarrinho();
+    });
     $('ckFechar').addEventListener('click', () => { clearInterval(pollTimer); $('checkout').hidden = true; });
     $('ckEnviar').addEventListener('click', confirmarPedido);
     $('ckAplicarCupom').addEventListener('click', async () => {
