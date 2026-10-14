@@ -60,9 +60,23 @@
     return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
   }
 
-  /** Branco ou quase-preto: o que der mais contraste EM CIMA desta cor. */
+  /**
+   * A cor para escrever EM CIMA desta.
+   *
+   * Prefere o quase-preto ou o branco, que ficam melhores com qualquer marca, mas so enquanto um deles
+   * de fato passar na norma. Para cor de luminancia media NENHUM dos dois passa — vermelho puro da
+   * 4,18:1 com o quase-preto e 4,00:1 com o branco, os dois abaixo de 4,5 — e ai cai no preto puro,
+   * que resolve (5,25:1). Isto foi achado por teste, depois de eu dar a conta como pronta.
+   */
   function textoSobre(rgb) {
-    return contraste(BRANCO, rgb) >= contraste(ESCURO, rgb) ? paraHex(BRANCO) : paraHex(ESCURO);
+    var ESCURO_HEX = paraHex(ESCURO), BRANCO_HEX = paraHex(BRANCO), PRETO_HEX = '#000000';
+    var cEscuro = contraste(ESCURO, rgb), cBranco = contraste(BRANCO, rgb);
+    if (cEscuro >= MINIMO_TEXTO && cEscuro >= cBranco) return ESCURO_HEX;
+    if (cBranco >= MINIMO_TEXTO) return BRANCO_HEX;
+    // Nenhum dos dois serve: vai no que der mais contraste, incluindo o preto puro.
+    var cPreto = contraste([0, 0, 0], rgb);
+    if (cPreto >= cBranco && cPreto >= cEscuro) return PRETO_HEX;
+    return cBranco >= cEscuro ? BRANCO_HEX : ESCURO_HEX;
   }
 
   /**

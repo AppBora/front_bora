@@ -28,7 +28,7 @@
 <script>
 (function(){
   const q = new URLSearchParams(location.search);
-  const lojaId = q.get('loja'), pedidoId = q.get('pedido');
+  const lojaId = q.get('loja'), pedidoId = q.get('pedido'), token = q.get('t') || '';
   // A tela que o cliente final fica olhando enquanto espera o pedido era roxa do Bora e assinada
   // "BoraHapp", em qualquer loja. Quem esta esperando o pedido e cliente da LOJA.
   (async function vestirMarca() {
@@ -61,7 +61,10 @@
   const ORDEM = ['RECEBIDO','CONFIRMADO','EM_PREPARO','PRONTO','SAIU_PARA_ENTREGA','ENTREGUE'];
   async function tick(){
     try{
-      const r = await fetch(location.origin + '/public/loja/' + lojaId + '/pedido/' + pedidoId + '/status');
+      // O `t` e a assinatura do pedido, que vem no link. Sem ele o status responde 404: os ids de
+      // pedido sao sequenciais, e sem assinatura qualquer um varria os pedidos de qualquer loja.
+      const r = await fetch(location.origin + '/public/loja/' + lojaId + '/pedido/' + pedidoId
+        + '/status?t=' + encodeURIComponent(token));
       if(!r.ok) throw new Error('Pedido não encontrado');
       const d = await r.json();
       document.getElementById('loja').textContent = d.loja || 'Seu pedido';

@@ -97,7 +97,12 @@
       ? p.itens.slice(0, 4).map(i => `<b>${i.quantidade || 1}×</b> ${esc(i.descricao)}`).join('<br>') +
         (p.itens.length > 4 ? `<br><span style="color:#94a3b8">+${p.itens.length - 4} item(ns)</span>` : '')
       : '<span style="color:#94a3b8">Sem itens detalhados</span>';
-    const endereco = [p.clienteEndereco, p.clienteBairro].filter(Boolean).join(' · ');
+    // O endereco DESTE pedido vem primeiro. `clienteEndereco` e o do CADASTRO: no cliente recorrente
+    // que se mudou, era o endereco antigo — e era isso que o card mostrava para quem entrega.
+    const retirada = p.tipoEntrega ? p.tipoEntrega === 'RETIRADA'
+                                   : /RETIRADA NO BALC/i.test(p.observacao || '');
+    const endereco = retirada ? '' : [p.enderecoEntrega || p.clienteEndereco,
+                                      p.bairroEntrega || p.clienteBairro].filter(Boolean).join(' · ');
     const canal = boraCanal(p.origem);
     const novo = p.status === 'RECEBIDO';
     return `<div class="kcard ${atrasado ? 'late' : ''}" style="--col:${col.cor}">
@@ -108,6 +113,7 @@
       </div>
       <div class="cli">${esc(p.clienteNome) || 'Cliente avulso'}</div>
       ${p.clienteTelefone ? `<div class="line">${TEL}${esc(p.clienteTelefone)}</div>` : ''}
+      ${retirada ? `<div class="line">🛍️ <b>Retirada no balcão</b></div>` : ''}
       ${endereco ? `<div class="line">${PIN}${esc(endereco)}</div>` : ''}
       ${p.aguardandoPagamento ? `<div class="late-tag" style="background:#fffbeb;color:#92400e;border-color:#fde68a">⏳ Esperando o PIX — não prepare ainda</div>` : ''}
       <div class="itens">${itensTxt}</div>

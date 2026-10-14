@@ -1,5 +1,8 @@
 // Entregas & Roteirização — agrupa pedidos prontos/em rota por bairro, atribui entregador e despacha.
 (function () {
+  /** Retirada no balcao: le a coluna do pedido; pedido anterior a V48 cai no texto da observacao. */
+  const ehRetirada = (p) => p.tipoEntrega ? p.tipoEntrega === 'RETIRADA'
+                                          : /RETIRADA NO BALC/i.test(p.observacao || '');
   if (!Bora.requireAuth()) return;
   const money = v => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -24,7 +27,7 @@
       : `<button class="btn" style="padding:7px 12px" onclick="__despachar(${p.id})">🛵 Despachar</button>`;
     return `<tr>
       <td><b>${esc(p.codigo) || '#' + p.id}</b></td>
-      <td>${esc(p.clienteNome) || '—'}<br><small style="color:#94a3b8">${esc(p.clienteEndereco || '')}</small></td>
+      <td>${esc(p.clienteNome) || '—'}<br><small style="color:#94a3b8">${esc(p.enderecoEntrega || p.clienteEndereco || '')}</small></td>
       <td>${money(p.valorTotal)}</td>
       <td><select style="width:140px;padding:7px;border:1px solid #e5e7eb;border-radius:8px"
             onchange="__setEntregador(${p.id}, this.value)">${optsEntregador(p.entregador)}</select></td>
@@ -58,7 +61,15 @@
 
       // agrupa prontos por bairro
       const grupos = {};
-      prontos.forEach(p => { const b = (p.clienteBairro || 'Sem bairro'); (grupos[b] = grupos[b] || []).push(p); });
+      // Retirada no balcao NAO e entrega: a tela oferecia "Despachar" para quem ia buscar na loja.
+      // E o bairro vem do PEDIDO; pelo cadastro do cliente, todo pedido do cardapio caia em
+      // "Sem bairro", porque o bairro escolhido no checkout nao era gravado em lugar nenhum.
+      const paraEntregar = prontos.filter(p => !ehRetirada(p));
+      const paraRetirar = prontos.filter(ehRetirada);
+      paraEntregar.forEach(p => {
+        const b = (p.bairroEntrega || p.clienteBairro || 'Sem bairro');
+        (grupos[b] = grupos[b] || []).push(p);
+      });
       const blocos = Object.entries(grupos).sort((a, b) => b[1].length - a[1].length)
         .map(([b, lst]) => grupoBairro(b, lst)).join('');
 
@@ -68,8 +79,16 @@
           <tbody>${emRota.map(p => linha(p, true)).join('') || '<tr><td colspan="6" style="color:#94a3b8">Ninguém em rota.</td></tr>'}</tbody></table>
       </div>`;
 
-      document.getElementById('rotas').innerHTML =
-        (blocos || '<div class="panel" style="margin-bottom:14px"><p style="color:#94a3b8">Nenhum pedido pronto aguardando rota.</p></div>') + rotaTabela;
+      // Os de retirada aparecem em bloco proprio, SEM botao de despachar: eles nao saem da loja.
+      const blocoRetirada = paraRetirar.length ? `<div class="panel" style="margin-bottom:14px">
+        <h2>🛍️ Retirada no balcão (${paraRetirar.length})</h2>
+        <p class="mini" style="color:#64748b;margin:0 0 10px">O cliente vem buscar. Avise quando ele chegar e marque como entregue na tela de Pedidos.</p>
+        <table class="table"><thead><tr><th>Cód.</th><th>Cliente</th><th>Valor</th><th>Pronto há</th></tr></thead>
+          <tbody>${paraRetirar.map(p => `<tr><td>${esc(p.codigo || p.id)}</td><td>${esc(p.clienteNome || '—')}</td><td>${money(p.valorTotal)}</td><td>${mins(p.atualizadoEm || p.criadoEm)} min</td></tr>`).join('')}</tbody></table>
+      </div>` : '';
+
+      document.getElementById('rotas').innerHTML = blocoRetirada +
+        (blocos || (paraRetirar.length ? '' : '<div class="panel" style="margin-bottom:14px"><p style="color:#94a3b8">Nenhum pedido pronto aguardando rota.</p></div>')) + rotaTabela;
     } catch (e) { document.getElementById('rotas').innerHTML = `<div class="panel"><p style="color:var(--danger)">${e.message}</p></div>`; }
   }
 

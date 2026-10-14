@@ -301,26 +301,38 @@
         $('pxCodigo').textContent = r.codigo; $('pxValor').textContent = money(r.valorTotal);
         if (r.pix.encodedImage) $('pxQr').src = 'data:image/png;base64,' + r.pix.encodedImage;
         $('pxPayload').value = r.pix.payload;
-        acompanharPagamento(r.pedidoId);
+        acompanharPagamento(r.pedidoId, r.acompanharToken);
       } else {
         $('ckForm').hidden = true; $('ckOk').hidden = false;
         $('okMsg').innerHTML = 'Seu pedido ' + r.codigo + ' (' + money(r.valorTotal) + ') já está na cozinha. Pagamento na entrega/retirada.<br><br>' +
-          '<a href="acompanhar.html?loja=' + lojaId + '&pedido=' + r.pedidoId + '" style="color:#7c3aed;font-weight:800">📍 Acompanhar meu pedido ao vivo</a>';
+          linkDeAcompanhar(r.pedidoId, r.acompanharToken);
       }
     } catch (e) { err.textContent = e.message || 'Falha ao enviar o pedido'; }
     btn.disabled = false; btn.textContent = 'Confirmar pedido';
   }
 
-  function acompanharPagamento(pedidoId) {
+  /**
+   * O link de acompanhar leva a assinatura do pedido.
+   *
+   * O endpoint de status passou a exigir o `t`: sem ele, qualquer um varria os pedidos de qualquer
+   * loja pelo id, que e sequencial, e lia codigo, status, horario e motivo de cancelamento.
+   */
+  function linkDeAcompanhar(pedidoId, token) {
+    const url = 'acompanhar.html?loja=' + lojaId + '&pedido=' + pedidoId
+      + (token ? '&t=' + encodeURIComponent(token) : '');
+    return '<a href="' + url + '" style="color:#7c3aed;font-weight:800">📍 Acompanhar meu pedido ao vivo</a>';
+  }
+
+  function acompanharPagamento(pedidoId, token) {
     clearInterval(pollTimer);
     pollTimer = setInterval(async () => {
       try {
-        const s = await Bora.api('/public/loja/' + lojaId + '/pedido/' + pedidoId + '/status');
+        const s = await Bora.api('/public/loja/' + lojaId + '/pedido/' + pedidoId + '/status'
+          + '?t=' + encodeURIComponent(token || ''));
         if (s.pago) {
           clearInterval(pollTimer);
           const st = $('pxStatus');
-          st.innerHTML = '✅ Pagamento confirmado! Pedido na cozinha.<br><br>' +
-            '<a href="acompanhar.html?loja=' + lojaId + '&pedido=' + pedidoId + '" style="color:#7c3aed;font-weight:800">📍 Acompanhar meu pedido ao vivo</a>';
+          st.innerHTML = '✅ Pagamento confirmado! Pedido na cozinha.<br><br>' + linkDeAcompanhar(pedidoId, token);
           st.style.color = '#15803d';
         }
       } catch (e) { /* segue tentando */ }
