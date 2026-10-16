@@ -1,4 +1,101 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoraHapp - Configurações da Loja</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260907b"></head><body>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoraHapp - Configurações da Loja</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260907b">
+<style>
+/* ---------------------------------------------------------------------------------------------
+   Layout desta tela. Fica AQUI e nao no styles.css de proposito: aquele arquivo e compartilhado
+   pelas 35 telas do painel, e mexer no fundo ou no card la mudaria todas elas.
+
+   O problema que isto resolve: a tela era um bloco unico de branco sobre quase-branco
+   (--card #fff sobre --bg #f6f7fb), com tudo aberto ao mesmo tempo e <hr> no lugar de separacao
+   de verdade. Para achar um cliente era preciso rolar por formularios que quase nunca se usa.
+--------------------------------------------------------------------------------------------- */
+.main { background: #eef1f6; }                 /* o fundo recua para o card aparecer */
+.card { border: 1px solid #dfe5ee; box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06); }
+
+/* ---- sanfona: secao que abre e fecha ---- */
+details.bloco { border: 1px solid #dfe5ee; border-radius: 12px; background: #fff; margin-top: 14px; overflow: hidden; }
+details.bloco > summary {
+  list-style: none; cursor: pointer; padding: 13px 16px; display: flex; align-items: center; gap: 10px;
+  font-weight: 800; font-size: 15px; color: #10213a; background: #f6f8fc;
+  border-left: 4px solid var(--primary); user-select: none; min-height: 48px;
+}
+details.bloco > summary::-webkit-details-marker { display: none; }
+details.bloco > summary::after {                /* a seta, que gira ao abrir */
+  content: '▸'; margin-left: auto; font-size: 15px; color: #64748b; transition: transform .15s;
+}
+details.bloco[open] > summary::after { transform: rotate(90deg); }
+details.bloco > summary:hover { background: #eef2f9; }
+details.bloco > summary:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; }
+details.bloco[open] > summary { border-bottom: 1px solid #e6ebf3; }
+details.bloco .conteudo { padding: 14px 16px 16px; }
+details.bloco > summary .pista {                /* o resumo do que ha dentro, sem precisar abrir */
+  font-weight: 600; font-size: 12.5px; color: #64748b;
+}
+
+/* a sanfona de nivel 1 (os cards da pagina) tem a barra um pouco mais forte */
+details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-height: 54px; }
+
+/* ---- cliente (empresa) e suas lojas ---- */
+.empresa { border: 1px solid #dfe5ee; border-radius: 12px; margin-top: 12px; overflow: hidden; background: #fff; }
+.empresa > summary {
+  list-style: none; cursor: pointer; padding: 12px 14px; display: flex; gap: 10px; align-items: center;
+  flex-wrap: wrap; background: #f1f5fb; border-left: 4px solid #334155; min-height: 52px;
+}
+.empresa > summary::-webkit-details-marker { display: none; }
+.empresa > summary::after { content: '▸'; margin-left: auto; color: #64748b; transition: transform .15s; }
+.empresa[open] > summary::after { transform: rotate(90deg); }
+.empresa > summary:hover { background: #e7edf7; }
+.empresa > summary:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; }
+.empresa .lojas { padding: 10px 12px 12px; display: grid; gap: 10px; background: #fafbfe; }
+
+/* cada loja e um bloco proprio, com tarja de cor pela situacao */
+.loja { border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; border-left: 5px solid #cbd5e1; }
+.loja.st-ATIVA         { border-left-color: #16a34a; }
+.loja.st-SEM_PAGAMENTO { border-left-color: #d97706; }
+.loja.st-SUSPENSA      { border-left-color: #dc2626; }
+.loja.st-ARQUIVADA     { border-left-color: #94a3b8; opacity: .75; }
+.loja > summary {
+  list-style: none; cursor: pointer; padding: 11px 13px; display: flex; gap: 10px; align-items: center;
+  flex-wrap: wrap; min-height: 50px;
+}
+.loja > summary::-webkit-details-marker { display: none; }
+.loja > summary:hover { background: #f8fafc; }
+.loja > summary:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; }
+.loja .nome { font-weight: 700; font-size: 14.5px; flex: 1 1 220px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.loja .acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+.loja .detalhe { padding: 0 13px 13px; border-top: 1px dashed #e8edf5; }
+.loja .detalhe .linha { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding-top: 11px; font-size: 13px; }
+.loja .ficha { color: #64748b; font-size: 12.5px; padding-top: 8px; line-height: 1.7; }
+
+/* cliente de uma loja so nao tem a camada da rede: o bloco da loja fica no primeiro nivel */
+#iaLojas > .loja { margin-top: 12px; }
+
+/* acao que vale para a rede toda -- separada das acoes de cada loja, de proposito */
+.daRede {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: #475569;
+  background: #fff; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 8px 10px;
+}
+.empresa > summary .pista { font-weight: 600; font-size: 12.5px; color: #64748b; }
+
+/* ---- alvos de toque e celular ---- */
+.loja .acoes .btn, .empresa > summary .btn { min-height: 38px; }
+@media (max-width: 760px) {
+  details.bloco .conteudo { padding: 12px; }
+  /* No celular o titulo e a pista brigam pela mesma linha e o titulo quebra no meio de uma
+     palavra. Empilha: titulo em cima, pista embaixo, e a seta encostada na direita. */
+  details.bloco > summary, .empresa > summary { display: block; position: relative; padding-right: 36px; }
+  details.bloco > summary .pista, .empresa > summary .pista { display: block; margin-top: 3px; }
+  details.bloco > summary::after, .empresa > summary::after {
+    position: absolute; right: 14px; top: 50%; margin: 0; transform: translateY(-50%);
+  }
+  details.bloco[open] > summary::after, .empresa[open] > summary::after {
+    transform: translateY(-50%) rotate(90deg);
+  }
+  .empresa .lojas { padding: 8px; }
+  .loja .acoes { width: 100%; }
+  .loja .acoes .btn { flex: 1 1 auto; min-height: 44px; }
+}
+</style>
+</head><body>
 <div class="layout">
   <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>BoraHapp</b><br><small>Delivery em tempo real</small></div></div>
     <nav class="nav"><a href="dashboard.html">Dashboard</a><a href="pedidos.html">Pedidos</a><a href="clientes.html">Clientes</a><a href="produtos.html">Produtos</a><a href="entregas.html">Entregas</a><a href="promocoes.html">Promoções</a><a href="relatorios.html">Relatórios</a><a class="active" href="configuracoes.html">Configurações</a><a class="" href="usuarios.html">Usuários</a><a href="planos.html">Planos</a></nav>
@@ -6,9 +103,10 @@
   <main class="main">
     <header class="top"><div class="title"><h1>Configurações da Loja</h1><p data-store>Sorveteria da Rosa</p></div>
       <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></header>
-    <div class="card">
-      <h2>Identidade da loja (white-label)</h2>
-      <p style="color:var(--muted);font-size:13px" id="planoInfo"></p>
+    <details class="bloco raiz" id="blocoIdentidade" open>
+      <summary>🎨 Identidade da loja <span class="pista">· nome, cores, logo, cashback e custos</span></summary>
+      <div class="conteudo">
+      <p style="color:var(--muted);font-size:13px;margin-top:0" id="planoInfo"></p>
       <form class="form" id="form">
         <div class="field full"><label>Nome exibido</label><input id="nomeExibicao"></div>
         <div class="field"><label>Cor primária</label><input type="color" id="corPrimaria" value="#7c3aed"></div>
@@ -27,11 +125,13 @@
         <div class="field full"><button class="btn" type="submit">Salvar identidade</button> <span id="msg" style="margin-left:10px"></span></div>
       </form>
       <div class="theme-preview" id="preview"></div>
-    </div>
+      </div>
+    </details>
     <!-- Minha senha (todo usuário logado troca a própria) -->
-    <div class="card" id="cardSenha" style="margin-top:16px">
-      <h2>🔒 Minha senha</h2>
-      <p style="color:var(--muted);font-size:13px;margin:6px 0 12px">
+    <details class="bloco raiz" id="cardSenha">
+      <summary>🔒 Minha senha <span class="pista">· troque de tempos em tempos</span></summary>
+      <div class="conteudo">
+      <p style="color:var(--muted);font-size:13px;margin:0 0 12px">
         Troque de tempos em tempos, e sempre que a senha tiver sido combinada por mensagem. Mínimo de 8 caracteres.
       </p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
@@ -47,12 +147,17 @@
         <button class="btn" id="btnTrocarSenha" style="height:40px">Trocar senha</button>
       </div>
       <p id="senhaMsg" style="font-size:13px;margin:10px 0 0"></p>
-    </div>
+      </div>
+    </details>
 
     <!-- Plataforma (visível SOMENTE para o ADMINISTRADOR_BORA — nenhuma conta de loja vê) -->
-    <div class="card" id="cardPlataforma" hidden style="margin-top:16px;border:2px dashed var(--primary)">
-      <h2>🔧 Plataforma BoraHapp <span style="font-weight:600;color:var(--muted);font-size:12px">· só o administrador da plataforma vê isto</span></h2>
-      <div style="display:flex;align-items:center;gap:14px;margin-top:10px">
+    <details class="bloco raiz" id="cardPlataforma" hidden open style="border:2px solid var(--primary)">
+      <summary>🔧 Plataforma BoraHapp <span class="pista">· só o administrador da plataforma vê isto</span></summary>
+      <div class="conteudo">
+      <details class="bloco" id="secFiscal">
+        <summary>🧾 Emissão de Nota Fiscal (NFC-e) <span class="pista">· chave da plataforma inteira</span></summary>
+        <div class="conteudo">
+      <div style="display:flex;align-items:center;gap:14px">
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700">
           <input type="checkbox" id="fiscalToggle" style="width:22px;height:22px;cursor:pointer">
           Emissão de Nota Fiscal (NFC-e)
@@ -64,8 +169,12 @@
         (custo da API fiscal: ~R$ 109/mês + R$ 0,65/nota — repassar como módulo pago por loja emissora).
       </p>
       <span id="fiscalMsg" style="font-size:13px"></span>
-      <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
-      <h3 style="margin:0 0 6px">➕ Nova loja (cliente)</h3>
+        </div>
+      </details>
+
+      <details class="bloco" id="secNovaLoja">
+        <summary>➕ Nova loja (cliente) <span class="pista">· o único caminho que grava o CNPJ</span></summary>
+        <div class="conteudo">
       <p style="color:var(--muted);font-size:13px;margin:0 0 10px">
         Cadastro feito pela plataforma — é o único caminho que grava o <b>CNPJ</b> na criação.
         A loja nasce semeada (formas de pagamento, motivos de cancelamento e horários 18h–23h) e
@@ -88,8 +197,12 @@
       <button class="btn" id="nlCriar" style="margin-top:12px">Criar loja</button>
       <span id="nlMsg" style="font-size:13px;margin-left:10px"></span>
       <div id="nlResultado" style="display:none;margin-top:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;font-size:13px"></div>
-      <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
-      <h3 style="margin:0 0 6px">👤 Administradores da plataforma</h3>
+        </div>
+      </details>
+
+      <details class="bloco" id="secAdmins">
+        <summary>👤 Administradores da plataforma <span class="pista" id="pistaAdmins"></span></summary>
+        <div class="conteudo">
       <p style="color:var(--muted);font-size:13px;margin:0 0 10px">
         Contas que enxergam <b>todos os clientes</b> e entram em qualquer loja pelo suporte — não são
         contas de loja. Até aqui só existia a que nasce no primeiro start do sistema: se ela se
@@ -106,8 +219,12 @@
       </div>
       <button class="btn" id="apCriar" style="margin-top:12px">Criar administrador</button>
       <span id="apMsg" style="font-size:13px;margin-left:10px"></span>
-      <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
-      <h3 style="margin:0 0 6px">🏪 Clientes — Módulo IA, taxa do PIX e situação</h3>
+        </div>
+      </details>
+
+      <details class="bloco" id="secClientes" open>
+        <summary>🏪 Clientes <span class="pista" id="pistaClientes">· Módulo IA, taxa do PIX e situação</span></summary>
+        <div class="conteudo">
       <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:0 0 8px;cursor:pointer">
         <input type="checkbox" id="verArquivadas" style="width:16px;height:16px">
         Mostrar também os clientes arquivados
@@ -118,8 +235,12 @@
         <b>0</b> para isentar — os fundadores foram vendidos sem taxa por pedido.
       </p>
       <div id="iaLojas" style="font-size:14px">Carregando lojas…</div>
-      <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0">
-      <h3 style="margin:0 0 6px">🧾 Faturamento do mês — e o que ainda está sem nota</h3>
+        </div>
+      </details>
+
+      <details class="bloco" id="secFaturamento">
+        <summary>💰 Faturamento do mês <span class="pista">· e o que ainda está sem nota</span></summary>
+        <div class="conteudo">
       <p style="color:var(--muted);font-size:13px;margin:0 0 10px">
         Cada mensalidade recebida vira uma linha aqui, com o CNPJ do cliente. Emita a nota no
         <b>Nota Fácil Sorocaba</b> e traga o número de volta: assim o mês fecha sabendo o que ficou
@@ -132,10 +253,14 @@
       </div>
       <div id="ftResumo" style="font-size:14px;margin-bottom:10px"></div>
       <div id="ftLista" style="font-size:14px">Carregando…</div>
-    </div>
+        </div>
+      </details>
+      </div>
+    </details>
     <!-- Módulo IA (aparece apenas para lojas com o add-on liberado) -->
-    <div class="card" id="cardIA" hidden style="margin-top:16px">
-      <h2>🧠 Módulo IA <span class="badge b-entregue" style="font-size:11px">contratado</span></h2>
+    <details class="bloco raiz" id="cardIA" hidden>
+      <summary>🧠 Módulo IA <span class="pista">· add-on contratado</span></summary>
+      <div class="conteudo">
       <div style="display:grid;gap:14px;margin-top:10px">
         <div>
           <b>🤖 Gerente Virtual</b> — o resumo do dia já é calculado e você vê aqui no botão abaixo.
@@ -161,11 +286,45 @@
           <span id="iaImpMsg" style="margin-left:8px;font-size:13px"></span>
         </div>
       </div>
-    </div>
+      </div>
+    </details>
   </main>
 </div>
 <script src="assets/js/api.js?v=20260930"></script><script src="assets/js/app.js?v=20260930"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20260630"></script><script src="assets/js/configuracoes.js?v=20260907&_=20260623"></script>
 <script>
+/**
+ * Lembra quais secoes desta tela ficaram abertas.
+ *
+ * Fica so no navegador de quem abriu (localStorage): nao vai para o servidor e nao vale para outro
+ * usuario nem para outro aparelho. Em janela privada, ou com dados de site bloqueados, so LER o
+ * localStorage estoura -- por isso tudo em try/catch. Sem a memoria, a tela abre no padrao e
+ * continua funcionando igual.
+ */
+const Sanfona = (function () {
+  const CHAVE = 'bora.cfg.abertos';
+  let estado = {};
+  try { estado = JSON.parse(localStorage.getItem(CHAVE) || '{}') || {}; } catch (e) { estado = {}; }
+  function guardar() {
+    try { localStorage.setItem(CHAVE, JSON.stringify(estado)); } catch (e) { /* sem memoria, paciencia */ }
+  }
+  return {
+    /** Estava aberto na ultima visita? Se nunca foi tocado, vale o padrao de quem chamou. */
+    aberto(chave, padrao) { return chave in estado ? estado[chave] : padrao; },
+    /** Aplica o que estava guardado e passa a anotar cada abre-e-fecha dentro de `raiz`. */
+    ligar(raiz) {
+      raiz.querySelectorAll('details[data-abre], details[id]').forEach(d => {
+        const k = d.dataset.abre || d.id;
+        if (!k) return;
+        if (k in estado) d.open = estado[k];
+        if (d.dataset.sanfona) return;      // ja ligado; nao empilha dois ouvintes
+        d.dataset.sanfona = '1';
+        d.addEventListener('toggle', () => { estado[k] = d.open; guardar(); });
+      });
+    }
+  };
+})();
+Sanfona.ligar(document);
+
 // Troca da propria senha — disponivel para qualquer usuario logado.
 (function () {
   const btn = document.getElementById('btnTrocarSenha');
@@ -287,24 +446,96 @@
       + ' ' + botao('arquivar', c.id, 'Arquivar', '#991b1b');
   }
 
-  // O cliente é a empresa (mesmo CNPJ); a rede aparece junta e, com 2+ lojas, dá para suspender,
+  // O cliente e a empresa (mesmo CNPJ); a rede aparece junta e, com 2+ lojas, da para suspender,
   // reativar, arquivar ou restaurar todas de uma vez.
-  function cabecalhoEmpresa(ls) {
+  //
+  // Os botoes da rede ficam DENTRO do bloco, nunca no <summary>: em HTML, clicar em qualquer coisa
+  // dentro de um <summary> abre e fecha a sanfona. Um "Arquivar empresa" dividindo o clique com o
+  // abre-e-fecha e a mesma armadilha do visto de IA que morava dentro do <label> do nome da loja.
+  function botoesDaRede(ls) {
     const e = ls[0];
+    if (ls.length < 2 || e.empresaId == null) return '';
     const vivas = ls.filter(c => c.situacao !== 'ARQUIVADA');
+    const b = (acao, texto, cor) => `<button class="btn" data-empacao="${acao}" data-empresa="${e.empresaId}"
+             style="background:${cor};padding:6px 10px;font-size:12px">${texto}</button>`;
     let botoes = '';
-    if (ls.length > 1 && e.empresaId != null) {
-      const b = (acao, texto, cor) => `<button class="btn" data-empacao="${acao}" data-empresa="${e.empresaId}"
-               style="background:${cor};padding:6px 10px;font-size:12px">${texto}</button>`;
-      if (vivas.some(c => c.situacao !== 'SUSPENSA')) botoes += b('suspender', 'Suspender empresa', '#b45309') + ' ';
-      if (vivas.some(c => c.situacao === 'SUSPENSA')) botoes += b('reativar', 'Reativar empresa', '#166534') + ' ';
-      if (vivas.length) botoes += b('arquivar', 'Arquivar empresa', '#991b1b') + ' ';
-      if (ls.some(c => c.situacao === 'ARQUIVADA')) botoes += b('restaurar', 'Restaurar empresa', '#0f766e');
-    }
-    return `<div style="margin-top:14px;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <b style="flex:1 1 220px">🏢 ${esc(e.empresaNome || e.nome)}
-        <span style="color:var(--muted);font-weight:400;font-size:12px">${e.documento ? esc(e.documento) + ' · ' : ''}${ls.length} loja${ls.length > 1 ? 's' : ''}</span></b>
-      ${botoes}</div>`;
+    if (vivas.some(c => c.situacao !== 'SUSPENSA')) botoes += b('suspender', 'Suspender tudo', '#b45309') + ' ';
+    if (vivas.some(c => c.situacao === 'SUSPENSA')) botoes += b('reativar', 'Reativar tudo', '#166534') + ' ';
+    if (vivas.length) botoes += b('arquivar', 'Arquivar tudo', '#991b1b') + ' ';
+    if (ls.some(c => c.situacao === 'ARQUIVADA')) botoes += b('restaurar', 'Restaurar tudo', '#0f766e');
+    return `<div class="daRede"><span>As ${ls.length} lojas de uma vez:</span> ${botoes}</div>`;
+  }
+
+  // O que faz o bloco nascer aberto: loja parada ou devendo e o que o dono precisa VER sem procurar.
+  const precisaDeAtencao = c => c.situacao === 'SEM_PAGAMENTO' || c.situacao === 'SUSPENSA'
+    || c.assinatura === 'INADIMPLENTE' || c.assinatura === 'PENDENTE';
+
+  const SELO_ASSINATURA = {
+    INADIMPLENTE: ['⚠️ inadimplente',       '#fee2e2', '#991b1b'],
+    PENDENTE:     ['⏳ pagamento pendente', '#fef3c7', '#92400e'],
+    CANCELADA:    ['⛔ sem assinatura',     '#e2e8f0', '#334155']
+  };
+
+  /**
+   * Uma loja, fechada. No <summary> fica so o que se le de relance: numero, nome e situacao.
+   *
+   * Tudo que CLICA -- o visto do Modulo IA (R$ 99/mes), a taxa do PIX e os botoes -- fica no
+   * detalhe, que so existe com o bloco aberto. Fora do <summary> por decisao, nao por estetica.
+   */
+  function blocoLoja(c) {
+    const chave = 'loja-' + c.id;
+    const sa = SELO_ASSINATURA[c.assinatura];
+    return `<details class="loja st-${c.situacao || 'ATIVA'}" data-abre="${chave}"
+             ${Sanfona.aberto(chave, false) ? 'open' : ''}>
+      <summary>
+        <span class="nome">#${c.id} · ${esc(c.nome) || 'Loja'}</span>
+        ${situacao(c)}
+        ${sa ? selo(sa[0], sa[1], sa[2]) : ''}
+        ${c.moduloIa ? selo('IA ligada', '#ede9fe', '#5b21b6') : ''}
+      </summary>
+      <div class="detalhe">
+        <div class="ficha">${ficha(c)}</div>
+        <div class="linha">
+          <!-- O nome da loja ficava DENTRO do <label> deste visto. Em HTML, clicar na etiqueta marca
+               a caixa: quem clicava no nome da loja para ler ligava, sem perceber, um add-on de
+               R$ 99/mes -- e so descobria na fatura do cliente. Agora a etiqueta e so a palavra. -->
+          <label for="ia-${c.id}" style="display:flex;gap:8px;align-items:center;cursor:pointer;font-weight:600">
+            <input type="checkbox" id="ia-${c.id}" data-ia="${c.id}" ${c.moduloIa ? 'checked' : ''}
+                   style="width:18px;height:18px;cursor:pointer"
+                   ${c.situacao === 'ARQUIVADA' ? 'disabled' : ''}>
+            Módulo IA <span style="color:var(--muted);font-weight:400">· add-on de R$ 99/mês</span>
+          </label>
+          <span data-iamsg="${c.id}" style="font-size:12px"></span>
+        </div>
+        <div class="linha">
+          <label for="split-${c.id}" style="color:var(--muted)">Taxa do PIX</label>
+          <input type="number" id="split-${c.id}" min="0" max="100" step="0.5" data-split="${c.id}"
+                 value="${c.splitPercentual == null ? '' : c.splitPercentual}" placeholder="padrão"
+                 style="width:86px;padding:6px;border:1px solid #e2e8f0;border-radius:6px">
+          <span style="color:var(--muted)">%</span>
+          <span data-splitmsg="${c.id}" style="font-size:12px"></span>
+        </div>
+        <div class="linha acoes">${acoes(c)}</div>
+      </div>
+    </details>`;
+  }
+
+  /**
+   * A rede de um mesmo CNPJ, fechada, com as lojas dentro.
+   *
+   * Cliente de uma loja so NAO ganha esta camada: o cabecalho repetiria o nome da loja e os botoes
+   * de rede nem existem com uma loja. Um nivel a menos para abrir.
+   */
+  function blocoCliente(chave, ls) {
+    if (ls.length === 1) return blocoLoja(ls[0]);
+    const e = ls[0];
+    const atencao = ls.filter(precisaDeAtencao).length;
+    const pista = (e.documento ? esc(e.documento) + ' · ' : '') + ls.length + ' lojas'
+      + (atencao ? ' · ⚠️ ' + atencao + (atencao > 1 ? ' precisam' : ' precisa') + ' de atenção' : '');
+    return `<details class="empresa" data-abre="${chave}" ${Sanfona.aberto(chave, atencao > 0) ? 'open' : ''}>
+      <summary><b>🏢 ${esc(e.empresaNome || e.nome)}</b> <span class="pista">${pista}</span></summary>
+      <div class="lojas">${botoesDaRede(ls)}${ls.map(blocoLoja).join('')}</div>
+    </details>`;
   }
 
   let ultimaLista = [];
@@ -320,34 +551,9 @@
         if (!grupos.has(k)) grupos.set(k, []);
         grupos.get(k).push(c);
       });
-      const linhaLoja = c =>
-        `<div style="padding:10px 0;border-top:1px solid #f1f5f9">
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <div style="display:flex;gap:8px;align-items:center;flex:1 1 240px;font-weight:600">
-              <!-- O nome da loja ficava DENTRO do <label> deste visto. Em HTML, clicar na etiqueta marca
-                   a caixa: quem clicava no nome da loja para ler ligava, sem perceber, um add-on de
-                   R$ 99/mes -- e so descobria na fatura do cliente. Agora so a propria caixa alterna,
-                   e ela tem rotulo proprio. -->
-              <input type="checkbox" id="ia-${c.id}" data-ia="${c.id}" ${c.moduloIa ? 'checked' : ''}
-                     style="width:18px;height:18px;cursor:pointer"
-                     ${c.situacao === 'ARQUIVADA' ? 'disabled' : ''} title="Módulo IA (add-on de R$ 99/mês)">
-              <label for="ia-${c.id}" style="font-weight:600;font-size:12px;color:var(--muted);cursor:pointer"
-                     title="Módulo IA (add-on de R$ 99/mês)">IA</label>
-              <span>#${c.id} · ${esc(c.nome) || 'Loja'} ${situacao(c)}</span>
-            </div>
-            <span style="color:var(--muted);font-size:13px">taxa PIX</span>
-            <input type="number" min="0" max="100" step="0.5" data-split="${c.id}"
-                   value="${c.splitPercentual == null ? '' : c.splitPercentual}" placeholder="padrão"
-                   style="width:86px;padding:6px;border:1px solid #e2e8f0;border-radius:6px">
-            <span style="color:var(--muted);font-size:13px">%</span>
-            ${acoes(c)}
-            <span data-splitmsg="${c.id}" style="font-size:12px"></span>
-            <span data-iamsg="${c.id}" style="font-size:12px;flex-basis:100%;padding-left:26px"></span>
-          </div>
-          <div style="color:var(--muted);font-size:12px;margin-top:4px;padding-left:26px">${ficha(c)}</div>
-        </div>`;
-      wrap.innerHTML = [...grupos.values()].map(ls => cabecalhoEmpresa(ls) + ls.map(linhaLoja).join('')).join('')
+      wrap.innerHTML = [...grupos].map(([k, ls]) => blocoCliente(k, ls)).join('')
         || 'Nenhum cliente ainda.';
+      Sanfona.ligar(wrap);
       wrap.querySelectorAll('button[data-empacao]').forEach(b => b.onclick = () => executarAcaoEmpresa(b));
       // O add-on custa R$ 99/mes. A tela ignorava a resposta do servidor: o administrador marcava o
       // visto e nao via nem a mensalidade nova, nem se a cobranca do cliente tinha mesmo mudado --
