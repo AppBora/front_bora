@@ -29,9 +29,33 @@
       <input type="password" id="senha" required autocomplete="current-password" placeholder="••••••">
       <button type="submit" id="btn">Entrar</button>
       <div class="login-err" id="err"></div>
-      <div class="login-foot" style="margin-bottom:6px"><a href="#" id="esqueci" style="color:var(--primary,#7c3aed);font-weight:600;text-decoration:none">Esqueci minha senha</a></div>
+      <div class="login-foot" style="margin-bottom:6px">
+        <a href="#" id="trocar" style="color:var(--primary,#7c3aed);font-weight:600;text-decoration:none">Trocar minha senha</a>
+        <span style="color:#94a3b8"> · </span>
+        <a href="#" id="esqueci" style="color:var(--primary,#7c3aed);font-weight:600;text-decoration:none">Esqueci minha senha</a>
+      </div>
       <div class="login-foot" style="margin-bottom:6px">Não tem conta? <a href="cadastro.html" style="color:var(--primary,#7c3aed);font-weight:600;text-decoration:none">Criar grátis</a></div>
       <div class="login-foot">BoraHapp · SaaS para pequenos deliveries</div>
+    </form>
+
+    <!-- Troca da propria senha, para quem NAO tem a tela de Configuracoes (operador e gerente).
+         Exige a senha antiga: sem isso, qualquer um que soubesse um e-mail trocaria a senha alheia. -->
+    <form class="login-card" id="formTroca" hidden style="margin-top:14px">
+      <h2 style="margin:0 0 4px;font-size:18px">Trocar minha senha</h2>
+      <p style="margin:0 0 10px;color:#64748b;font-size:13px">
+        Precisa saber a senha atual. Se não souber, use <b>Esqueci minha senha</b>.
+      </p>
+      <label>E-mail</label>
+      <input type="email" id="tEmail" required autocomplete="username" placeholder="voce@loja.com">
+      <label>Senha atual</label>
+      <input type="password" id="tAtual" required autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;">
+      <label>Nova senha <span style="font-weight:400;color:#64748b;font-size:12px">&middot; minimo 8 caracteres</span></label>
+      <input type="password" id="tNova" required autocomplete="new-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;">
+      <label>Repita a nova senha</label>
+      <input type="password" id="tNova2" required autocomplete="new-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;">
+      <button type="submit" id="tBtn">Trocar senha</button>
+      <div class="login-err" id="tErr"></div>
+      <div class="login-foot"><a href="#" id="tVoltar" style="color:var(--primary,#7c3aed);font-weight:600;text-decoration:none">Voltar para o login</a></div>
     </form>
   </div>
   <script src="assets/js/api.js?v=20260930"></script>
@@ -40,13 +64,81 @@
     // Nao existe envio de e-mail no sistema, entao "esqueci a senha" nao pode virar um link magico
     // por e-mail. O caminho que resolve hoje: o administrador da loja redefine em Usuarios, e quem
     // nao tem a quem recorrer fala com o suporte - ja com o e-mail preenchido na mensagem.
-    document.getElementById('esqueci').addEventListener('click', (ev) => {
+    document.getElementById('esqueci').addEventListener('click', async (ev) => {
       ev.preventDefault();
       const email = (document.getElementById('email').value || '').trim();
-      const texto = 'Oi! Esqueci a senha do BoraHapp.' + (email ? ' Meu e-mail de acesso e ' + email + '.' : '')
-        + ' Pode me ajudar a redefinir?';
-      if (confirm('Quem redefine a senha e o administrador da sua loja, na tela Usuarios. Se voce E o administrador, ou nao tem a quem pedir, abrimos o WhatsApp do suporte. Continuar?')) {
+      const err = document.getElementById('err');
+      if (!email) {
+        err.style.color = ''; err.textContent = 'Escreva seu e-mail acima e clique de novo.';
+        document.getElementById('email').focus();
+        return;
+      }
+      // Registra o pedido para o ADMINISTRADOR DA LOJA ver na tela de Usuarios. E o canal que
+      // funciona hoje: nao ha envio de e-mail no sistema, e nenhuma loja tem WhatsApp valido da Meta
+      // (conferido em 18/10/2026 -- a credencial de uma venceu em julho, a da outra e texto de
+      // exemplo). Quando houver, o mesmo registro dispara a mensagem sozinho.
+      //
+      // A resposta e sempre a mesma, exista o e-mail ou nao: senao esta tela viraria um jeito de
+      // descobrir quem usa o BoraHapp digitando enderecos.
+      try {
+        await Bora.api('/auth/pedido-de-senha', { method: 'POST', body: JSON.stringify({ email }) });
+      } catch (e) {
+        // 429 do freio ou API fora do ar: o caminho do WhatsApp abaixo continua valendo.
+      }
+      err.style.color = '#166534';
+      err.textContent = 'Avisamos o administrador da sua loja. Ele redefine sua senha em Usuários.';
+      const texto = 'Oi! Esqueci a senha do BoraHapp. Meu e-mail de acesso é ' + email + '. Pode me ajudar a redefinir?';
+      if (confirm('Quem redefine a senha é o administrador da sua loja — ele já foi avisado no painel.\n\nQuer abrir o WhatsApp para falar com o suporte do BoraHapp também?')) {
         window.open('https://wa.me/5515998602332?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+      }
+    });
+
+    // ---- Trocar a propria senha, sem precisar do painel ----
+    //
+    // Nao ha endpoint publico de troca de senha, e nao deve haver: seria um lugar a mais para testar
+    // senha alheia. O caminho aqui usa o que ja existe e ja e protegido -- entra com a senha ATUAL
+    // (o FreioDeTentativas do /auth/login trava forca bruta) e, com a sessao na mao, chama o
+    // /auth/trocar-senha de sempre, que exige a senha atual de novo.
+    const cardLogin = document.getElementById('form');
+    const cardTroca = document.getElementById('formTroca');
+    const mostrarTroca = (mostrar) => {
+      cardTroca.hidden = !mostrar;
+      cardLogin.hidden = mostrar;
+      if (mostrar) {
+        document.getElementById('tEmail').value = (document.getElementById('email').value || '').trim();
+        document.getElementById('tEmail').focus();
+      }
+    };
+    document.getElementById('trocar').addEventListener('click', (ev) => { ev.preventDefault(); mostrarTroca(true); });
+    document.getElementById('tVoltar').addEventListener('click', (ev) => { ev.preventDefault(); mostrarTroca(false); });
+
+    cardTroca.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('tBtn'), err = document.getElementById('tErr');
+      const v = id => (document.getElementById(id).value || '').trim();
+      const nova = document.getElementById('tNova').value, nova2 = document.getElementById('tNova2').value;
+      err.style.color = ''; err.textContent = '';
+      if (nova.length < 8) { err.textContent = 'A nova senha precisa ter ao menos 8 caracteres.'; return; }
+      if (nova !== nova2) { err.textContent = 'As duas novas senhas não conferem.'; return; }
+      btn.disabled = true; btn.textContent = 'Trocando…';
+      try {
+        const resp = await Bora.login(v('tEmail'), document.getElementById('tAtual').value);
+        Bora.setSession(resp);
+        try {
+          await Bora.api('/auth/trocar-senha', { method: 'POST',
+            body: JSON.stringify({ senhaAtual: document.getElementById('tAtual').value, novaSenha: nova }) });
+        } catch (dentro) {
+          // Entrou mas nao trocou: a sessao aberta aqui nao pode ficar de pe com a senha que a
+          // pessoa justamente quer abandonar.
+          localStorage.removeItem('boraToken'); localStorage.removeItem('boraUser');
+          throw dentro;
+        }
+        location.href = 'dashboard.html';
+      } catch (ex) {
+        const m = ex && ex.message ? ex.message : '';
+        // "Credenciais invalidas" aqui quer dizer senha ATUAL errada, e e isso que a pessoa precisa ler.
+        err.textContent = /credenci/i.test(m) ? 'Senha atual incorreta.' : (m || 'Não foi possível trocar a senha.');
+        btn.disabled = false; btn.textContent = 'Trocar senha';
       }
     });
 

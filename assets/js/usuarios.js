@@ -63,8 +63,38 @@ O efeito é imediato: se ela estiver `
     } catch (e) { alert('Nao foi possivel redefinir: ' + e.message); }
   };
 
+  /**
+   * Quem pediu ajuda com a senha e ainda nao foi atendido.
+   *
+   * Isto existe porque nao ha outro canal: o sistema nao manda e-mail, e o envio por WhatsApp
+   * depende da Cloud API da Meta -- conferido em 18/10/2026, nenhuma loja tem credencial valida.
+   * Entao o aviso vive aqui, onde esta o botao que resolve. Some sozinho quando a senha e redefinida.
+   */
+  async function pedidosDeSenha() {
+    const caixa = document.getElementById('pedidosSenha');
+    if (!caixa) return;
+    let itens = [];
+    try { itens = await Bora.api('/api/usuarios/pedidos-de-senha'); } catch (e) { itens = []; }
+    if (!Array.isArray(itens) || !itens.length) { caixa.hidden = true; return; }
+    const quando = iso => {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    };
+    caixa.innerHTML = '<b style="color:#92400e">🔑 ' + itens.length + (itens.length > 1 ? ' pessoas pediram' : ' pessoa pediu')
+      + ' para trocar a senha</b>'
+      + '<p style="margin:6px 0 10px;font-size:13px;color:#78350f">Use <b>Redefinir senha</b> na linha da pessoa, '
+      + 'aqui embaixo, e combine a senha nova com ela. O aviso some sozinho depois disso.</p>'
+      + itens.map(i => '<div style="font-size:13px;padding:4px 0">• <b>' + esc(i.nome) + '</b> '
+        + '<span style="color:#78350f">' + esc(i.email || '') + '</span> · pediu em ' + quando(i.criadoEm)
+        // Nao dizer "avisado" sem ter avisado: hoje isto e sempre falso, e e isso que o dono precisa saber.
+        + (i.avisadoPorWhatsapp ? ' · avisado por WhatsApp' : '') + '</div>').join('');
+    caixa.hidden = false;
+  }
+
   async function lista() {
     const tb = $('lista');
+    pedidosDeSenha();
     try {
       // A equipe traz as lojas de cada um; a lista de lojas da empresa diz o que dá para somar.
       const [us, equipe, daEmpresa] = await Promise.all([

@@ -46,9 +46,6 @@ const BORA_NAV = [
   { href:'canais.html',        label:'Canais',          ic:'📡' },
   { href:'entregas.html',      label:'Entregas',        ic:'🛵' },   // EntregadorService.listar() e aberto
   { href:'cardapio-qr.html',   label:'Cardápio QR',     ic:'📱' },
-  // Configuracoes fica para todos de proposito: e onde cada um troca a PROPRIA senha. O card de
-  // identidade da loja, esse sim, a tela esconde de quem nao e administrador.
-  { href:'configuracoes.html', label:'Configurações',   ic:'⚙️' },
   { href:'ajuda.html',         label:'Ajuda',           ic:'🆘' },
 
   // --- cadastro e numero da loja: GERENTE para cima ---
@@ -69,6 +66,10 @@ const BORA_NAV = [
   { href:'integracoes.html',   label:'Integrações',     ic:'🔌', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
 
   // --- so o dono da loja: quem manda no acesso e no dinheiro ---
+  // Configuracoes mexe no nome, nas cores, no cashback e no custo fixo da loja:
+  // ConfiguracaoLojaService.atualizar exige ADMINISTRADOR_LOJA. Quem nao e administrador troca a
+  // PROPRIA senha na tela de login, em "Trocar minha senha" -- nao precisa deste menu para isso.
+  { href:'configuracoes.html', label:'Configurações',   ic:'⚙️', roles:['ADMINISTRADOR_LOJA'] },
   { href:'usuarios.html',      label:'Usuários',        ic:'🔑', roles:['ADMINISTRADOR_LOJA'] },
   { href:'planos.html',        label:'Planos',          ic:'🏷️', roles:['ADMINISTRADOR_LOJA'] }
 ];

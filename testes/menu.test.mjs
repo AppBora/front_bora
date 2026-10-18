@@ -52,7 +52,7 @@ function menuDe(papel) {
 /** O que o balconista precisa para trabalhar — e nada além. */
 const DO_OPERADOR = [
   'dashboard.html', 'pedidos.html', 'pdv.html', 'caixa.html', 'kds.html',
-  'canais.html', 'entregas.html', 'cardapio-qr.html', 'configuracoes.html', 'ajuda.html',
+  'canais.html', 'entregas.html', 'cardapio-qr.html', 'ajuda.html',
 ];
 
 test('o OPERADOR nao ve Usuarios — era o defeito relatado', () => {
@@ -70,10 +70,27 @@ test('o OPERADOR nao ve numero de dono (faturamento, margem, lucro)', () => {
   }
 });
 
-test('o OPERADOR CONTINUA com Configuracoes — e onde ele troca a propria senha', () => {
-  // Esconder a tela inteira tiraria do operador o unico caminho para trocar a senha. Quem esconde o
-  // card de identidade da loja e a propria tela, nao o menu.
-  assert.ok(menuDe('OPERADOR').includes('configuracoes.html'));
+test('o OPERADOR nao ve Configuracoes — e a troca de senha mudou de lugar', () => {
+  // Configuracoes mexe no nome, nas cores, no cashback e no custo fixo da loja, e
+  // ConfiguracaoLojaService.atualizar exige ADMINISTRADOR_LOJA.
+  //
+  // Antes isto ficava a vista para todos porque era o unico lugar de trocar a propria senha. Deixou
+  // de ser: a tela de login ganhou "Trocar minha senha", que exige a senha atual. Se este teste
+  // voltar a falhar porque alguem devolveu Configuracoes ao operador, conferir ANTES se a troca de
+  // senha no login continua de pe -- senao o operador fica sem nenhum caminho.
+  assert.ok(!menuDe('OPERADOR').includes('configuracoes.html'));
+  assert.ok(!menuDe('GERENTE').includes('configuracoes.html'));
+  assert.ok(menuDe('ADMINISTRADOR_LOJA').includes('configuracoes.html'));
+});
+
+test('a tela de login tem a troca de senha, que e o caminho do operador agora', () => {
+  // Sem isto, o teste de cima estaria trancando uma regressao: operador sem Configuracoes E sem
+  // troca de senha no login nao consegue trocar a propria senha de jeito nenhum.
+  const login = fs.readFileSync(path.join(import.meta.dirname, '..', 'login.html'), 'utf8');
+  assert.ok(login.includes('id="formTroca"'), 'login.html perdeu o formulario de trocar senha');
+  assert.ok(login.includes('id="tAtual"'), 'a troca de senha tem que exigir a senha ATUAL');
+  assert.ok(login.includes("'/auth/trocar-senha'"), 'tem que chamar o endpoint que exige a senha atual');
+  assert.ok(login.includes("'/auth/pedido-de-senha'"), 'quem nao sabe a senha precisa conseguir pedir ajuda');
 });
 
 test('o OPERADOR continua com PDV e Entregas: a API nao bloqueia o que essas telas fazem', () => {
