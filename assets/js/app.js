@@ -25,33 +25,52 @@ const BORA_SLA = { 'Balcão':12, 'WhatsApp':25, 'Instagram':25, 'Telefone':25, '
   'iFood':40, '99Food':40, 'Rappi':40, 'Uber Eats':40, 'aiqfome':40, 'Goomer':35 };
 function boraSla(origem){ return BORA_SLA[boraCanal(origem).key] || 30; }
 
+// Quem ve o que.
+//
+// `roles` ausente = TODO MUNDO ve, inclusive o OPERADOR. Cada `roles` abaixo foi decidido pelo que a
+// API JA recusa (o `ctx.requirePapel` do servico), nao por opiniao sobre o que um operador deveria
+// ver -- menu e API discordando e como o lojista descobre a regra: levando erro na cara.
+//
+// Era o contrario ate 18/10/2026: 15 dos 26 itens nao tinham `roles`, e uma operadora recem-criada
+// na Zira via "Usuarios", "Planos" e "Relatorios" no menu. Clicar so dava "Acao nao permitida para o
+// seu perfil" -- a API sempre barrou, nada ficou exposto --, mas o menu prometia o que nao entregava.
+//
+// Fica para o OPERADOR o que ele usa no balcao: pedido, caixa, cozinha, entrega e a propria senha.
 const BORA_NAV = [
+  // --- o dia a dia: a API nao bloqueia nada disto ---
   { href:'dashboard.html',     label:'Dashboard',       ic:'📊' },
-  { href:'pedidos.html',       label:'Pedidos',         ic:'🧾' },
-  { href:'pdv.html',           label:'Frente de Caixa', ic:'💳' },
+  { href:'pedidos.html',       label:'Pedidos',         ic:'🧾' },   // so EXCLUIR pedido e GERENTE+ (RN06)
+  { href:'pdv.html',           label:'Frente de Caixa', ic:'💳' },   // ProdutoService.listar() e aberto
   { href:'caixa.html',         label:'Fechar Caixa',    ic:'💰' },
   { href:'kds.html',           label:'KDS Cozinha',     ic:'🍳' },
   { href:'canais.html',        label:'Canais',          ic:'📡' },
-  { href:'respostas-whatsapp.html', label:'Respostas WhatsApp', ic:'💬' },
-  { href:'integracoes.html',   label:'Integrações',     ic:'🔌' },
-  { href:'entregas.html',      label:'Entregas',        ic:'🛵' },
-  { href:'entregadores.html',  label:'Entregadores',    ic:'🏍️' },
-  { href:'acerto-entregadores.html', label:'Acerto Motoboy', ic:'💵', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
-  { href:'crm.html',           label:'CRM',             ic:'⭐' },
-  { href:'clientes.html',      label:'Clientes',        ic:'👥' },
-  { href:'produtos.html',      label:'Produtos',        ic:'📦' },
-  { href:'estoque.html',       label:'Estoque',         ic:'🗃️' },
-  { href:'insumos.html',       label:'Insumos',         ic:'🧂' },
+  { href:'entregas.html',      label:'Entregas',        ic:'🛵' },   // EntregadorService.listar() e aberto
   { href:'cardapio-qr.html',   label:'Cardápio QR',     ic:'📱' },
-  { href:'promocoes.html',     label:'Promoções',       ic:'⚡' },
-  { href:'relatorios.html',    label:'Relatórios',      ic:'📈' },
+  // Configuracoes fica para todos de proposito: e onde cada um troca a PROPRIA senha. O card de
+  // identidade da loja, esse sim, a tela esconde de quem nao e administrador.
+  { href:'configuracoes.html', label:'Configurações',   ic:'⚙️' },
+  { href:'ajuda.html',         label:'Ajuda',           ic:'🆘' },
+
+  // --- cadastro e numero da loja: GERENTE para cima ---
+  { href:'respostas-whatsapp.html', label:'Respostas WhatsApp', ic:'💬', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'entregadores.html',  label:'Entregadores',    ic:'🏍️', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'acerto-entregadores.html', label:'Acerto Motoboy', ic:'💵', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'crm.html',           label:'CRM',             ic:'⭐', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'clientes.html',      label:'Clientes',        ic:'👥', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'produtos.html',      label:'Produtos',        ic:'📦', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'estoque.html',       label:'Estoque',         ic:'🗃️', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'insumos.html',       label:'Insumos',         ic:'🧂', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'promocoes.html',     label:'Promoções',       ic:'⚡', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'ajustes.html',       label:'Ajustes Operação',ic:'🛠️', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  // Faturamento, CMV, margem e lucro sao numeros de dono, nao de balcao.
+  { href:'relatorios.html',    label:'Relatórios',      ic:'📈', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'desempenho.html',    label:'Desempenho',      ic:'💹', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'rede.html',          label:'Rede & Análise IA', ic:'🏪', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
-  { href:'configuracoes.html', label:'Configurações',   ic:'⚙️' },
-  { href:'ajustes.html',       label:'Ajustes Operação',ic:'🛠️' },
-  { href:'usuarios.html',      label:'Usuários',        ic:'🔑' },
-  { href:'planos.html',        label:'Planos',          ic:'🏷️' },
-  { href:'ajuda.html',         label:'Ajuda',           ic:'🆘' }
+  { href:'integracoes.html',   label:'Integrações',     ic:'🔌', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+
+  // --- so o dono da loja: quem manda no acesso e no dinheiro ---
+  { href:'usuarios.html',      label:'Usuários',        ic:'🔑', roles:['ADMINISTRADOR_LOJA'] },
+  { href:'planos.html',        label:'Planos',          ic:'🏷️', roles:['ADMINISTRADOR_LOJA'] }
 ];
 
 function renderNav(){

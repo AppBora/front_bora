@@ -325,6 +325,19 @@ const Sanfona = (function () {
 })();
 Sanfona.ligar(document);
 
+// Identidade da loja: quem nao administra a loja nao edita o nome, as cores nem o custo fixo.
+//
+// A tela INTEIRA continua no menu do operador de proposito -- e aqui que cada um troca a propria
+// senha. Mas `ConfiguracaoLojaService.atualizar` exige ADMINISTRADOR_LOJA: deixar o formulario a
+// vista so entregava "Acao nao permitida" depois de preencher tudo.
+(function () {
+  const bloco = document.getElementById('blocoIdentidade');
+  if (!bloco) return;
+  const p = (Bora.user() && Bora.user().papel) || '';
+  if (p === 'ADMINISTRADOR_LOJA' || p === 'ADMINISTRADOR_BORA') return;
+  bloco.hidden = true;
+})();
+
 // Troca da propria senha — disponivel para qualquer usuario logado.
 (function () {
   const btn = document.getElementById('btnTrocarSenha');
