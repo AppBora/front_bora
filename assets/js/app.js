@@ -20,6 +20,40 @@ function boraCanal(origem){
   for (const c of BORA_CANAIS){ if (c.match.some(m=>o.includes(m))) return c; }
   return { key: origem || 'Outros', ic:'🧾', cor:'#94a3b8' };
 }
+/**
+ * Este pedido conta como VENDA do dia?
+ *
+ * A regra existe num lugar só de propósito. Ela estava copiada em três telas, com duas versões
+ * diferentes (medido em 20/10/2026):
+ *   - caixa.js        -> `status !== 'CANCELADO' && !aguardandoPagamento`   (certo)
+ *   - dashboard.js    -> `status !== 'CANCELADO'`                           (contava PIX abandonado)
+ *   - canais.js       -> `status !== 'CANCELADO'`                           (idem)
+ * O número grande da primeira tela ficava maior que o fechamento de caixa do MESMO dia, e o lojista
+ * não tinha como saber qual dos dois acreditar.
+ *
+ * As duas condições:
+ *   - CANCELADO não é venda, óbvio.
+ *   - `aguardandoPagamento` é PIX online gerado e ainda NÃO pago: checkout abandonado. O pedido
+ *     expira sozinho em 30 minutos. Contar isso é fechar o caixa com dinheiro que nunca entrou.
+ *     Quando o Asaas confirma, o servidor zera essa marca (PublicController e CobradorDePixService),
+ *     então PIX PAGO conta normalmente.
+ *
+ * É a mesma regra do servidor em `PedidoRepository.somaReceita` e `contaPedidosValidos`, e do
+ * `RelatorioService`. Mudar aqui sem mudar lá volta a fazer as telas discordarem do relatório.
+ *
+ * Quem mostra faturamento deve mostrar TAMBÉM o que está esperando PIX (ver `boraEsperandoPix`):
+ * esse dinheiro não está perdido, está em trânsito, e esconder isso faz o lojista achar que vendeu
+ * menos.
+ */
+function boraEhVenda(p) {
+  return p && p.status !== 'CANCELADO' && !p.aguardandoPagamento;
+}
+
+/** PIX gerado e ainda não pago — o que ficou FORA do faturamento, e ainda pode entrar. */
+function boraEsperandoPix(p) {
+  return !!(p && p.status !== 'CANCELADO' && p.aguardandoPagamento);
+}
+
 // SLA de preparo (minutos prometidos) por canal — base do alerta de atraso.
 const BORA_SLA = { 'Balcão':12, 'WhatsApp':25, 'Instagram':25, 'Telefone':25, 'Site':30, 'Delivery':35,
   'iFood':40, '99Food':40, 'Rappi':40, 'Uber Eats':40, 'aiqfome':40, 'Goomer':35 };

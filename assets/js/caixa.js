@@ -44,8 +44,10 @@
       // PIX que ninguem pagou nao e venda. O fechamento contava como faturamento do dia: o lojista
       // fechava o caixa com um dinheiro que nunca entrou, e so descobria conferindo a conta do banco.
       // O servidor ja ignorava esse pedido na receita; aqui nao, e os dois numeros nao fechavam.
-      const vendas = hoje.filter(p => p.status !== 'CANCELADO' && !p.aguardandoPagamento);
-      const esperandoPix = hoje.filter(p => p.aguardandoPagamento);
+      // A regra desta tela estava CERTA e era a unica certa das tres. Agora ela mora em app.js
+      // (boraEhVenda) e as tres usam a mesma -- a copia e que deixava o Dashboard divergir.
+      const vendas = hoje.filter(boraEhVenda);
+      const esperandoPix = hoje.filter(boraEsperandoPix);
       const fat = vendas.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
       const ticket = vendas.length ? fat / vendas.length : 0;
       const canc = hoje.filter(p => p.status === 'CANCELADO').length;

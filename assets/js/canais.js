@@ -14,7 +14,10 @@
   };
 
   function render() {
-    const vendas = board.filter(p => p.status !== 'CANCELADO' && dentroPeriodo(p.criadoEm));
+    // boraEhVenda (app.js), nao `status !== 'CANCELADO'` solto: esta tela decide qual canal vale a
+    // pena, e contar checkout abandonado como venda do canal proprio fazia o cardapio parecer melhor
+    // do que e -- justamente contra o marketplace, que nunca tem PIX pendente.
+    const vendas = board.filter(p => boraEhVenda(p) && dentroPeriodo(p.criadoEm));
     const agg = {};
     vendas.forEach(p => {
       const c = boraCanal(p.origem);

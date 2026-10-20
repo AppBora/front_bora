@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { subir } from './harness.mjs';
+import { subir, helpersDoApp } from './harness.mjs';
 
 const REPO_FE = 'C:/Users/user/OneDrive/Desktop/Bora/bora-fase-2-frontend/assets/js/';
 const ARQ = process.env.CAIXA_JS || REPO_FE + 'caixa.js';
@@ -8,9 +8,14 @@ const hoje = () => new Date().toISOString();
 const card = (o) => ({ status: 'RECEBIDO', valorTotal: 0, formaPagamento: 'Dinheiro', origem: 'Balcao',
   criadoEm: hoje(), aguardandoPagamento: false, ...o });
 
+// Os helpers de VERDADE do app.js. A regra do que conta como venda (`boraEhVenda`) mora la para as
+// telas de dinheiro nao divergirem -- um dublê aqui faria este teste medir a regra do dublê enquanto
+// a tela roda com a do arquivo, que e exatamente o defeito que o conserto fechou (item 6, 20/10).
+const HELPERS = helpersDoApp();
+
 async function fecharCaixaCom(cards) {
   const Bora = { requireAuth: () => true, board: async () => cards, repetir() {} };
-  const pagina = subir(ARQ, { Bora, globais: { boraCanal: o => ({ ic: 'X', key: o }) } });
+  const pagina = subir(ARQ, { Bora, globais: { ...HELPERS } });
   await pagina.carregarPagina();
   return pagina;
 }

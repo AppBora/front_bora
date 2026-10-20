@@ -9,6 +9,42 @@ function elemento() {
   return e;
 }
 
+/**
+ * Os helpers de VERDADE do app.js, para o teste nao medir um dublê.
+ *
+ * O `boraEhVenda` decide o que entra no faturamento das telas de dinheiro, e ele mora num lugar so
+ * exatamente para as telas nao divergirem. Um stub no teste desfaria isso: o teste passaria com a
+ * regra do stub enquanto a tela roda com a do arquivo.
+ *
+ * Avalia o app.js inteiro num contexto com stubs de DOM. Ele NAO e so declaracoes: tem trechos que
+ * rodam na carga (registro do manifest, marca da loja), e eles mexem no document. Por isso os stubs
+ * abaixo cobrem `head`, `body` e `documentElement` -- sem isso a avaliacao estoura. Medido: sem o
+ * `head`, quebra em app.js:214.
+ */
+export function helpersDoApp(raiz = 'C:/Users/user/OneDrive/Desktop/Bora/bora-fase-2-frontend/') {
+  const nada = () => null;
+  const ctx = vm.createContext({
+    document: { querySelector: nada, querySelectorAll: () => [], getElementById: nada,
+      createElement: () => ({ style: {}, classList: { add() {}, remove() {} }, appendChild() {} }),
+      body: { appendChild() {} }, head: { appendChild() {} },
+      documentElement: { style: { setProperty() {} } },
+      addEventListener() {} },
+    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    // O app.js registra o service worker na carga; sem o navegador o `in` estoura.
+    navigator: { serviceWorker: { register: () => Promise.resolve() } },
+    window: { open: () => ({ document: { write() {}, close() {} }, focus() {} }), location: { origin: 'http://t' } },
+    console, Date, Math, JSON, Number, String, Object, Array, Promise, setTimeout,
+  });
+  vm.runInContext(fs.readFileSync(raiz + 'assets/js/app.js', 'utf8'), ctx,
+    { filename: 'app.js' });
+  return {
+    boraEhVenda: vm.runInContext('boraEhVenda', ctx),
+    boraEsperandoPix: vm.runInContext('boraEsperandoPix', ctx),
+    boraCanal: vm.runInContext('boraCanal', ctx),
+    boraSla: vm.runInContext('boraSla', ctx),
+  };
+}
+
 export function subir(arquivo, { Bora, globais = {}, search = '' } = {}) {
   const els = new Map();
   const ouvintes = {};

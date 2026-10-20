@@ -15,7 +15,10 @@
   };
 
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
-  const isVenda = p => p.status !== 'CANCELADO';
+  // A regra vive em app.js (boraEhVenda). Aqui era `p.status !== 'CANCELADO'`, sem olhar o
+  // aguardandoPagamento: o faturamento desta tela incluía checkout abandonado e ficava MAIOR que o
+  // fechamento de caixa do mesmo dia. Duas telas, dois números, e nenhuma pista de qual acreditar.
+  const isVenda = boraEhVenda;
 
   async function promoRelampago() {
     if (!confirm('Abrir o cupom BORA15 (15% de desconto, 3 horas, até 20 usos) no seu cardápio agora?')) return;
@@ -108,6 +111,12 @@
       const ticket = vendasHoje.length ? fat / vendasHoje.length : 0;
       const canc = hoje.filter(p => p.status === 'CANCELADO').length;
       const pctCanc = hoje.length ? Math.round((canc / hoje.length) * 100) : 0;
+      // O que ficou fora do faturamento por falta de pagamento. Mostrar isto é parte do conserto:
+      // sem a linha, o lojista vê um número menor que antes e acha que perdeu venda — e esse dinheiro
+      // não está perdido, está esperando o PIX e ainda pode entrar. Mesmo padrão do Caixa e do
+      // Relatórios.
+      const esperandoPix = hoje.filter(boraEsperandoPix);
+      const valorEsperandoPix = esperandoPix.reduce((t, p) => t + Number(p.valorTotal || 0), 0);
 
       set('kFat', money(fat));
       set('kPed', vendasHoje.length);
@@ -116,6 +125,15 @@
 
       const tr = document.getElementById('kFatTrend');
       if (tr) { tr.className = 'trend ' + (vendasHoje.length ? 'up' : 'flat'); tr.textContent = vendasHoje.length ? '● hoje' : '—'; }
+
+      const avisoPix = document.getElementById('kFatPix');
+      if (avisoPix) {
+        avisoPix.hidden = !esperandoPix.length;
+        avisoPix.textContent = esperandoPix.length
+          ? '⏳ ' + money(valorEsperandoPix) + ' em ' + esperandoPix.length
+            + ' pedido(s) esperando PIX — fora desta conta'
+          : '';
+      }
 
       set('opPreparo', resumo.emPreparo);
       set('opAguard', board.filter(p => p.status === 'PRONTO').length);
