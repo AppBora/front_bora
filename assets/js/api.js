@@ -80,7 +80,28 @@ const Bora = {
   atualizarEntregador(id, b) { return this.api('/api/entregadores/' + id, { method: 'PUT', body: JSON.stringify(b) }); },
   excluirEntregador(id) { return this.api('/api/entregadores/' + id, { method: 'DELETE' }); },
   produtos() { return this.api('/api/produtos'); },
-  atualizarProduto(id, b) { return this.api('/api/produtos/' + id, { method: 'PUT', body: JSON.stringify(b) }); },
+  // atualizarProduto FOI REMOVIDO de proposito. Ele mandava o cadastro inteiro num PUT, e quem
+  // chamava sem ter todos os campos apagava o que nao conhecia -- foi assim que as telas de
+  // Estoque e Contagem passariam a apagar o codigo do marketplace. Quem edita cadastro e so o
+  // formulario de Produtos, que chama o endpoint direto; quem mexe em estoque usa as funcoes
+  // abaixo. Deixar o atalho aqui era convidar o defeito de volta.
+
+  // Estoque NAO passa mais pelo cadastro. O PUT /api/produtos gravava `estoque` sem condicao, e quem
+  // mandava o cadastro mandava o numero que a tela carregou -- talvez horas antes. Corrigir o preco as
+  // 21h apagava as vendas da noite. E as telas de Estoque e Contagem, que mandavam o cadastro que
+  // CONHECEM, apagavam os campos que nao conhecem (o codigo do marketplace, por exemplo).
+  //
+  // `quantidade` nula em DEFINIR quer dizer "para de controlar estoque". AJUSTAR soma no banco.
+  definirEstoqueProduto(id, quantidade) { return this.mexerNoEstoqueProduto(id, 'DEFINIR', quantidade); },
+  ajustarEstoqueProduto(id, delta) { return this.mexerNoEstoqueProduto(id, 'AJUSTAR', delta); },
+  mexerNoEstoqueProduto(id, tipo, quantidade) {
+    return this.api('/api/produtos/' + id + '/estoque',
+      { method: 'PUT', body: JSON.stringify({ tipo, quantidade }) });
+  },
+  definirEstoqueInsumo(id, quantidade) {
+    return this.api('/api/insumos/' + id + '/estoque',
+      { method: 'PUT', body: JSON.stringify({ tipo: 'DEFINIR', quantidade }) });
+  },
   relatorios(dias, lojaId) { return this.api('/api/relatorios?dias=' + (dias || 30) + (lojaId ? '&lojaId=' + lojaId : '')); },
   insumos() { return this.api('/api/insumos'); },
   salvarInsumo(b) { return this.api('/api/insumos' + (b.id ? '/' + b.id : ''), { method: b.id ? 'PUT' : 'POST', body: JSON.stringify(b) }); },

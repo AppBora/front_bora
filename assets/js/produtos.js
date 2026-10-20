@@ -38,17 +38,38 @@
 
   const num = v => v === '' || v == null ? null : Number(v);
   let fotoAtual = null; // data URL comprimida da foto escolhida (null = manter a existente)
+  // O estoque que a tela carregou para o produto em edicao. null tambem quando se esta criando.
+  let estoqueNaTela = null;
+
+  /**
+   * Manda o estoque SO SE O LOJISTA MUDOU o numero.
+   *
+   * O defeito que isto fecha: o formulario mandava o estoque sempre, com o valor carregado na abertura
+   * da tela. Abrir Produtos as 18h, vender 12 durante a noite e corrigir so o PRECO as 21h apagava as
+   * 12 baixas, sem log e sem aviso. Agora, nao mexer no campo = nao mandar nada.
+   *
+   * Mudou de proposito? E uma contagem: o lojista esta dizendo quanto tem. Vai pelo endpoint de
+   * estoque, que existe so para isso.
+   */
+  async function salvarEstoqueSeMudou(id) {
+    const agora = num($('estoque').value);
+    if (agora === estoqueNaTela) return;
+    await Bora.definirEstoqueProduto(id, agora);
+  }
   function payload() {
     const p = { nome: $('nome').value.trim(), categoria: $('categoria').value.trim(),
       preco: Number($('preco').value || 0), custo: num($('custo').value),
       estoque: num($('estoque').value), estoqueMinimo: num($('estoqueMinimo').value), ativo: true,
+      // `estoque` fica no corpo porque a CRIACAO precisa dele (quantidade inicial). Na edicao o
+      // servidor IGNORA este campo -- quem mexe em estoque e o PUT /api/produtos/{id}/estoque, numa
+      // chamada separada e so quando o lojista realmente mudou o numero. Ver `salvarEstoqueSeMudou`.
       // Vazio vai como string vazia de proposito: o servidor converte para nulo. Mandar sempre
       // permite APAGAR o codigo de um produto que ja tinha um.
       codigoExterno: $('codigoExterno').value.trim() };
     if (fotoAtual !== null) p.imagemUrl = fotoAtual;
     return p;
   }
-  function reset() { $('form').reset(); $('id').value = ''; fotoAtual = null; $('fotoPrev').hidden = true;
+  function reset() { $('form').reset(); $('id').value = ''; fotoAtual = null; estoqueNaTela = null; $('fotoPrev').hidden = true;
     $('btnSalvar').textContent = 'Salvar produto'; $('cancelar').style.display = 'none'; $('msg').textContent = ''; }
 
   // Comprime a foto no navegador (máx. 640px, JPEG 80%) para caber no banco sem pesar o cardápio.
@@ -76,6 +97,10 @@
     $('id').value = p.id; $('nome').value = p.nome || ''; $('categoria').value = p.categoria || '';
     $('preco').value = p.preco ?? ''; $('custo').value = p.custo ?? ''; $('estoque').value = p.estoque ?? ''; $('estoqueMinimo').value = p.estoqueMinimo ?? '';
     $('codigoExterno').value = p.codigoExterno ?? '';
+    // O valor que a tela ESTA MOSTRANDO. Na hora de salvar, comparamos com o que esta no campo: se
+    // nao mudou, nao mandamos nada de estoque, e as vendas que aconteceram enquanto a tela estava
+    // aberta ficam de pe.
+    estoqueNaTela = p.estoque ?? null;
     $('btnSalvar').textContent = 'Atualizar produto'; $('cancelar').style.display = 'inline-block'; window.scrollTo(0, 0); };
   window.__del = async id => { if (!confirm('Excluir produto?')) return; try { await Bora.api('/api/produtos/' + id, { method: 'DELETE' }); lista(); } catch (e) { alert(e.message); } };
 
@@ -121,7 +146,10 @@
     e.preventDefault(); $('msg').textContent = '';
     try {
       const id = $('id').value;
-      if (id) await Bora.api('/api/produtos/' + id, { method: 'PUT', body: JSON.stringify(payload()) });
+      if (id) {
+        await Bora.api('/api/produtos/' + id, { method: 'PUT', body: JSON.stringify(payload()) });
+        await salvarEstoqueSeMudou(id);
+      }
       else await Bora.api('/api/produtos', { method: 'POST', body: JSON.stringify(payload()) });
       reset(); lista();
     } catch (ex) { $('msg').textContent = ex.message; }

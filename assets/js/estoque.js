@@ -1,4 +1,12 @@
-// Controle de estoque — alertas de ruptura/mínimo e ajuste rápido (reusa PUT /api/produtos).
+// Controle de estoque — alertas de ruptura/mínimo e ajuste rápido.
+//
+// ANTES reusava o PUT /api/produtos, mandando o cadastro inteiro de volta a cada ajuste. Dois
+// defeitos nisso: (1) o cadastro que esta tela conhece não tem todos os campos, então cada ajuste
+// apagava o que ela não sabe que existe — o código do marketplace, por exemplo; (2) o "+1" era
+// calculado no NAVEGADOR, a partir da lista carregada minutos antes, e gravado como valor absoluto:
+// clicar "+1" às 21h com a lista de 18h gravava o saldo de 18h mais um, e as vendas da noite sumiam.
+//
+// Agora usa o PUT /api/produtos/{id}/estoque, que mexe NUMA coluna e soma no banco.
 (function () {
   if (!Bora.requireAuth()) return;
   const $ = id => document.getElementById(id);
@@ -7,22 +15,18 @@
   let produtos = [];
 
   window.__ajustar = async (id, delta) => {
-    const p = produtos.find(x => x.id === id); if (!p) return;
-    const novo = Math.max(0, (p.estoque || 0) + delta);
-    await salvar(p, novo);
+    // O delta vai para o servidor; a conta é do banco. Antes era `(p.estoque || 0) + delta` aqui, com
+    // o `p` de uma lista que pode ter minutos de idade.
+    try { await Bora.ajustarEstoqueProduto(id, delta); carregar(); }
+    catch (e) { alert(e.message); carregar(); }
   };
   window.__definir = async (id, valor) => {
-    const p = produtos.find(x => x.id === id); if (!p) return;
     const v = parseInt(valor, 10); if (isNaN(v)) return;
-    await salvar(p, Math.max(0, v));
+    // Valor absoluto: o lojista está dizendo quanto tem. Vence mesmo que tenha havido venda entre a
+    // leitura da tela e o clique — ele olhou a prateleira.
+    try { await Bora.definirEstoqueProduto(id, Math.max(0, v)); carregar(); }
+    catch (e) { alert(e.message); carregar(); }
   };
-  async function salvar(p, novoEstoque) {
-    try {
-      await Bora.atualizarProduto(p.id, { nome: p.nome, categoria: p.categoria, preco: p.preco, custo: p.custo,
-        estoque: novoEstoque, estoqueMinimo: p.estoqueMinimo, ativo: p.ativo });
-      carregar();
-    } catch (e) { alert(e.message); }
-  }
 
   function status(p) {
     if (p.estoque <= 0) return '<span class="st off">RUPTURA</span>';

@@ -32,8 +32,10 @@
       const novo = Number($('c' + p.id).value);
       if (!isFinite(novo) || novo < 0) { falhas.push(p.nome + ': quantidade inválida'); continue; }
       try {
-        await Bora.atualizarProduto(p.id, { nome: p.nome, categoria: p.categoria, preco: p.preco, custo: p.custo,
-          estoque: novo, estoqueMinimo: p.estoqueMinimo, ativo: p.ativo });
+        // So o estoque, pelo endpoint de estoque. Antes mandava o cadastro inteiro de volta, e o
+        // cadastro que esta tela conhece nao tem todos os campos -- cada contagem apagava o que ela
+        // nao sabe que existe (o codigo do marketplace, por exemplo).
+        await Bora.definirEstoqueProduto(p.id, novo);
       } catch (e) { falhas.push(p.nome + ': ' + e.message); }
     }
     $('msg').textContent = falhas.length

@@ -5,6 +5,10 @@
   const money = v => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let insumos = [];
+  // O estoque que a tela carregou para o insumo em edicao. Serve para saber se o lojista mexeu no
+  // campo: nao mexeu = nao mandamos nada, e o consumo da ficha que aconteceu enquanto a tela
+  // estava aberta fica de pe.
+  let estoqueNaTela = null;
 
   function estoqueCel(i) {
     if (i.estoque == null) return '<span style="color:#94a3b8">livre</span>';
@@ -23,18 +27,30 @@
   const num = v => v === '' || v == null ? null : Number(v);
   function payload() { return { nome: $('nome').value.trim(), unidade: $('unidade').value, custo: Number($('custo').value || 0),
     estoque: num($('estoque').value), estoqueMinimo: num($('estoqueMinimo').value) }; }
-  function reset() { $('form').reset(); $('id').value = ''; $('btnSalvar').textContent = 'Salvar insumo'; $('cancelar').style.display = 'none'; $('msg').textContent = ''; }
+  function reset() { $('form').reset(); $('id').value = ''; estoqueNaTela = null; $('btnSalvar').textContent = 'Salvar insumo'; $('cancelar').style.display = 'none'; $('msg').textContent = ''; }
 
   window.__edit = id => { const i = insumos.find(x => x.id === id); if (!i) return;
     $('id').value = i.id; $('nome').value = i.nome || ''; $('unidade').value = i.unidade || 'un'; $('custo').value = i.custo ?? '';
     $('estoque').value = i.estoque ?? ''; $('estoqueMinimo').value = i.estoqueMinimo ?? '';
+    estoqueNaTela = i.estoque == null ? null : Number(i.estoque);
     $('btnSalvar').textContent = 'Atualizar insumo'; $('cancelar').style.display = 'inline-block'; window.scrollTo(0, 0); };
   window.__del = async id => { if (!confirm('Excluir insumo?')) return;
     try { await Bora.excluirInsumo(id); await lista(); } catch (e) { alert('Não foi possível excluir: ' + e.message); } };
 
   $('cancelar').addEventListener('click', reset);
   $('form').addEventListener('submit', async e => { e.preventDefault(); $('msg').textContent = '';
-    try { const b = payload(); if ($('id').value) b.id = Number($('id').value); await Bora.salvarInsumo(b); reset(); await lista(); }
+    try {
+      const b = payload(); const id = $('id').value;
+      if (id) b.id = Number(id);
+      await Bora.salvarInsumo(b);
+      // Na edicao o servidor IGNORA o `estoque` do cadastro, pelo mesmo motivo do produto: o campo
+      // traz o numero carregado na abertura da tela, e corrigir o custo as 21h apagava o consumo da
+      // noite. Se o lojista mudou o numero, e uma contagem -- vai pelo endpoint de estoque.
+      if (id && num($('estoque').value) !== estoqueNaTela) {
+        await Bora.definirEstoqueInsumo(Number(id), num($('estoque').value));
+      }
+      reset(); await lista();
+    }
     catch (ex) { $('msg').textContent = ex.message; } });
 
   document.addEventListener('DOMContentLoaded', () => lista().catch(e => $('lista').innerHTML = `<tr><td colspan="4" style="color:var(--danger)">${e.message}</td></tr>`));
