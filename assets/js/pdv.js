@@ -15,6 +15,26 @@
     if (c && Number(c.cashback || 0) > 0) {
       box.style.display = 'flex'; $('cashbackVal').textContent = money(c.cashback);
     } else { box.style.display = 'none'; $('usarCashback').checked = false; }
+    renderCart();   // trocar de cliente muda o desconto, logo muda o TOTAL
+  }
+
+  /**
+   * Quanto do saldo entra NESTE pedido.
+   *
+   * Mesma regra do servidor (`FidelidadeService.resgatePossivel`): o resgate nunca zera o pedido,
+   * sempre fica pelo menos um centavo a pagar. Repetir a regra aqui e de proposito -- a tela tem
+   * que mostrar o MESMO numero que vai ser gravado. Quem decide de verdade continua sendo o
+   * servidor; isto e a previsao, e ela precisa bater.
+   */
+  function descontoDoCashback(subtotal) {
+    if (!$('usarCashback').checked) return 0;
+    const c = clientes.find(x => String(x.id) === $('cliente').value);
+    if (!c) return 0;
+    const saldo = Number(c.cashback || 0);
+    if (saldo <= 0 || subtotal <= 0) return 0;
+    const teto = subtotal - 0.01;
+    if (teto <= 0) return 0;
+    return Math.round(Math.min(saldo, teto) * 100) / 100;
   }
 
   function cats() {
@@ -55,9 +75,12 @@
         </div>`).join('');
     }
     const qtd = cart.reduce((s, i) => s + i.qtd, 0);
-    const total = cart.reduce((s, i) => s + i.preco * i.qtd, 0);
+    const subtotal = cart.reduce((s, i) => s + i.preco * i.qtd, 0);
+    const desconto = descontoDoCashback(subtotal);
     $('qtdItens').textContent = qtd;
-    $('total').textContent = money(total);
+    $('linhaCashbackBox').hidden = desconto <= 0;
+    $('linhaCashback').textContent = '- ' + money(desconto);
+    $('total').textContent = money(Math.max(0, subtotal - desconto));
     $('finish').disabled = !cart.length;
   }
 
@@ -171,6 +194,8 @@
       pagamento = b.dataset.p; document.querySelectorAll('.pay-btn').forEach(x => x.classList.remove('sel')); b.classList.add('sel'); });
     $('finish').addEventListener('click', finalizar);
     $('cliente').addEventListener('change', atualizarCashback);
+    // Sem este ouvinte, marcar o visto nao mexia no total: a tela seguia no preco cheio.
+    $('usarCashback').addEventListener('change', renderCart);
     try {
       // allSettled: forma de pagamento com problema não pode fechar o caixa da loja
       const [rp, rc, rf] = await Promise.allSettled([Bora.produtos(), Bora.clientes(), Bora.formasPagamento()]);

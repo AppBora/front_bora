@@ -23,6 +23,12 @@
         <div class="cart-items" id="items"><div class="cart-empty">Toque em um produto para começar</div></div>
         <div class="cart-foot">
           <div class="ln"><span>Itens</span><span id="qtdItens">0</span></div>
+          <!-- O desconto do cashback PRECISA aparecer aqui. Sem esta linha, a tela mostrava o preco
+               cheio, o servidor descontava, e o caixa cobrava do cliente um valor que o sistema nao
+               registrou: o cliente pagava o cheio E perdia o saldo. -->
+          <div class="ln" id="linhaCashbackBox" hidden style="color:#166534;font-weight:700">
+            <span>Cashback</span><span id="linhaCashback">- R$ 0,00</span>
+          </div>
           <div class="tot"><span>Total</span><span id="total">R$ 0,00</span></div>
           <select id="cliente"><option value="">Cliente avulso (balcão)</option></select>
           <label id="cashbackBox" style="display:none;align-items:center;gap:8px;background:#ecfdf5;border-radius:10px;padding:10px;margin-bottom:12px;cursor:pointer;font-size:13px;font-weight:700;color:#166534">
