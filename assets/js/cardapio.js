@@ -13,10 +13,20 @@
     produtos.forEach(p => { const c = p.categoria || 'Outros'; (grupos[c] = grupos[c] || []).push(p); });
     document.getElementById('menu').innerHTML = Object.entries(grupos).map(([cat, itens]) =>
       `<div class="menu-cat"><h3>${esc(cat)}</h3></div>` +
-      itens.map(p => `<div class="menu-item">
-        ${p.imagem ? `<img src="${p.imagem}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:10px;margin-right:10px;flex-shrink:0">` : ''}
-        <div class="mi"><div class="mn">${esc(p.nome)}</div><div class="mp">${money(p.preco)}</div></div>
-        <button class="madd" onclick="__add(${p.id})">+</button>
+      // Esgotado fica VISIVEL e nao clicavel. Antes o produto sem estoque aparecia normal, o cliente
+      // montava o carrinho inteiro e so levava o "acabou" no confirmar -- a pior forma de contar isso
+      // a ele. Mesma ideia do aviso de loja fechada, que ja aparece antes.
+      //
+      // O servidor e quem decide de verdade, na hora de gravar: entre carregar o cardapio e confirmar,
+      // alguem pode comprar o ultimo. Isto aqui e so para o cliente nao tomar o susto no fim.
+      itens.map(p => `<div class="menu-item"${p.esgotado ? ' style="opacity:.55"' : ''}>
+        ${p.imagem ? `<img src="${p.imagem}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:10px;margin-right:10px;flex-shrink:0${p.esgotado ? ';filter:grayscale(1)' : ''}">` : ''}
+        <div class="mi"><div class="mn">${esc(p.nome)}</div><div class="mp">${p.esgotado
+          ? '<span style="color:#dc2626;font-weight:700">Esgotado</span>'
+          : money(p.preco)}</div></div>
+        ${p.esgotado
+          ? '<button class="madd" disabled title="Esgotado" style="opacity:.4;cursor:not-allowed">+</button>'
+          : `<button class="madd" onclick="__add(${p.id})">+</button>`}
       </div>`).join('')
     ).join('');
     atualizarBarra();
@@ -83,6 +93,10 @@
 
   window.__add = id => {
     const p = produtos.find(x => x.id == id); if (!p) return;
+    // O botao do esgotado ja vem desabilitado; esta trava e para o OUTRO caminho, o "repetir pedido",
+    // que monta o carrinho por codigo. Sem ela o cliente repetia um pedido com item que acabou e so
+    // descobria no confirmar.
+    if (p.esgotado) return;
     if (p.complementos && p.complementos.length) abrirComplementos(p);
     else addLinha(p, [], 0, p.nome);
   };
@@ -138,6 +152,9 @@
         // Some entre a resposta e o cardápio carregado (corrida, ou produto que o servidor aceita e
         // a lista não traz). Ficar em silêncio faria o cliente levar menos do que pediu sem saber.
         if (!p) { avisos.push((it.nome || 'Um item') + ' não está disponível agora'); return; }
+        // Acabou desde o pedido anterior. Contamos, igual ao item que saiu do cardápio — repetir um
+        // carrinho com item esgotado só adiaria o "acabou" para o confirmar.
+        if (p.esgotado) { avisos.push((p.nome || 'Um item') + ' está esgotado agora'); return; }
         const ids = (it.complementos || []).map(Number);
         // Preço e rótulo saem do cardápio de HOJE, não do pedido antigo: é o que o cliente vai pagar.
         let extra = 0; const nomes = [];
