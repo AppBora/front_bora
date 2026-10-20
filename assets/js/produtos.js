@@ -41,7 +41,10 @@
   function payload() {
     const p = { nome: $('nome').value.trim(), categoria: $('categoria').value.trim(),
       preco: Number($('preco').value || 0), custo: num($('custo').value),
-      estoque: num($('estoque').value), estoqueMinimo: num($('estoqueMinimo').value), ativo: true };
+      estoque: num($('estoque').value), estoqueMinimo: num($('estoqueMinimo').value), ativo: true,
+      // Vazio vai como string vazia de proposito: o servidor converte para nulo. Mandar sempre
+      // permite APAGAR o codigo de um produto que ja tinha um.
+      codigoExterno: $('codigoExterno').value.trim() };
     if (fotoAtual !== null) p.imagemUrl = fotoAtual;
     return p;
   }
@@ -72,6 +75,7 @@
     if (p.imagemUrl) { $('fotoPrev').src = p.imagemUrl; $('fotoPrev').hidden = false; } else $('fotoPrev').hidden = true;
     $('id').value = p.id; $('nome').value = p.nome || ''; $('categoria').value = p.categoria || '';
     $('preco').value = p.preco ?? ''; $('custo').value = p.custo ?? ''; $('estoque').value = p.estoque ?? ''; $('estoqueMinimo').value = p.estoqueMinimo ?? '';
+    $('codigoExterno').value = p.codigoExterno ?? '';
     $('btnSalvar').textContent = 'Atualizar produto'; $('cancelar').style.display = 'inline-block'; window.scrollTo(0, 0); };
   window.__del = async id => { if (!confirm('Excluir produto?')) return; try { await Bora.api('/api/produtos/' + id, { method: 'DELETE' }); lista(); } catch (e) { alert(e.message); } };
 
