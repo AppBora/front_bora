@@ -53,7 +53,7 @@ O efeito é imediato: se ela estiver `
 
   /** Redefine a senha de alguem da equipe. O admin escolhe a nova e combina com a pessoa. */
   window.__senha = async (id, nome) => {
-    const nova = prompt('Nova senha para ' + nome + ' (minimo 8 caracteres). Combine com a pessoa e peca para ela trocar depois, em Configuracoes.');
+    const nova = prompt('Nova senha para ' + nome + ' (mínimo 8 caracteres). Combine com a pessoa e peça para ela trocar depois, na tela de login, em "Trocar minha senha".');
     if (nova === null) return;
     if (nova.trim().length < 8) { alert('A senha precisa ter ao menos 8 caracteres.'); return; }
     try {
@@ -137,9 +137,45 @@ O efeito é imediato: se ela estiver `
         nome: $('nome').value.trim(), email: $('email').value.trim(),
         senha: $('senha').value, papel: $('papel').value
       }) });
-      $('form').reset(); lista();
+      $('form').reset();
+      document.dispatchEvent(new Event('bora:usuario-criado'));   // a senha nao fica a mostra
+      lista();
     } catch (ex) { $('msg').style.color = 'var(--danger)'; $('msg').textContent = ex.message; }
   });
+
+  /**
+   * Olhinho para conferir a senha digitada.
+   *
+   * Quem cadastra alguem da equipe digita a senha aqui e combina com a pessoa depois. Sem poder ver
+   * o que digitou, erro de digitacao so aparece quando a pessoa tenta entrar e nao consegue -- e aí
+   * ninguem sabe se a senha foi cadastrada errada ou passada errada.
+   *
+   * Ela volta a ficar escondida sozinha em 15 segundos, e tambem quando o usuario e criado: esta e a
+   * tela do balcao, e senha aberta no monitor e lida por quem passa atras.
+   */
+  (function () {
+    const campo = $('senha'), botao = $('verSenha');
+    if (!campo || !botao) return;
+    let relogio = null;
+    function esconder() {
+      clearTimeout(relogio);
+      campo.type = 'password';
+      botao.textContent = '\u{1F441}';
+      botao.setAttribute('aria-pressed', 'false');
+      botao.title = 'Mostrar a senha';
+    }
+    botao.addEventListener('click', () => {
+      if (campo.type !== 'password') { esconder(); campo.focus(); return; }
+      campo.type = 'text';
+      botao.textContent = '\u{1F648}';
+      botao.setAttribute('aria-pressed', 'true');
+      botao.title = 'Esconder a senha';
+      clearTimeout(relogio);
+      relogio = setTimeout(esconder, 15000);
+      campo.focus();
+    });
+    document.addEventListener('bora:usuario-criado', esconder);
+  })();
 
   document.addEventListener('DOMContentLoaded', lista);
 })();

@@ -1,4 +1,27 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoraHapp - Usuários</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260907b"></head><body>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoraHapp - Usuários</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260907b">
+<style>
+/* O olhinho de ver a senha. Fica AQUI e nao no styles.css de proposito: aquele arquivo e
+   compartilhado pelas 34 telas do painel, e um seletor novo la valeria para todas elas. */
+/* Os dois cards empilhados: "Novo usuario" em cima, "Equipe da loja" embaixo. O .row do styles.css
+   e 2fr 1fr (lado a lado), e e usado por varias telas -- a troca vale so para esta pagina.
+   Em cima de tudo, a tabela da equipe tem 5 colunas e vivia espremida em 1/3 da largura. */
+.row { grid-template-columns: 1fr; }
+/* Com a largura inteira, o formulario nao precisa de duas colunas: campo de 50% de uma tela larga e
+   caixa de texto gigante para escrever um e-mail. */
+.form { grid-template-columns: minmax(0, 520px); }
+
+.comOlho { position: relative; }
+.comOlho input { padding-right: 48px; }       /* o texto digitado nao passa por baixo do botao */
+.olho {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 38px; height: 38px; border: 0; border-radius: 10px; background: transparent;
+  cursor: pointer; font-size: 17px; line-height: 1; padding: 0;
+}
+.olho:hover { background: #eef2f9; }
+.olho:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; }
+.olho[aria-pressed="true"] { background: #ede9fe; }
+@media (max-width: 760px) { .olho { width: 44px; height: 44px; } }
+</style></head><body>
 <div class="layout">
   <aside class="side"><div class="brand"><div class="logo"></div><div><b data-store>BoraHapp</b><br><small>Delivery em tempo real</small></div></div>
     <nav class="nav"><a href="dashboard.html">Dashboard</a><a href="pedidos.html">Pedidos</a><a href="clientes.html">Clientes</a><a href="produtos.html">Produtos</a><a href="entregas.html">Entregas</a><a href="promocoes.html">Promoções</a><a href="relatorios.html">Relatórios</a><a href="configuracoes.html">Configurações</a><a class="active" href="usuarios.html">Usuários</a><a href="planos.html">Planos</a></nav>
@@ -13,8 +36,17 @@
       <div class="card"><h2>Novo usuário</h2>
         <form id="form" class="form">
           <div class="field full"><label>Nome</label><input id="nome" required></div>
-          <div class="field"><label>E-mail</label><input id="email" type="email" required></div>
-          <div class="field"><label>Senha (mín. 6)</label><input id="senha" type="password" required></div>
+          <div class="field full"><label>E-mail</label><input id="email" type="email" required></div>
+          <div class="field full"><label>Senha
+            <span style="font-weight:400;font-size:12px">· mínimo 8 caracteres</span></label>
+            <div class="comOlho">
+              <!-- minlength 8 porque e o que a API exige (UsuarioService.criar). O rotulo dizia 6: quem
+                   digitasse 6 preenchia o formulario inteiro para levar erro do servidor no fim. -->
+              <input id="senha" type="password" required minlength="8" autocomplete="new-password">
+              <button type="button" id="verSenha" class="olho" aria-pressed="false"
+                      aria-controls="senha" title="Mostrar a senha">👁</button>
+            </div>
+          </div>
           <div class="field full"><label>Papel</label><select id="papel"><option value="OPERADOR">Operador</option><option value="GERENTE">Gerente</option><option value="ADMINISTRADOR_LOJA">Administrador da loja</option></select></div>
           <div class="field full"><button class="btn" type="submit">Criar usuário</button> <span id="msg" style="margin-left:10px"></span></div>
         </form>
