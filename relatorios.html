@@ -44,7 +44,40 @@
         </table>
       </div>
     </section>
+
+    <!-- Limpeza da movimentacao de teste. Nasce ESCONDIDA e so aparece para ADMINISTRADOR_BORA; a
+         API confere o papel de novo (LimpezaDeTestesService.requireAdminBora), entao esconder aqui e
+         conforto, nao seguranca. O administrador da LOJA nao ve: o estrago de um clique errado seria
+         o historico de vendas do proprio negocio dele. -->
+    <section id="zonaDePerigo" hidden
+             style="margin-top:22px;background:#fff;border:1px solid #fecaca;border-left:5px solid #dc2626;border-radius:14px;padding:18px">
+      <h2 style="margin:0 0 4px;font-size:17px;color:#991b1b">🧹 Limpar a movimentação de teste</h2>
+      <p style="margin:0 0 12px;font-size:13.5px;color:#7f1d1d">
+        Apaga <b>pedidos, itens, histórico de status e acertos de motoboy</b> desta loja.
+        <b>Não</b> toca em cardápio, insumos, complementos, cupons, integrações, PIX, assinatura
+        nem usuários. <b>Não tem como desfazer.</b>
+      </p>
+      <div id="lpPrevia" style="font-size:13.5px;margin-bottom:12px;color:#475569">Carregando o que existe hoje…</div>
+      <div id="lpForm" hidden>
+        <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;margin-bottom:12px;cursor:pointer">
+          <input type="checkbox" id="lpZerar" style="width:18px;height:18px;margin-top:1px;cursor:pointer">
+          <span>Zerar também o <b>cashback</b>, o total gasto e a contagem de pedidos dos clientes.
+            <span style="color:#7f1d1d">Cashback é dinheiro que o cliente final já tem a receber —
+            deixe desmarcado se houver cliente de verdade na lista.</span></span>
+        </label>
+        <label style="font-size:13px;display:block;margin-bottom:6px">
+          Para confirmar, digite o nome exato da loja: <b id="lpNomeEsperado"></b>
+        </label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="lpConfirma" placeholder="nome da loja" autocomplete="off"
+                 style="padding:11px;border:1px solid #e5e7eb;border-radius:12px;min-width:260px;font-size:15px">
+          <button class="btn" id="lpLimpar" disabled
+                  style="background:#dc2626">Apagar a movimentação</button>
+          <span id="lpMsg" style="font-size:13px"></span>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
-<script src="assets/js/api.js?v=20260930"></script><script src="assets/js/app.js?v=20260930"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20260630"></script><script src="assets/js/relatorios.js?v=20260907d"></script><script src="assets/js/balancete.js?v=20260930"></script>
+<script src="assets/js/api.js?v=20260930"></script><script src="assets/js/app.js?v=20260930"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20260630"></script><script src="assets/js/relatorios.js?v=20260907d"></script><script src="assets/js/balancete.js?v=20260930"></script><script src="assets/js/limpeza.js?v=20261019"></script>
 </body></html>
