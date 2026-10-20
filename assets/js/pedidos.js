@@ -50,7 +50,13 @@
   window.__excluir = async (id) => {
     const p = cache.find(x => x.id === id);
     const nome = p ? (p.codigo || '#' + p.id) : '#' + id;
-    if (!confirm(`Excluir o pedido ${nome} de vez?\n\nUse só para pedido de TESTE ou lançado errado: ele some das vendas e dos relatórios e não dá para desfazer.\n\nPedido de verdade que não vai sair: use Cancelar.`)) return;
+    // O que acontece com o estoque e o cashback está escrito aqui de propósito. Até 20/10/2026 o
+    // excluir NÃO devolvia nada, e o lojista não tinha como saber — o cliente perdia o saldo que
+    // gastou numa venda que o próprio lojista acabou de apagar.
+    const volta = p && p.status === 'CANCELADO'
+      ? 'O estoque e o cashback já voltaram quando você cancelou.'
+      : 'O estoque e o cashback deste pedido VOLTAM.';
+    if (!confirm(`Excluir o pedido ${nome} de vez?\n\nUse só para pedido de TESTE ou lançado errado: ele some das vendas e dos relatórios e não dá para desfazer.\n\n${volta}\n\nPedido de verdade que não vai sair: use Cancelar.`)) return;
     try { await Bora.api('/api/pedidos/' + id, { method: 'DELETE' }); await carregar(); }
     catch (e) { alert('Não foi possível excluir: ' + e.message); }
   };
