@@ -31,3 +31,53 @@ test('produtos: clicar para editar abre o campo preenchido', () => {
   assert.match(edit[1], /\$\('codigoExterno'\)\.value = p\.codigoExterno/,
     'editar um produto tem que trazer o código que já está salvo, senão salvar de novo o apaga');
 });
+
+// ---------------------------------------------------------------------------------------------
+// Acima estão os testes de conteúdo do arquivo. Abaixo, o comportamento de verdade: a tela é
+// EXECUTADA, com um produto que já tem código salvo, e medimos o que ela preenche e o que ela manda.
+// Teste de grep prova que a linha existe; estes provam que ela funciona.
+import { subir } from './harness.mjs';
+
+const PRODUTO = { id: 11, nome: 'Açaí 500ml', categoria: 'Açaí', preco: 24, custo: 8.5,
+  estoque: 10, estoqueMinimo: 2, ativo: true, codigoExterno: '7470' };
+
+async function abrirProdutos() {
+  const enviados = [];
+  const janela = { open() {}, scrollTo() {}, location: { origin: 'http://t' } };
+  const Bora = {
+    requireAuth: () => true,
+    requirePapel: () => true,
+    produtos: async () => [PRODUTO],
+    insumos: async () => [],
+    api: async (url, opt) => {
+      if (opt && opt.body) enviados.push({ url, metodo: opt.method, corpo: JSON.parse(opt.body) });
+      if (url === '/api/produtos') return [PRODUTO];
+      return {};
+    },
+  };
+  const pagina = subir('C:/Users/user/OneDrive/Desktop/Bora/bora-fase-2-frontend/assets/js/produtos.js',
+    { Bora, globais: { window: janela, boraToast() {}, alert() {}, confirm: () => true, FileReader: class {}, Image: class {} } });
+  await pagina.carregarPagina();
+  return { pagina, enviados, janela };
+}
+
+test('produtos (rodando): editar um produto traz o código salvo para o campo', async () => {
+  const { pagina, janela } = await abrirProdutos();
+  assert.equal(typeof janela.__edit, 'function', 'a tela não registrou o __edit');
+
+  janela.__edit(11);
+
+  assert.equal(pagina.get('codigoExterno').value, '7470',
+    'sem isto, salvar de novo apagaria o código que já estava lá');
+  assert.equal(pagina.get('nome').value, 'Açaí 500ml');
+});
+
+test('produtos (rodando): editar um produto SEM código deixa o campo vazio, não "undefined"', async () => {
+  // O ?? '' importa: "undefined" seria gravado como código de verdade e nunca casaria com nada.
+  const { pagina, janela } = await abrirProdutos();
+  PRODUTO.codigoExterno = undefined;
+  janela.__edit(11);
+  PRODUTO.codigoExterno = '7470';
+
+  assert.equal(pagina.get('codigoExterno').value, '');
+});
