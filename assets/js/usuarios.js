@@ -119,28 +119,126 @@ O efeito é imediato: se ela estiver `
             style="background:#eef2ff;color:#3730a3;padding:4px 8px;margin-left:6px"
             title="Definir uma nova senha para esta pessoa">Nova senha</button>`;
         const comLojas = Object.assign({}, u, porId[u.id] || {});
-        return `<tr><td>${esc(u.nome) || '—'}</td><td>${esc(u.email)}</td><td>${PAPEL[u.papel] || esc(u.papel)}</td>`
+        return `<tr data-abrir="${u.id}" title="Abrir no formulário acima">`
+          + `<td>${esc(u.nome) || '—'}</td><td>${esc(u.email)}</td><td>${PAPEL[u.papel] || esc(u.papel)}</td>`
           + `<td>${celulaLojas(comLojas)}</td><td>${badge}${toggle}${novaSenha}</td></tr>`;
       }).join('') || '<tr><td colspan="5" style="color:#94a3b8">Nenhum usuário.</td></tr>';
       tb.querySelectorAll('button[data-senha]').forEach(b =>
         b.onclick = () => window.__senha(Number(b.dataset.senha), b.dataset.nome));
+      // A linha inteira abre a pessoa, MENOS os botoes dela: clicar em "Desativar" nao pode virar
+      // "abrir para editar", e clicar num link de loja tambem nao.
+      tb.querySelectorAll('tr[data-abrir]').forEach(tr => tr.addEventListener('click', ev => {
+        if (ev.target.closest('button, a, select, input')) return;
+        const u = us.find(x => x.id === Number(tr.dataset.abrir));
+        if (u) modoEditar(u);
+      }));
     } catch (e) {
       const m = e.message.includes('403') || /perfil|restrita/i.test(e.message) ? 'Apenas administradores da loja acessam esta tela.' : e.message;
       tb.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${esc(m)}</td></tr>`;
     }
   }
 
+  /**
+   * Clicar em alguem da lista abre essa pessoa no formulario de cima.
+   *
+   * <b>A SENHA NAO VEM PREENCHIDA, e nao tem como vir.</b> Ela e guardada como hash BCrypt
+   * (`UsuarioService.java:60`, `encoder.encode`): da para conferir se uma senha confere, nunca para
+   * ler qual e. O `UsuarioView` devolve id, nome, e-mail, papel, ativo e loja -- senha nao sai de
+   * endpoint nenhum, e nem adiantaria sair. Entao o campo vira "nova senha, em branco mantem".
+   *
+   * Nome e e-mail abrem preenchidos mas travados: a API tem endpoint para papel, senha e ativo
+   * (`UsuarioController`), e nenhum para nome ou e-mail. Campo editavel que nao salva e pior que
+   * campo travado. O e-mail, em especial, e o login da pessoa.
+   */
+  let editando = null;
+
+  function modoCriar() {
+    editando = null;
+    $('form').reset();
+    document.dispatchEvent(new Event('bora:usuario-criado'));   // a senha nao fica a mostra
+    $('tituloForm').textContent = 'Novo usuário';
+    $('avisoEdicao').hidden = true;
+    $('nome').disabled = false;
+    $('email').disabled = false;
+    $('senha').required = true;
+    $('rotuloSenha').innerHTML = 'Senha <span style="font-weight:400;font-size:12px">· mínimo 8 caracteres</span>';
+    $('btnSalvar').textContent = 'Criar usuário';
+    $('btnCancelar').hidden = true;
+    $('msg').textContent = '';
+  }
+
+  function modoEditar(u) {
+    editando = u;
+    document.dispatchEvent(new Event('bora:usuario-criado'));   // esconde senha de quem foi editado antes
+    $('tituloForm').textContent = 'Editando ' + (u.nome || u.email);
+    $('avisoEdicao').hidden = false;
+    $('avisoEdicao').innerHTML = '<b>Nome e e-mail não mudam por aqui</b> — o e-mail é o login da '
+      + 'pessoa. Dá para trocar o <b>papel</b> e definir uma <b>nova senha</b>.';
+    $('nome').value = u.nome || '';
+    $('email').value = u.email || '';
+    $('papel').value = u.papel || 'OPERADOR';
+    $('nome').disabled = true;
+    $('email').disabled = true;
+    $('senha').value = '';
+    $('senha').required = false;
+    $('rotuloSenha').innerHTML = 'Nova senha <span style="font-weight:400;font-size:12px">'
+      + '· deixe em branco para manter a atual</span>';
+    $('btnSalvar').textContent = 'Salvar alterações';
+    $('btnCancelar').hidden = false;
+    $('msg').textContent = '';
+    $('tituloForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  $('btnCancelar').addEventListener('click', modoCriar);
+
   $('form').addEventListener('submit', async (e) => {
     e.preventDefault(); $('msg').textContent = '';
+    const btn = $('btnSalvar');
+    btn.disabled = true;
     try {
-      await Bora.api('/api/usuarios', { method: 'POST', body: JSON.stringify({
-        nome: $('nome').value.trim(), email: $('email').value.trim(),
-        senha: $('senha').value, papel: $('papel').value
-      }) });
-      $('form').reset();
-      document.dispatchEvent(new Event('bora:usuario-criado'));   // a senha nao fica a mostra
+      if (editando) {
+        const novaSenha = $('senha').value;
+        const trocaPapel = $('papel').value !== editando.papel;
+        if (novaSenha && novaSenha.length < 8) {
+          throw new Error('A nova senha precisa ter ao menos 8 caracteres.');
+        }
+        // Rebaixar o proprio administrador tranca a pessoa para fora desta tela, e nada no servidor
+        // impede (so o "desativar" tem guarda contra alvo proprio). Pelo menos pergunta.
+        if (trocaPapel && editando.papel === 'ADMINISTRADOR_LOJA'
+            && !confirm('Esta pessoa deixa de ser administradora da loja.\n\nSe esta for a SUA conta, '
+                        + 'você perde o acesso à tela de Usuários na hora. Continuar?')) {
+          btn.disabled = false; return;
+        }
+        if (!trocaPapel && !novaSenha) {
+          $('msg').style.color = 'var(--muted)';
+          $('msg').textContent = 'Nada para salvar: nem o papel mudou, nem há senha nova.';
+          btn.disabled = false; return;
+        }
+        if (trocaPapel) {
+          await Bora.api('/api/usuarios/' + editando.id + '/papel?papel='
+            + encodeURIComponent($('papel').value), { method: 'PUT' });
+        }
+        if (novaSenha) {
+          await Bora.api('/api/usuarios/' + editando.id + '/senha',
+            { method: 'PUT', body: JSON.stringify({ novaSenha }) });
+        }
+        const quem = editando.nome || editando.email;
+        modoCriar();
+        if (typeof boraToast === 'function') {
+          boraToast('<b>' + esc(quem) + '</b> atualizado ✓'
+            + (novaSenha ? ' — combine a senha nova com a pessoa.' : ''), 'ok');
+        }
+      } else {
+        await Bora.api('/api/usuarios', { method: 'POST', body: JSON.stringify({
+          nome: $('nome').value.trim(), email: $('email').value.trim(),
+          senha: $('senha').value, papel: $('papel').value
+        }) });
+        modoCriar();
+      }
       lista();
-    } catch (ex) { $('msg').style.color = 'var(--danger)'; $('msg').textContent = ex.message; }
+    } catch (ex) {
+      $('msg').style.color = 'var(--danger)'; $('msg').textContent = ex.message;
+    } finally { btn.disabled = false; }
   });
 
   /**
