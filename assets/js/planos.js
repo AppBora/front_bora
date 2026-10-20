@@ -54,8 +54,24 @@
       }
       // Assinatura cancelada ou em atraso tambem precisa de botao: antes a tela so mostrava o status
       // e o lojista nao tinha como voltar a pagar por conta propria.
-      const precisaReativar = a && (a.status === 'CANCELADA' || a.status === 'INADIMPLENTE');
-      if (!a || precisaReativar) {
+      // INADIMPLENTE nao "reativa": ele PAGA a fatura que existe. Ate 20/10/2026 o unico botao
+      // oferecido a ele era "Reativar assinatura", e era exatamente ele que apagava a fatura atrasada
+      // no Asaas e abria outra cortesia de 7 dias. Agora o servidor recusa isso (409), entao a tela
+      // tem que oferecer o caminho certo: o link da fatura.
+      const temFatura = !!(a && a.faturaLink);
+      const precisaReativar = a && (a.status === 'CANCELADA'
+        || (a.status === 'INADIMPLENTE' && !temFatura));
+      if (a && a.status === 'INADIMPLENTE' && temFatura) {
+        const venc = a.faturaVencimento ? a.faturaVencimento.split('-').reverse().join('/') : null;
+        const val = a.faturaValor != null ? 'R$ ' + Number(a.faturaValor).toFixed(2).replace('.', ',') : null;
+        el.innerHTML =
+          `<p style="margin:0 0 10px"><b>Há uma fatura em aberto.</b>
+             ${val ? val + (venc ? ', vencida em ' + venc : '') + '. ' : ''}Pague por aqui para manter o acesso.</p>
+           <a class="btn" href="${encodeURI(a.faturaLink)}" target="_blank" rel="noopener">Pagar a fatura</a>
+           <p style="margin:10px 0 0;color:var(--muted);font-size:13px">
+             Pagar esta fatura é o que reativa o acesso. Criar uma assinatura nova não apaga esta
+             cobrança — ela continuaria em aberto.</p>`;
+      } else if (!a || precisaReativar) {
         el.innerHTML =
           `<p style="margin:0 0 10px">${precisaReativar
              ? (a.status === 'CANCELADA'
@@ -70,10 +86,19 @@
         document.getElementById('btnAssinar').onclick = ativarAssinatura;
       } else {
         const valor = a.valor != null ? Number(a.valor).toFixed(2).replace('.', ',') : '—';
+        // Duas assinaturas vivas no Asaas: um cancelamento falhou e o lojista esta sendo cobrado em
+        // dobro. Ele tem que saber por aqui, nao pelo extrato do banco.
+        const dobro = a.cobrancaDuplicada
+          ? `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;
+               padding:10px;margin-top:10px;font-size:13px"><b>Atenção:</b> detectamos uma cobrança
+               antiga que não foi encerrada e você pode ser cobrado duas vezes. Já estamos avisados;
+               fale com o suporte para o estorno.</div>`
+          : '';
         el.innerHTML =
           `<p style="margin:0"><b>Status:</b> ${ST[a.status] || a.status}</p>
            <p style="margin:6px 0 0"><b>Plano:</b> ${NOME[a.plano] || a.plano} — R$ ${valor}/mês</p>
-           <p style="margin:6px 0 0;color:var(--muted);font-size:13px">A cobrança (PIX/boleto/cartão) é enviada pelo Asaas ao responsável.</p>`;
+           <p style="margin:6px 0 0;color:var(--muted);font-size:13px">A cobrança (PIX/boleto/cartão) é enviada pelo Asaas ao responsável.</p>
+           ${dobro}`;
       }
     } catch (e) {
       el.innerHTML = `<p style="color:var(--danger)">${e.message}</p>`;
