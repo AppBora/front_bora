@@ -53,6 +53,33 @@
     } catch (e) { el.innerHTML = `<p style="color:var(--muted)">Termômetro indisponível.</p>`; }
   }
 
+  /**
+   * A faixa de "sem conexao" no topo da tela.
+   *
+   * Numeros congelados sem aviso sao pior que tela vazia: quem olha acredita neles. A faixa fica ate
+   * a proxima carga dar certo, e o horario diz desde quando o que esta na tela parou de valer.
+   */
+  function avisarSemConexao(erro) {
+    let faixa = document.getElementById('semConexao');
+    if (!faixa) {
+      faixa = document.createElement('div');
+      faixa.id = 'semConexao';
+      faixa.style.cssText = 'background:#fef2f2;color:#991b1b;border:1px solid #fecaca;'
+        + 'border-radius:8px;padding:8px 12px;margin:0 0 12px;font-weight:700;font-size:14px';
+      const alvo = document.querySelector('main') || document.body;
+      alvo.insertBefore(faixa, alvo.firstChild);
+    }
+    const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    faixa.textContent = '⚠️ Sem conexão com o servidor (' + hora + '). Os números abaixo são os '
+      + 'últimos que deram certo — não são de agora.';
+    faixa.hidden = false;
+  }
+
+  function limparAvisoDeConexao() {
+    const faixa = document.getElementById('semConexao');
+    if (faixa) faixa.hidden = true;
+  }
+
   function canal(p) { const c = boraCanal(p.origem); return { k: c.key, ic: c.ic }; }
 
   function renderBarras(pedidosHoje) {
@@ -143,6 +170,8 @@
       renderBarras(hoje);
       renderCanais(hoje);
       renderTop(hoje);
+      // A carga deu certo: os numeros na tela sao de agora (item 7.3).
+      limparAvisoDeConexao();
 
       const tbody = document.getElementById('orders');
       if (tbody) {
@@ -153,9 +182,18 @@
           return `<tr><td>${esc(p.codigo) || '#' + p.id}</td><td>${esc(p.clienteNome) || '—'}</td>` +
             `<td><span class="badge ${cls}">${label}</span></td>` +
             `<td>${money(p.valorTotal)}</td><td>${canal(p).ic} ${canal(p).k}</td></tr>`;
-        }).join('');
+        }).join('')
+          // Item 7.11: sem isto, dia sem pedido deixava a tabela em branco e o lojista achava que a
+          // tela tinha quebrado.
+          || '<tr><td colspan="5" style="color:#94a3b8">Nenhum pedido ainda hoje.</td></tr>';
       }
-    } catch (e) { console.warn('Falha ao carregar dashboard:', e.message); }
+    } catch (e) {
+      // Item 7.3: era so um console.warn. Os numeros ficavam CONGELADOS na tela, sem nada dizendo
+      // que pararam -- e o dono olhava o faturamento de dez minutos atras achando que era de agora.
+      // Pedidos e KDS ja faziam certo; esta tela ficou de fora.
+      console.warn('Falha ao carregar dashboard:', e.message);
+      avisarSemConexao(e.message);
+    }
   }
 
   document.addEventListener('DOMContentLoaded', () => {

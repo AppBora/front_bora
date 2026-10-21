@@ -16,8 +16,21 @@
   window.__entregue = async (id) => { try { await Bora.mudarStatus(id, 'ENTREGUE'); carregar(); } catch (e) { alert(e.message); } };
   window.__setEntregador = async (id, nome) => { try { await Bora.definirEntregador(id, nome); } catch (e) { alert(e.message); } };
   window.__despacharBairro = async (ids) => {
-    for (const id of ids) { try { await Bora.mudarStatus(id, 'SAIU_PARA_ENTREGA'); } catch (e) {} }
+    // Item 7.4: despachava o bairro inteiro sem perguntar, e um catch VAZIO engolia TODA
+    // falha -- o lojista achava que os cinco pedidos sairam e um deles nao tinha saido. Cada
+    // despacho avisa o cliente no WhatsApp, entao errar aqui fala com gente de fora.
+    if (!confirm('Despachar ' + ids.length + ' pedido(s) deste bairro?\n\n'
+      + 'Cada um avisa o cliente no WhatsApp que o pedido saiu para entrega.')) return;
+    const falhas = [];
+    for (const id of ids) {
+      try { await Bora.mudarStatus(id, 'SAIU_PARA_ENTREGA'); }
+      catch (e) { falhas.push('#' + id + ': ' + e.message); }
+    }
     carregar();
+    if (falhas.length) {
+      alert('Despachei ' + (ids.length - falhas.length) + ' de ' + ids.length + '.\n\n'
+        + 'NÃO saiu:\n' + falhas.join('\n'));
+    }
   };
 
   function linha(p, emRota) {

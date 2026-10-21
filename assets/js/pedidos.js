@@ -37,9 +37,16 @@
     catch (e) { alert(e.message); }
   }
   window.__avancar = (id, st) => mudarStatus(id, PROXIMO[st]);
-  window.__cancelar = (id) => { const m = prompt('Motivo do cancelamento:'); if (m && m.trim()) mudarStatus(id, 'CANCELADO', m.trim()); };
+  // Item 6.8 da varredura: este texto vai INTEIRO para o cliente, no WhatsApp e na tela de
+  // acompanhar ("seu pedido foi cancelado (MOTIVO)"). Quem digita tem que saber -- "acabou o acai,
+  // esse cliente sempre reclama" era escrito achando que ficava interno.
+  const AVISO_MOTIVO = 'Motivo do cancelamento:\n\n'
+    + '⚠️ Este texto é enviado AO CLIENTE no WhatsApp e aparece na tela de acompanhar o pedido.\n'
+    + 'Escreva o que você diria a ele.';
+
+  window.__cancelar = (id) => { const m = prompt(AVISO_MOTIVO); if (m && m.trim()) mudarStatus(id, 'CANCELADO', m.trim()); };
   window.__aceitar = (id) => mudarStatus(id, 'CONFIRMADO');
-  window.__recusar = (id) => { const m = prompt('Motivo da recusa do pedido:'); if (m && m.trim()) mudarStatus(id, 'CANCELADO', m.trim()); };
+  window.__recusar = (id) => { const m = prompt(AVISO_MOTIVO.replace('cancelamento', 'recusa')); if (m && m.trim()) mudarStatus(id, 'CANCELADO', m.trim()); };
   window.__imprimir = (id) => { const p = cache.find(x => x.id === id); if (p && typeof boraPrintComanda === 'function') boraPrintComanda(p); };
   window.__refresh = () => carregar().catch(e => Bora._conexao(false, e));
 

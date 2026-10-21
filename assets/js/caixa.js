@@ -22,6 +22,10 @@
     const loja = (JSON.parse(localStorage.getItem('boraTheme') || '{}').name) || 'Bora';
     const linha = (k, v) => `<tr><td>${esc(k)}</td><td class="r">${money(v)}</td></tr>`;
     const w = window.open('', '_print', 'width=320,height=640');
+    // Item 7.10: sem esta linha, pop-up bloqueado fazia `w.document` estourar e a tela nao fazia
+    // NADA -- o lojista clicava em imprimir o fechamento do caixa e nada acontecia. A funcao
+    // compartilhada da comanda (app.js) ja tratava; estas duas ficaram de fora.
+    if (!w) { alert('O navegador bloqueou a janela de impressão. Libere pop-ups para este site e clique de novo.'); return; }
     w.document.write(`<html><head><title>Fechamento</title><style>
       *{font-family:'Courier New',monospace;font-size:13px;margin:0}body{padding:8px;width:280px}
       h2{text-align:center;font-size:16px;margin:4px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}

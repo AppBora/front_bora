@@ -26,7 +26,7 @@
     try {
       produtos = await Bora.produtos();
       tb.innerHTML = produtos.map(p =>
-        `<tr><td>${p.imagemUrl ? `<img src="${p.imagemUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">` : ''}<b>${esc(p.nome) || '—'}</b><br><small style="color:#94a3b8">${esc(p.categoria || '')}</small></td>` +
+        `<tr><td>${p.imagemUrl ? `<img src="${p.imagemUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">` : ''}<b>${esc(p.nome) || '—'}</b>${p.ativo === false ? ' <span style="background:#f1f5f9;color:#64748b;border-radius:4px;padding:1px 5px;font-size:11px;font-weight:700">fora do cardápio</span>' : ''}<br><small style="color:#94a3b8">${esc(p.categoria || '')}</small></td>` +
         `<td>${money(p.preco)}</td><td>${margem(p)}</td><td>${estoqueCel(p)}</td>` +
         `<td style="text-align:right"><button onclick="__comp(${p.id})" title="Complementos (tamanho, borda, extras)" style="border:0;background:#ecfdf5;color:#059669;border-radius:8px;padding:5px 9px;cursor:pointer">🧩</button> ` +
         `<button onclick="__ficha(${p.id})" title="Ficha técnica" style="border:0;background:#f5f3ff;color:#7c3aed;border-radius:8px;padding:5px 9px;cursor:pointer">🧪</button> ` +
@@ -59,7 +59,12 @@
   function payload() {
     const p = { nome: $('nome').value.trim(), categoria: $('categoria').value.trim(),
       preco: Number($('preco').value || 0), custo: num($('custo').value),
-      estoque: num($('estoque').value), estoqueMinimo: num($('estoqueMinimo').value), ativo: true,
+      estoque: num($('estoque').value), estoqueMinimo: num($('estoqueMinimo').value),
+      // Item 7.7: isto era `ativo: true` FIXO. Produto que o lojista tirou do cardapio voltava a
+      // aparecer na primeira vez que alguem editasse o preco -- e nao havia como desativar pelo
+      // painel, entao ele nem tinha como desfazer. Agora a tela tem a caixinha, e editar preserva o
+      // que esta nela. Cadastro novo nasce ativo, que e o que se espera.
+      ativo: $('ativo') ? $('ativo').checked : true,
       // `estoque` fica no corpo porque a CRIACAO precisa dele (quantidade inicial). Na edicao o
       // servidor IGNORA este campo -- quem mexe em estoque e o PUT /api/produtos/{id}/estoque, numa
       // chamada separada e so quando o lojista realmente mudou o numero. Ver `salvarEstoqueSeMudou`.
@@ -97,6 +102,8 @@
     $('id').value = p.id; $('nome').value = p.nome || ''; $('categoria').value = p.categoria || '';
     $('preco').value = p.preco ?? ''; $('custo').value = p.custo ?? ''; $('estoque').value = p.estoque ?? ''; $('estoqueMinimo').value = p.estoqueMinimo ?? '';
     $('codigoExterno').value = p.codigoExterno ?? '';
+    // Traz o estado atual para a caixinha: sem isto, salvar religaria o produto desativado.
+    if ($('ativo')) $('ativo').checked = p.ativo !== false;
     // O valor que a tela ESTA MOSTRANDO. Na hora de salvar, comparamos com o que esta no campo: se
     // nao mudou, nao mandamos nada de estoque, e as vendas que aconteceram enquanto a tela estava
     // aberta ficam de pe.

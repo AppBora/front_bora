@@ -21,6 +21,15 @@
           <div class="field full"><label>Código no iFood / 99
               <small style="color:#94a3b8">o mesmo código que você cadastrou lá — opcional, mas sem ele o pedido de delivery pode não baixar estoque</small></label>
             <input id="codigoExterno" maxlength="60" placeholder="ex.: 7470"></div>
+          <!-- Item 7.7 da varredura: o salvar mandava `ativo: true` FIXO, entao produto tirado do
+               cardapio voltava a aparecer na primeira edicao de preco -- e nao havia como desativar
+               pelo painel, so excluindo (o que leva a ficha tecnica e os complementos). -->
+          <div class="field full">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input id="ativo" type="checkbox" checked>
+              <span>Aparece no cardápio (desmarque para esconder sem excluir)</span>
+            </label>
+          </div>
           <div class="field full"><label>Foto do produto <small style="color:#94a3b8">aparece no cardápio digital</small></label><input type="file" id="fotoProduto" accept="image/*"> <img id="fotoPrev" hidden style="height:44px;border-radius:8px;vertical-align:middle;margin-left:8px"></div>
           <input type="hidden" id="id">
           <div class="field full"><button class="btn" type="submit" id="btnSalvar">Salvar produto</button> <button type="button" class="btn secondary" id="cancelar" style="display:none">Cancelar</button> <span id="msg" style="color:var(--danger);margin-left:10px"></span></div>

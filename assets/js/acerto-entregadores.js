@@ -147,6 +147,8 @@
       <td class="r">${money(l.valorTaxas)}</td><td class="r">${money(l.valorDinheiro)}</td>
       <td class="r">${money(l.valorOutras)}</td><td class="r">${money(l.valorTotal)}</td></tr>`).join('');
     const w = window.open('', '_print', 'width=800,height=700');
+    // Item 7.10, mesma coisa do fechamento de caixa: o recibo do motoboy nao saia e nada era dito.
+    if (!w) { alert('O navegador bloqueou a janela de impressão. Libere pop-ups para este site e clique de novo.'); return; }
     w.document.write(`<html><head><title>Acerto de entregadores</title><style>
       body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#111}
       h1{font-size:18px;margin:0 0 4px}p{margin:0 0 12px;color:#555;font-size:13px}
