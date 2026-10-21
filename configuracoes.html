@@ -641,10 +641,23 @@ Sanfona.ligar(document);
       if (quando === null) return;
       const obs = prompt('Alguma observação? (opcional)\n\nEx.: PIX direto na conta', 'PIX direto na conta');
       btn.disabled = true;
+      // Dois registros do mesmo valor no mesmo dia podem ser um clique duplo OU dois pagamentos de
+      // verdade (foi o caso da Zira: R$ 199 + R$ 199 em 15/10). O servidor nao tem como saber, e
+      // ate 21/10/2026 ele escolhia sozinho pelo pior caminho -- jogava o segundo fora e dizia
+      // "Pagamento registrado". Agora ele recusa com 409 e quem decide e voce.
+      const enviar = (confirmar) => Bora.api('/admin-bora/lojas/' + id + '/pagamento-recebido',
+        { method: 'POST', body: JSON.stringify({ valor: String(valor).trim(), pagoEm: quando.trim(),
+                                                 observacao: obs, confirmarSegundoPagamento: !!confirmar }) });
       try {
-        const r = await Bora.api('/admin-bora/lojas/' + id + '/pagamento-recebido',
-          { method: 'POST', body: JSON.stringify({ valor: String(valor).trim(),
-                                                   pagoEm: quando.trim(), observacao: obs }) });
+        let r;
+        try {
+          r = await enviar(false);
+        } catch (e) {
+          // Só o conflito do pagamento repetido pergunta; qualquer outro erro sobe como erro.
+          if (!/já há um pagamento/i.test(String(e.message || ''))) throw e;
+          if (!confirm(e.message + '\n\nRegistrar os DOIS?')) { btn.disabled = false; return; }
+          r = await enviar(true);
+        }
         await carregarLojas();
         alert(r.recado);
       } catch (e) { alert('Erro: ' + e.message); btn.disabled = false; }
