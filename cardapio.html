@@ -103,6 +103,10 @@
       </div>
       <div id="ckConta" style="margin-top:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;font-size:14px">
         <div style="display:flex;justify-content:space-between"><span>Itens</span><b id="ctItens">R$ 0,00</b></div>
+        <!-- O desconto do cashback PRECISA aparecer aqui. Sem esta linha a conta mostrava o preco
+             cheio e o servidor descontava: no PIX o QR saia certo e o cliente percebia, mas no
+             "pagar na entrega" ele separava o dinheiro errado e chegava faltando troco. -->
+        <div id="ctCashbackLinha" hidden style="display:flex;justify-content:space-between;margin-top:4px;color:#166534;font-weight:700"><span>Cashback</span><b id="ctCashback">- R$ 0,00</b></div>
         <div id="ctFreteLinha" style="display:flex;justify-content:space-between;margin-top:4px"><span>Entrega</span><b id="ctFrete">R$ 0,00</b></div>
         <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:16px"><span><b>Total</b></span><b id="ctTotal">R$ 0,00</b></div>
       </div>

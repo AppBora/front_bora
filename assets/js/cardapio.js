@@ -295,15 +295,36 @@
     return Math.min(bruto, totalCarrinho());
   }
 
+  /**
+   * Quanto do cashback entra NESTE pedido.
+   *
+   * Mesma regra do servidor, e a ordem importa: ele calcula o resgate DEPOIS do cupom e ANTES do
+   * frete (`PublicController`, no trecho do `usarCashback`), com
+   * `resgatePossivel = min(saldo, base - 0,01)` -- o resgate nunca zera o pedido, sempre fica pelo
+   * menos um centavo a pagar. Repetir a regra aqui e de proposito: a tela tem que mostrar o MESMO
+   * numero que vai ser cobrado. Quem decide continua sendo o servidor; isto e a previsao, e ela
+   * precisa bater.
+   */
+  function descontoDoCashback(base) {
+    const marcado = $('ckUsarCashback') && $('ckUsarCashback').checked;
+    if (!marcado || saldoCashback <= 0 || base <= 0) return 0;
+    const teto = base - 0.01;
+    if (teto <= 0) return 0;
+    return Math.round(Math.min(saldoCashback, teto) * 100) / 100;
+  }
+
   function atualizarEntrega() {
     const retira = ehRetirada();
     $('ckBairroWrap').hidden = !bairros.length || retira;
     $('ckEndWrap').hidden = retira;
     const itens = totalCarrinho() - descontoDoCupom();
+    const cashback = descontoDoCashback(itens);
     const frete = freteEscolhido();
     $('ctItens').textContent = money(itens);
+    $('ctCashbackLinha').hidden = cashback <= 0;
+    $('ctCashback').textContent = '- ' + money(cashback);
     $('ctFrete').textContent = retira ? 'Retirada' : money(frete);
-    $('ctTotal').textContent = money(Math.max(0, itens) + frete);
+    $('ctTotal').textContent = money(Math.max(0, itens - cashback) + frete);
   }
   function atualizarCpf() {
     const pix = document.querySelector('input[name="ckForma"]:checked')?.value === 'PIX';
@@ -318,7 +339,7 @@
     const nome = ($('ckNome').value || '').trim();
     // O servidor so revela o saldo para quem informa o telefone E o nome do cadastro: telefone de
     // cliente nao e segredo, e so com ele dava para consultar e gastar o cashback dos outros.
-    if (tel.length < 10 || !nome) { caixa.hidden = true; saldoCashback = 0; return; }
+    if (tel.length < 10 || !nome) { caixa.hidden = true; saldoCashback = 0; atualizarEntrega(); return; }
     try {
       const r = await Bora.api('/public/loja/' + lojaId + '/cashback?telefone=' + encodeURIComponent(tel)
         + '&nome=' + encodeURIComponent(nome));
@@ -333,6 +354,9 @@
     } catch (e) {
       caixa.hidden = true; saldoCashback = 0;
     }
+    // Saldo novo = desconto novo = TOTAL novo. Sem isto, o saldo chegava depois de o cliente marcar o
+    // visto e a conta ficava no valor antigo -- e era o mesmo descuido que o PDV tinha (v118).
+    atualizarEntrega();
   }
 
   /**
@@ -473,6 +497,8 @@
     document.querySelectorAll('input[name="ckForma"]').forEach(r => r.addEventListener('change', atualizarCpf));
     document.querySelectorAll('input[name="ckTipo"]').forEach(r => r.addEventListener('change', atualizarEntrega));
     $('ckBairro').addEventListener('change', atualizarEntrega);
+    // Sem este ouvinte, marcar o visto nao mexia no total: a conta seguia no preco cheio.
+    if ($('ckUsarCashback')) $('ckUsarCashback').addEventListener('change', atualizarEntrega);
     $('ckTel').addEventListener('blur', verCashback);
     $('ckTel').addEventListener('change', verCashback);
     // O nome agora faz parte da identificacao, entao mudar o nome refaz a consulta.
