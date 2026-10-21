@@ -97,6 +97,23 @@
       <label style="display:flex;gap:8px;align-items:center;padding:8px 0;cursor:pointer">
         <input type="radio" name="ckForma" value="ENTREGA"> 💵 Pagar na entrega/retirada
       </label>
+      <!--
+        Dinheiro ou cartão — item 6.7 da varredura. O cardápio nunca perguntou, e o acerto do
+        entregador procura a palavra DINHEIRO na forma de pagamento para saber quanto de dinheiro
+        vivo o motoboy traz de volta. Sem esta pergunta, "recebeu dinheiro" era R$ 0,00 em todo
+        pedido do cardápio, e o acerto fechava errado.
+        Aparece só quando o cliente marca "pagar na entrega"; sem marcar nada, o servidor cai no
+        "Na entrega" de antes.
+      -->
+      <div id="ckEntregaComoWrap" hidden style="padding:2px 0 6px 26px">
+        <div style="font-size:12px;color:#64748b;margin-bottom:2px">Como você vai pagar?</div>
+        <label style="display:inline-flex;gap:6px;align-items:center;margin-right:14px;cursor:pointer;font-size:14px">
+          <input type="radio" name="pgEntrega" value="DINHEIRO"> Dinheiro
+        </label>
+        <label style="display:inline-flex;gap:6px;align-items:center;cursor:pointer;font-size:14px">
+          <input type="radio" name="pgEntrega" value="CARTAO"> Cartão
+        </label>
+      </div>
       <div id="ckCpfWrap" hidden>
         <label style="display:block;font-size:13px;margin:6px 0 4px">CPF (necessário para o PIX) *</label>
         <input id="ckCpf" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px" placeholder="Somente números">

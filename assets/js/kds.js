@@ -13,6 +13,24 @@
     try { await Bora.mudarStatus(id, PROXIMO[st]); carregar(); } catch (e) { alert(e.message); }
   };
 
+  /**
+   * O recado do pedido, destacado no card da cozinha.
+   *
+   * Item 7.1 da varredura: a observacao SEMPRE chegou neste navegador (o PedidoCard manda o campo),
+   * e o card nunca a desenhava. "Sem cebola" nao chegava em quem monta o prato -- e o unico lugar
+   * onde a equipe leria isso e aqui.
+   *
+   * Vem com fundo forte de proposito: numa cozinha, a pessoa olha o card por dois segundos. Recado
+   * que se parece com o resto do texto nao e lido.
+   */
+  function recado(p) {
+    const texto = (p.observacao || '').trim();
+    if (!texto) return '';
+    return `<div style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:6px;`
+      + `padding:5px 7px;margin:4px 0;font-weight:700;font-size:13px;white-space:pre-wrap">`
+      + `📝 ${esc(texto)}</div>`;
+  }
+
   function card(p) {
     const m = mins(p.atualizadoEm || p.criadoEm);
     const sla = boraSla(p.origem);
@@ -25,6 +43,7 @@
       <div class="kcli">${esc(p.clienteNome) || 'Balcão'}${p.origem ? ' · ' + esc(p.origem) : ''} · SLA ${sla}min</div>
       ${p.aguardandoPagamento ? `<div style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:4px 6px;margin:4px 0;font-weight:700;font-size:12px">⏳ Esperando o PIX — não prepare ainda</div>` : ''}
       <ul>${itens}</ul>
+      ${recado(p)}
       <div class="kgo">${ROTULO[PROXIMO[p.status]] || 'Avançar'} ▸</div>
     </div>`;
   }

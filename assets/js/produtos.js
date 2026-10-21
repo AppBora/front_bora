@@ -167,6 +167,32 @@
     const btnCriar = document.getElementById('impCriar');
     let lote = [];
 
+    /**
+     * O preço de uma linha do import, aceitando vírgula OU ponto como decimal.
+     *
+     * Item 7.6 da varredura, medido em 21/10/2026: a versão anterior era
+     * `Number(bruto.replace(/[R$\s.]/g,'').replace(',','.'))` — ela apagava TODO ponto, tratando-o
+     * como separador de milhar. Então "12,50" entrava certo e **"12.50" entrava como R$ 1.250,00**,
+     * cem vezes mais caro. E o import roda no onboarding, que é exatamente quando o lojista cola uma
+     * planilha — que pode vir em qualquer um dos dois formatos.
+     *
+     * A regra: o ÚLTIMO separador manda, porque é sempre o decimal. "1.234,56" e "1,234.56" são a
+     * mesma quantia escrita nos dois padrões, e as duas chegam em 1234.56. Separador sozinho com três
+     * casas depois ("1.250") é milhar, não decimal — ninguém cadastra preço com três decimais.
+     */
+    function precoDoImport(bruto) {
+      const limpo = String(bruto == null ? '' : bruto).replace(/[R$\s]/g, '');
+      const corte = Math.max(limpo.lastIndexOf(','), limpo.lastIndexOf('.'));
+      if (corte < 0) return Number(limpo);
+      const depois = limpo.slice(corte + 1);
+      // So um TIPO de separador e tres digitos depois dele = milhar ("1.250", "1.250.000"): ninguem
+      // cadastra preco com tres casas decimais. Com os dois tipos ("1.234,56"), o ultimo e o decimal.
+      const tipos = new Set(limpo.match(/[.,]/g) || []);
+      if (tipos.size === 1 && depois.length === 3) return Number(limpo.replace(/[.,]/g, ''));
+      return Number(limpo.slice(0, corte).replace(/[.,]/g, '') + '.' + depois);
+    }
+    window.__precoDoImport = precoDoImport;
+
     // Aceita ";", tab ou "|" — quem copia de planilha ou do bloco de notas não deve ter que pensar.
     function parse(texto) {
       const linhas = texto.split('\n').map(l => l.trim()).filter(Boolean);
@@ -175,7 +201,7 @@
         const p = linha.split(/[;|	]/).map(x => x.trim()).filter(x => x !== '');
         if (p.length < 2) { erros.push('linha ' + (n + 1) + ': faltou o preço — ' + linha); return; }
         const precoBruto = p[p.length - 1];
-        const preco = Number(precoBruto.replace(/[R$\s.]/g, '').replace(',', '.'));
+        const preco = precoDoImport(precoBruto);
         if (!isFinite(preco) || preco <= 0) { erros.push('linha ' + (n + 1) + ': preço inválido "' + precoBruto + '"'); return; }
         const nome = p.length >= 3 ? p[1] : p[0];
         const categoria = p.length >= 3 ? p[0] : 'Geral';

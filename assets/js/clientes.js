@@ -15,28 +15,86 @@
     return v;
   };
 
+  /**
+   * Os clientes carregados, para o editar não precisar de outra chamada.
+   *
+   * Item 7.12 da varredura: esta tela só tinha CRIAR e EXCLUIR. Para corrigir um telefone digitado
+   * errado, o único caminho era excluir e cadastrar de novo — e excluir leva o cashback e o histórico
+   * do cliente junto, sem avisar. O endpoint de editar já existia (`PUT /api/clientes/{id}`); era a
+   * tela que não usava.
+   */
+  let carregados = [];
+
   async function lista() {
     const tb = $('lista');
     try {
-      const cs = await Bora.clientes();
-      tb.innerHTML = cs.map(c =>
+      carregados = await Bora.clientes();
+      tb.innerHTML = carregados.map(c =>
         `<tr><td>${esc(c.nome) || '—'}</td><td>${esc(fone(c.telefone)) || '—'}</td><td>${esc(c.bairro) || '—'}</td>` +
-        `<td style="text-align:right"><button class="btn ghost" style="background:#e5e7eb;color:#111;padding:4px 8px" onclick="__del(${c.id})">✕</button></td></tr>`
+        `<td style="text-align:right;white-space:nowrap">` +
+        `<button class="btn ghost" style="background:#eef2ff;color:#3730a3;padding:4px 8px;margin-right:4px" onclick="__editar(${c.id})">✎</button>` +
+        `<button class="btn ghost" style="background:#e5e7eb;color:#111;padding:4px 8px" onclick="__del(${c.id})">✕</button></td></tr>`
       ).join('') || '<tr><td colspan="4" style="color:#94a3b8">Nenhum cliente ainda.</td></tr>';
     } catch (e) { tb.innerHTML = `<tr><td colspan="4" style="color:var(--danger)">${esc(e.message)}</td></tr>`; }
   }
-  window.__del = async (id) => { if (!confirm('Excluir cliente?')) return; try { await Bora.api('/api/clientes/' + id, { method: 'DELETE' }); lista(); } catch (e) { alert(e.message); } };
+
+  /** Traz o cliente para o formulário. Daí o salvar vira PUT em vez de POST. */
+  window.__editar = (id) => {
+    const c = carregados.find(x => x.id === id);
+    if (!c) return;
+    $('id').value = c.id;
+    $('nome').value = c.nome || '';
+    // Mostra com máscara, como na lista — o servidor normaliza para dígitos ao salvar.
+    $('telefone').value = fone(c.telefone) === c.telefone ? (c.telefone || '') : fone(c.telefone);
+    $('endereco').value = c.endereco || '';
+    $('bairro').value = c.bairro || '';
+    $('referencia').value = c.referencia || '';
+    $('salvar').textContent = 'Salvar alterações';
+    $('cancelar').hidden = false;
+    $('msg').textContent = '';
+    $('nome').focus();
+    if (window.scrollTo) window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  function reset() {
+    $('form').reset();
+    $('id').value = '';
+    $('salvar').textContent = 'Adicionar cliente';
+    $('cancelar').hidden = true;
+    $('msg').textContent = '';
+  }
+  window.__cancelarEdicao = reset;
+
+  window.__del = async (id) => {
+    // O aviso diz o que se perde. A exclusao desamarra os pedidos (o historico fica), mas o cashback
+    // vai com o cadastro -- e isso o lojista tem que saber ANTES de clicar.
+    const c = carregados.find(x => x.id === id);
+    const saldo = c && Number(c.cashback || 0) > 0
+      ? '\n\nATENÇÃO: este cliente tem R$ ' + Number(c.cashback).toFixed(2).replace('.', ',')
+        + ' de cashback, e o saldo vai embora com o cadastro.'
+      : '';
+    if (!confirm('Excluir ' + ((c && c.nome) || 'cliente') + '?'
+      + '\n\nOs pedidos dele continuam no histórico, sem vínculo.' + saldo
+      + '\n\nSe o que você quer é corrigir o cadastro, use o ✎.')) return;
+    try { await Bora.api('/api/clientes/' + id, { method: 'DELETE' }); reset(); lista(); }
+    catch (e) { alert(e.message); }
+  };
 
   $('form').addEventListener('submit', async (e) => {
     e.preventDefault(); $('msg').textContent = '';
+    const id = $('id').value;
+    const corpo = JSON.stringify({
+      nome: $('nome').value.trim(), telefone: $('telefone').value.trim(),
+      endereco: $('endereco').value.trim(), bairro: $('bairro').value.trim(), referencia: $('referencia').value.trim()
+    });
     try {
-      await Bora.api('/api/clientes', { method: 'POST', body: JSON.stringify({
-        nome: $('nome').value.trim(), telefone: $('telefone').value.trim(),
-        endereco: $('endereco').value.trim(), bairro: $('bairro').value.trim(), referencia: $('referencia').value.trim()
-      }) });
-      $('form').reset(); lista();
+      // Editar usa o endpoint que sempre existiu; criar continua no POST.
+      await Bora.api('/api/clientes' + (id ? '/' + id : ''), { method: id ? 'PUT' : 'POST', body: corpo });
+      reset(); lista();
     } catch (ex) { $('msg').textContent = ex.message; }
   });
+
+  if ($('cancelar')) $('cancelar').addEventListener('click', ev => { ev.preventDefault(); reset(); });
 
   document.addEventListener('DOMContentLoaded', lista);
 })();

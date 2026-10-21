@@ -58,7 +58,15 @@
           <table class="table"><tbody id="itens"></tbody></table>
           <div style="max-width:320px;margin-left:auto;margin-top:10px;font-size:14px">
             <div style="display:flex;justify-content:space-between;padding:2px 0"><span>Subtotal</span><span id="linhaSub">R$ 0,00</span></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0">
+            <!--
+              ENTREGA ou RETIRADA — item 6.2 da varredura. O painel nunca mandava o tipo, entao TODO
+              pedido lancado aqui nascia ENTREGA: a tela de Entregas oferecia "Despachar" para quem
+              vinha buscar no balcao, e o cliente que estava na loja recebia "saiu para entrega".
+            -->
+            <label style="display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer">
+              <input id="retirada" type="checkbox"> <span>Retirada no balcão (não é entrega)</span>
+            </label>
+            <div id="boxTaxa" style="display:flex;justify-content:space-between;align-items:center;padding:2px 0">
               <span>Taxa de entrega</span>
               <span style="display:flex;align-items:center;gap:6px">
                 <input id="taxa" type="number" step="0.01" min="0" value="0" style="width:90px;text-align:right;padding:4px 6px"></span>

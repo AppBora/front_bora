@@ -14,7 +14,15 @@
           <div class="field"><label>Bairro</label><input id="bairro"></div>
           <div class="field full"><label>Endereço</label><input id="endereco"></div>
           <div class="field full"><label>Referência</label><input id="referencia"></div>
-          <div class="field full"><button class="btn" type="submit">Salvar cliente</button> <span id="msg" style="color:var(--danger);margin-left:10px"></span></div>
+          <!-- O id do cliente em edicao. Vazio = cadastro novo (item 7.12 da varredura: a tela so
+               tinha criar e excluir, e corrigir um telefone errado obrigava a excluir -- levando o
+               cashback e o historico junto). -->
+          <input id="id" type="hidden">
+          <div class="field full">
+            <button class="btn" type="submit" id="salvar">Adicionar cliente</button>
+            <button class="btn ghost" type="button" id="cancelar" hidden style="background:#e5e7eb;color:#111">Cancelar</button>
+            <span id="msg" style="color:var(--danger);margin-left:10px"></span>
+          </div>
         </form>
       </div>
       <div class="card"><h2>Clientes da loja</h2>

@@ -88,7 +88,15 @@
   window.__add = async id => {
     const p = produtos.find(x => x.id === id);
     if (!p) return;
-    const grupos = await carregarComplementos(id);
+    let grupos;
+    try {
+      grupos = await carregarComplementos(id);
+    } catch (e) {
+      // Nao coloca no carrinho: produto com adicional entrando pelo preco base e prejuizo silencioso.
+      alert('Não consegui carregar os adicionais de "' + p.nome + '". Tente de novo — '
+        + 'se eu colocasse agora, ele entraria sem os adicionais e pelo preço base.');
+      return;
+    }
     if (!grupos.length) { colocar(p, [], [], 0); return; }
     abrirEscolha(p, grupos);
   };
@@ -109,7 +117,15 @@
   async function carregarComplementos(produtoId) {
     if (!complementosPorProduto[produtoId]) {
       try { complementosPorProduto[produtoId] = await Bora.api('/api/produtos/' + produtoId + '/complementos') || []; }
-      catch (e) { complementosPorProduto[produtoId] = []; }
+      catch (e) {
+        // Item 7.5 da varredura: aqui gravava `[]` no cache. Uma falha de rede de um segundo fazia o
+        // produto entrar no carrinho SEM os adicionais e pelo PRECO BASE, para o resto da sessao --
+        // numa acaiteria, metade do valor da venda. E nada na tela dizia nada.
+        //
+        // Nao cachear e avisar: a proxima tentativa busca de novo, e o operador sabe que nao deve
+        // fechar essa venda ainda.
+        throw e;
+      }
     }
     return complementosPorProduto[produtoId];
   }
@@ -167,6 +183,10 @@
     const body = {
       clienteId: $('cliente').value ? Number($('cliente').value) : null,
       formaPagamento: pagamento, origem: 'Balcão',
+      // Venda de balcao e RETIRADA por definicao: o cliente esta na loja, com o produto na mao -- e
+      // esta tela ja marca o pedido como entregue na hora, logo abaixo. Sem o tipo, o pedido nascia
+      // ENTREGA e aparecia na tela de Entregas esperando motoboy (item 6.2 da varredura).
+      tipoEntrega: 'RETIRADA',
       usarCashback: $('usarCashback').checked,
       itens: cart.map(i => ({ produtoId: i.id, quantidade: i.qtd, complementos: i.complementos || [] }))
     };

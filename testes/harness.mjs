@@ -5,7 +5,10 @@ import fs from 'node:fs';
 function elemento() {
   const e = { textContent: '', innerHTML: '', value: '', checked: false, hidden: false, style: {},
     dataset: {}, children: [], classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
-    addEventListener() {}, setAttribute() {}, appendChild() {}, focus() {}, querySelectorAll: () => [], querySelector: () => null };
+    addEventListener() {}, setAttribute() {}, appendChild() {}, focus() {}, querySelectorAll: () => [], querySelector: () => null,
+    // Um <form> de verdade tem reset(). Sem isto, toda tela que chama `$('form').reset()` -- e varias
+    // chamam, depois de salvar -- estourava no teste por falta do dublê, nao por defeito da tela.
+    reset() { this.value = ''; this.checked = false; } };
   return e;
 }
 

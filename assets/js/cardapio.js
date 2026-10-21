@@ -329,6 +329,8 @@
   function atualizarCpf() {
     const pix = document.querySelector('input[name="ckForma"]:checked')?.value === 'PIX';
     $('ckCpfWrap').hidden = !pix || !pixDisponivel;
+    // "Dinheiro ou cartao" so faz sentido para quem vai pagar na entrega (item 6.7).
+    if ($('ckEntregaComoWrap')) $('ckEntregaComoWrap').hidden = pix && pixDisponivel;
   }
 
   // Cashback: o cliente do cardapio nao tem login, entao o telefone e a identificacao.
@@ -407,7 +409,7 @@
         observacao: $('ckObs').value.trim(),
         cupom: cupomOk ? $('ckCupom').value.trim() : '',
         usarCashback: !!($('ckUsarCashback') && $('ckUsarCashback').checked && saldoCashback > 0),
-        formaPagamento: forma,
+        formaPagamento: forma === 'PIX' ? 'PIX' : formaNaEntrega(),
         cpf: $('ckCpf').value.trim()
       })});
       cart = []; atualizarBarra();
@@ -436,6 +438,21 @@
     const url = 'acompanhar.html?loja=' + lojaId + '&pedido=' + pedidoId
       + (token ? '&t=' + encodeURIComponent(token) : '');
     return '<a href="' + url + '" style="color:#7c3aed;font-weight:800">📍 Acompanhar meu pedido ao vivo</a>';
+  }
+
+  /**
+   * Como o cliente vai pagar na entrega: DINHEIRO ou CARTAO.
+   *
+   * Item 6.7 da varredura: o cardapio nunca perguntou, e o servidor gravava o texto "Na entrega"
+   * para tudo. O acerto do entregador procura a palavra DINHEIRO para saber quanto de dinheiro vivo
+   * o motoboy traz de volta -- entao "recebeu dinheiro" era R$ 0,00 para todo pedido do cardapio, e
+   * o acerto fechava errado em toda loja que vende pelo link.
+   *
+   * Sem escolha marcada volta vazio, e o servidor cai em "Na entrega" -- o comportamento de antes.
+   */
+  function formaNaEntrega() {
+    const m = document.querySelector('input[name="pgEntrega"]:checked');
+    return m ? m.value : '';
   }
 
   function acompanharPagamento(pedidoId, token) {

@@ -160,7 +160,11 @@
 
   function renderTotais() {
     const sub = subtotal();
-    const taxa = num($('taxa').value);
+    // Retirada nao tem taxa, e o campo sai da tela para nao sobrar numero que nao vai ser cobrado
+    // (item 6.2). A conta do total usa o mesmo zero que vai no pedido.
+    const retira = $('retirada') && $('retirada').checked;
+    if ($('boxTaxa')) $('boxTaxa').style.display = retira ? 'none' : 'flex';
+    const taxa = retira ? 0 : num($('taxa').value);
     const c = clienteSelecionado();
     // estimativa: o servidor tem a palavra final sobre quanto do saldo pode entrar neste pedido
     const cashback = $('usarCashback').checked && c ? Math.min(Number(c.cashback || 0), sub) : 0;
@@ -259,6 +263,7 @@
     $('cliente').addEventListener('change', aoTrocarCliente);
     $('origem').addEventListener('change', () => { aoTrocarCliente(); });
     $('taxa').addEventListener('input', renderTotais);
+    $('retirada').addEventListener('change', renderTotais);
     $('usarCashback').addEventListener('change', renderTotais);
     $('produto').addEventListener('change', renderComplementos);
     $('btnNovoCliente').addEventListener('click', () => alternarNovoCliente($('novoClienteBox').style.display === 'none'));
@@ -307,7 +312,9 @@
           origem: $('origem').value,
           observacao: $('obs').value.trim() || null,
           usarCashback: $('usarCashback').checked,
-          taxaEntrega: num($('taxa').value),
+          // Item 6.2: sem isto todo pedido do painel nascia ENTREGA. Retirada nao tem taxa.
+          tipoEntrega: $('retirada').checked ? 'RETIRADA' : 'ENTREGA',
+          taxaEntrega: $('retirada').checked ? 0 : num($('taxa').value),
           itens: itens.map(i => ({ produtoId: i.id, quantidade: i.qtd, complementos: i.complementos }))
         })
       });
