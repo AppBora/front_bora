@@ -115,8 +115,12 @@ class H(http.server.SimpleHTTPRequestHandler):
                 "marca": {"nomeExibicao": "Pizzaria Bella Napoli", "corPrimaria": "#C8102E"},
                 "aberta": True, "pixDisponivel": False,
                 "bairros": [{"bairro": t["bairro"], "taxa": t["taxa"]} for t in TAXAS if t.get("ativo")],
-                "produtos": [dict(x, complementos=COMPLEMENTOS.get(x["id"], []))
-                             for x in PRODUTOS if x.get("ativo") and (x.get("estoque") is None or x["estoque"] > 0)],
+                # Esgotado FICA no menu, marcado -- nao some. PublicController.java:240-250
+                # ("Esgotado JA NO MENU"). Escondendo, eu sumia com a categoria inteira junto e
+                # escondia a regressao 29.3, que e justamente sobre o selo de esgotado.
+                "produtos": [dict(x, complementos=COMPLEMENTOS.get(x["id"], []),
+                                  esgotado=(x.get("estoque") is not None and x["estoque"] <= 0))
+                             for x in PRODUTOS if x.get("ativo")],
             })
 
         # ---- o que mora na memoria
@@ -268,10 +272,37 @@ class H(http.server.SimpleHTTPRequestHandler):
                                ("/api/promocoes", E.promocoes), ("/api/cupons", E.promocoes),
                                ("/api/usuarios", E.usuarios), ("/api/motivos", E.motivos),
                                ("/api/taxas", TAXAS), ("/api/formas-pagamento", FORMAS)):
-            m = re.match(r"^" + prefixo + r"/(\d+)", rota)
+            # A ancora de fim e o que impede /api/produtos/31/ficha e /complementos de cairem
+            # neste ramo generico. Sem ela, o corpo (uma LISTA json) ia para corpo.items() e a
+            # conexao morria com ERR_EMPTY_RESPONSE -- a tela parecia quebrada e nao estava.
+            m = re.match(r"^" + prefixo + r"/(\d+)$", rota)
             if m:
                 return lista, int(m.group(1))
         return None, None
+
+    def _mexer_no_estoque(self, alvo, corpo):
+        """
+        DEFINIR poe o saldo exato; AJUSTAR soma (ou subtrai).
+
+        O tipo e OBRIGATORIO, igual ao servidor: ProdutoService.java:144 devolve 400 quando ele
+        vem nulo. Antes este duble olhava so `quantidade` e SEMPRE somava -- mandar
+        {"tipo":"DEFINIR","quantidade":7} num produto com 20 deixava 27. Mais permissivo que a
+        producao, que e o pior jeito de um duble errar: o teste passa e o lojista toma 400.
+        """
+        tipo = (corpo.get("tipo") or "").upper()
+        if not tipo:
+            return "Informe o tipo: DEFINIR ou AJUSTAR"
+        qtd = corpo.get("quantidade")
+        if tipo == "DEFINIR":
+            valor = float(qtd or 0)
+            if valor < 0:
+                return "O estoque nao pode ser negativo"
+            alvo["estoque"] = valor
+        elif tipo == "AJUSTAR":
+            alvo["estoque"] = (alvo.get("estoque") or 0) + float(qtd or 0)
+        else:
+            return "Informe o tipo: DEFINIR ou AJUSTAR"
+        return None
 
     def do_PUT(self):
         corpo = self._corpo()
@@ -282,19 +313,33 @@ class H(http.server.SimpleHTTPRequestHandler):
             p = next((x for x in PRODUTOS if x["id"] == int(m.group(1))), None)
             if not p:
                 return self._erro(404, "Produto nao encontrado")
-            if "quantidade" in corpo:        # entrada (+) ou saida (-), SOMANDO
-                p["estoque"] = (p.get("estoque") or 0) + float(corpo["quantidade"])
-            elif "estoque" in corpo:         # definir o saldo exato
-                p["estoque"] = float(corpo["estoque"])
-            return self._json(p)
+            erro = self._mexer_no_estoque(p, corpo)
+            return self._erro(400, erro) if erro else self._json(p)
 
         m = re.match(r"^/api/insumos/(\d+)/estoque$", rota)
         if m:
             i = next((x for x in E.insumos if x["id"] == int(m.group(1))), None)
             if not i:
                 return self._erro(404, "Insumo nao encontrado")
-            i["estoque"] = (i.get("estoque") or 0) + float(corpo.get("quantidade") or 0)
-            return self._json(i)
+            erro = self._mexer_no_estoque(i, corpo)
+            return self._erro(400, erro) if erro else self._json(i)
+
+        # Mesma familia do status/entregador: a tela manda na QUERY, nao no corpo.
+        m = re.match(r"^/api/usuarios/(\d+)/(ativo|papel)$", rota)
+        if m:
+            u = next((x for x in E.usuarios if x["id"] == int(m.group(1))), None)
+            if not u:
+                return self._erro(404, "Usuario nao encontrado")
+            campo = m.group(2)
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            valor = (q.get(campo) or [None])[0]
+            if valor is None:
+                valor = corpo.get(campo)
+            if campo == "ativo":
+                u["ativo"] = str(valor).lower() == "true"
+            else:
+                u["papel"] = valor
+            return self._json(u)
 
         if rota == "/api/horarios":
             if isinstance(corpo, list):
@@ -311,7 +356,11 @@ class H(http.server.SimpleHTTPRequestHandler):
             # O cadastro do produto NAO mexe no estoque: e a regra do servidor (ProdutoService
             # ignora o campo de proposito) e foi um bug caro -- corrigir o preco as 21h apagava o
             # consumo da noite inteira. O duble tem de ser fiel nisso, senao o teste 14.4 mente.
-            proibidos = {"estoque", "estoqueMinimo"} if lista is PRODUTOS else set()
+            # Vale para produto E para insumo. Era so para produto, e por isso o cadastro de
+            # insumo sobrescrevia o saldo -- fazendo a regressao 15.2, que ja esta paga, PARECER
+            # que voltou. InsumoService.java:62: "O ESTOQUE so entra na CRIACAO".
+            proibidos = ({"estoque", "estoqueMinimo"}
+                         if lista is PRODUTOS or lista is E.insumos else set())
             for k, v in corpo.items():
                 if k != "id" and k not in proibidos:
                     alvo[k] = v
