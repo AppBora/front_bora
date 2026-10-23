@@ -68,9 +68,15 @@
       const prontos = board.filter(p => p.status === 'PRONTO');
       const emRota = board.filter(p => p.status === 'SAIU_PARA_ENTREGA');
 
+      // kpiProntos e kpiSaiu saem do MESMO board que a tabela logo abaixo. kpiSaiu vinha do
+      // /api/dashboard/resumo, e os dois discordavam na tela: o KPI dizia 0 com a tabela
+      // mostrando "Em rota (1)". O `emRota` ja era calculado aqui e jogado fora.
       document.getElementById('kpiProntos').textContent = prontos.length;
-      document.getElementById('kpiSaiu').textContent = resumo.saiuParaEntrega;
-      document.getElementById('kpiHora').textContent = resumo.entreguesUltimaHora;
+      document.getElementById('kpiSaiu').textContent = emRota.length;
+      // "Entregues na ultima hora" o board nao sabe dizer (nao traz entregueEm), entao continua
+      // vindo do resumo. Mas campo ausente escrevia "undefined" na tela, e o lojista nao
+      // distinguia "nenhuma entrega" de "a tela quebrou".
+      document.getElementById('kpiHora').textContent = resumo.entreguesUltimaHora ?? 0;
 
       // agrupa prontos por bairro
       const grupos = {};
