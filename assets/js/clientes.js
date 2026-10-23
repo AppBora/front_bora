@@ -25,16 +25,47 @@
    */
   let carregados = [];
 
-  async function lista() {
+  /**
+   * Os clientes que casam com o que esta escrito na busca.
+   *
+   * Filtra o que JA esta carregado, em vez de ir ao servidor a cada tecla: a lista da loja cabe na
+   * memoria e o balconista esta com pressa. Casa por nome, por bairro e por telefone -- e o telefone
+   * compara so os numeros, porque a tela MOSTRA formatado "(15) 98103-4318" e quem busca digita
+   * "15981034318" ou "98103". Sem isso, buscar pelo telefone nunca acharia nada.
+   */
+  function filtrados() {
+    const termo = (($('busca') && $('busca').value) || '').trim().toLowerCase();
+    if (!termo) return carregados;
+    const soNumeros = termo.replace(/\D/g, '');
+    return carregados.filter(c => {
+      const alvo = ((c.nome || '') + ' ' + (c.bairro || '')).toLowerCase();
+      if (alvo.includes(termo)) return true;
+      return soNumeros && String(c.telefone || '').replace(/\D/g, '').includes(soNumeros);
+    });
+  }
+
+  /** Redesenha a tabela com o filtro de agora. Nao vai ao servidor. */
+  function pintar() {
     const tb = $('lista');
-    try {
-      carregados = await Bora.clientes();
-      tb.innerHTML = carregados.map(c =>
+    const visiveis = filtrados();
+    tb.innerHTML = visiveis.map(c =>
         `<tr><td>${esc(c.nome) || '—'}</td><td>${esc(fone(c.telefone)) || '—'}</td><td>${esc(c.bairro) || '—'}</td>` +
         `<td style="text-align:right;white-space:nowrap">` +
         `<button class="btn ghost" style="background:#eef2ff;color:#3730a3;padding:4px 8px;margin-right:4px" onclick="__editar(${c.id})">✎</button>` +
         `<button class="btn ghost" style="background:#e5e7eb;color:#111;padding:4px 8px" onclick="__del(${c.id})">✕</button></td></tr>`
-      ).join('') || '<tr><td colspan="4" style="color:#94a3b8">Nenhum cliente ainda.</td></tr>';
+      ).join('') || (carregados.length
+        ? '<tr><td colspan="4" style="color:#94a3b8">Nenhum cliente com esse nome, telefone ou bairro.</td></tr>'
+        : '<tr><td colspan="4" style="color:#94a3b8">Nenhum cliente ainda.</td></tr>');
+  }
+
+  // Filtra ao digitar, sem ir ao servidor: e so redesenhar o que ja esta em memoria.
+  if ($('busca')) $('busca').addEventListener('input', pintar);
+
+  async function lista() {
+    const tb = $('lista');
+    try {
+      carregados = await Bora.clientes();
+      pintar();
     } catch (e) { tb.innerHTML = `<tr><td colspan="4" style="color:var(--danger)">${esc(e.message)}</td></tr>`; }
   }
 

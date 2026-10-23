@@ -43,6 +43,10 @@
    * dizendo "Bairro (define a taxa)".
    */
   function bairroDoPedido() {
+    // O bairro DESTE pedido ganha de tudo: se o atendente digitou "entregar no Centro", e no Centro
+    // que vai, mesmo que o cadastro diga outro bairro.
+    const doPedido = $('pedBairro') ? $('pedBairro').value.trim() : '';
+    if (doPedido) return doPedido;
     if (criandoCliente) return $('ncBairro').value.trim();
     const c = clienteSelecionado();
     return c ? String(c.bairro || '') : '';
@@ -181,6 +185,8 @@
     // (item 6.2). A conta do total usa o mesmo zero que vai no pedido.
     const retira = $('retirada') && $('retirada').checked;
     if ($('boxTaxa')) $('boxTaxa').style.display = retira ? 'none' : 'flex';
+    // Retirada no balcao nao tem para onde entregar: perguntar endereco so atrapalha quem atende.
+    if ($('boxEnderecoPedido')) $('boxEnderecoPedido').style.display = retira ? 'none' : 'block';
     const taxa = retira ? 0 : num($('taxa').value);
     const c = clienteSelecionado();
     // estimativa: o servidor tem a palavra final sobre quanto do saldo pode entrar neste pedido
@@ -293,6 +299,7 @@
     $('cliente').addEventListener('change', aoTrocarCliente);
     // Sem isto o campo "Bairro (define a taxa)" nao definia taxa nenhuma: ninguem escutava.
     $('ncBairro').addEventListener('input', aoTrocarCliente);
+    $('pedBairro').addEventListener('input', aoTrocarCliente);
     $('ncBairro').addEventListener('change', aoTrocarCliente);
     $('origem').addEventListener('change', () => { aoTrocarCliente(); });
     $('taxa').addEventListener('input', renderTotais);
@@ -345,6 +352,10 @@
           origem: $('origem').value,
           observacao: $('obs').value.trim() || null,
           usarCashback: $('usarCashback').checked,
+          // Em branco vai null, e o servidor usa o endereco do cadastro (primeiroNaoVazio em
+          // PedidoService). Mandar "" sobrescreveria o cadastro com vazio.
+          enderecoEntrega: $('pedEndereco').value.trim() || null,
+          bairroEntrega: $('pedBairro').value.trim() || null,
           // Item 6.2: sem isto todo pedido do painel nascia ENTREGA. Retirada nao tem taxa.
           tipoEntrega: $('retirada').checked ? 'RETIRADA' : 'ENTREGA',
           taxaEntrega: $('retirada').checked ? 0 : num($('taxa').value),

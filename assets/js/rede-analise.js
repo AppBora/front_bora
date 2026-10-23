@@ -152,13 +152,20 @@
     }
   }
 
+  // Nem toda aba desta tela e carregada daqui: a "agente" tem script proprio (agente-rede.js), que
+  // ja escuta o chip dela. Por isso LOADERS nao a inclui -- e por isso a chamada abaixo precisa de
+  // guarda. Sem ela, clicar em "Agente IA" estourava TypeError: LOADERS[v] is not a function, e o
+  // pior vinha depois: com essa aba ativa, trocar o periodo e clicar Buscar caia no mesmo erro e a
+  // tela ignorava o filtro, CALADA. O lojista mudava a data e nada acontecia.
   const LOADERS = { faturamento: carregarFaturamento, canais: carregarCanais, horario: carregarHorario, tempos: carregarTempos };
 
   function mostrar(v, forcar) {
     atual = v;
     document.querySelectorAll('.subnav .chip').forEach(c => c.classList.toggle('active', c.dataset.v === v));
     document.querySelectorAll('.view').forEach(s => s.classList.toggle('active', s.id === 'v-' + v));
-    if (forcar || !carregado[v]) { carregado[v] = true; LOADERS[v](); }
+    const carregar = LOADERS[v];
+    if (!carregar) return;              // aba de script proprio: trocar de aba ja basta
+    if (forcar || !carregado[v]) { carregado[v] = true; carregar(); }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -166,7 +173,13 @@
     $('dtIni').value = fmt(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
     $('dtFim').value = fmt(hoje);
     document.querySelectorAll('.subnav .chip').forEach(c => c.addEventListener('click', () => mostrar(c.dataset.v)));
-    $('btnBuscar').addEventListener('click', () => { Object.keys(carregado).forEach(k => delete carregado[k]); mostrar(atual, true); });
+    // Buscar troca o periodo: tudo o que estava carregado fica velho. Se a aba ATUAL nao tem
+    // carregador (a do agente), o filtro valeria para as outras mesmo assim -- antes nem isso
+    // acontecia, porque o erro abortava o handler na primeira linha.
+    $('btnBuscar').addEventListener('click', () => {
+      Object.keys(carregado).forEach(k => delete carregado[k]);
+      mostrar(atual, true);
+    });
     mostrar('faturamento');
   });
 })();

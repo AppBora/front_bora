@@ -66,6 +66,18 @@
             <label style="display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer">
               <input id="retirada" type="checkbox"> <span>Retirada no balcão (não é entrega)</span>
             </label>
+            <!--
+              Endereco DESTE pedido. O backend aceita enderecoEntrega/bairroEntrega desde sempre
+              (NovoPedidoRequest) e a tela nunca mandava: cliente que liga pedindo entrega na casa
+              da mae, ou no trabalho, nao tinha como ser atendido pelo painel. Em branco, vale o
+              endereco do cadastro -- quem decide isso e o servidor (primeiroNaoVazio).
+            -->
+            <div id="boxEnderecoPedido" style="padding:4px 0">
+              <input id="pedEndereco" placeholder="Entregar em outro endereço (vazio = o do cadastro)"
+                     style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px">
+              <input id="pedBairro" placeholder="Bairro deste pedido (define a taxa)"
+                     style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;margin-top:6px">
+            </div>
             <div id="boxTaxa" style="display:flex;justify-content:space-between;align-items:center;padding:2px 0">
               <span>Taxa de entrega</span>
               <span style="display:flex;align-items:center;gap:6px">
@@ -88,5 +100,5 @@
 <script src="assets/js/app.js?v=20260930"></script>
 <script src="assets/js/cores.js?v=20261009"></script>
 <script src="assets/js/whitelabel.js?v=20260630"></script>
-<script src="assets/js/novo-pedido.js?v=20261023c"></script>
+<script src="assets/js/novo-pedido.js?v=20261023d"></script>
 </body></html>
