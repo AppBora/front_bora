@@ -11,6 +11,7 @@
   const num = v => { const n = Number(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : 0; };
 
   let produtos = [], clientes = [], taxas = [], itens = [];
+  let criandoCliente = false;
   const complementosPorProduto = {}; // cache: produtoId -> grupos (evita rebuscar a cada troca)
   let escolhaAtual = [];             // ids marcados no produto em foco
   let pendente = false;              // mexeu no produto/quantidade/adicionais e ainda não adicionou
@@ -31,19 +32,35 @@
       box.style.display = 'none';
       $('usarCashback').checked = false;
     }
-    $('taxa').value = taxaDoBairro(c).toFixed(2);
+    $('taxa').value = taxaDoBairro().toFixed(2);
     renderTotais();
   }
 
-  /** Taxa cadastrada para o bairro do cliente. Balcão não tem frete. */
-  function taxaDoBairro(c) {
-    if (!c || !c.bairro) return 0;
+  /**
+   * O bairro que vale para ESTE pedido. Nem sempre vem do cadastro: quando o atendente esta
+   * cadastrando na hora quem ligou pela primeira vez, o unico bairro que existe e o que ele esta
+   * digitando -- e era justamente esse o caso que a tela ignorava, cobrando frete zero com o campo
+   * dizendo "Bairro (define a taxa)".
+   */
+  function bairroDoPedido() {
+    if (criandoCliente) return $('ncBairro').value.trim();
+    const c = clienteSelecionado();
+    return c ? String(c.bairro || '') : '';
+  }
+
+  /** Taxa cadastrada para o bairro do pedido. Balcão não tem frete. */
+  function taxaDoBairro() {
+    const bairro = bairroDoPedido();
+    if (!bairro) return 0;
     if (/BALC/i.test($('origem').value || '')) return 0;
-    const t = taxas.find(x => x.ativo !== false && String(x.bairro || '').trim().toLowerCase() === String(c.bairro).trim().toLowerCase());
+    const t = taxas.find(x => x.ativo !== false && String(x.bairro || '').trim().toLowerCase() === bairro.toLowerCase());
     return t ? Number(t.taxa || 0) : 0;
   }
 
   function alternarNovoCliente(abrir) {
+    // O estado fica aqui, nao no style: decidir regra de negocio perguntando ao layout quebra
+    // calado assim que alguem trocar display por uma classe.
+    criandoCliente = abrir;
     $('novoClienteBox').style.display = abrir ? 'grid' : 'none';
     $('cliente').disabled = abrir;
     $('btnNovoCliente').textContent = abrir ? 'Escolher da lista' : '+ Novo cliente';
@@ -252,7 +269,20 @@
     $('produto').innerHTML = produtos.length
       ? produtos.map(p => `<option value="${p.id}">${esc(p.nome)} — ${money(p.preco)}</option>`).join('')
       : '<option value="">Nenhum produto ativo</option>';
-    $('origem').innerHTML = BORA_CANAIS.map(c => `<option value="${c.key}">${c.ic} ${c.key}</option>`).join('');
+    // O navegador seleciona a PRIMEIRA opcao quando nenhuma vem marcada, e o BORA_CANAIS comeca
+    // com iFood: todo pedido lancado aqui por quem nao tocou neste campo entrava como venda de
+    // marketplace, sujando o relatorio por canal e a conta de comissao. Esta tela e para o pedido
+    // que a loja atendeu (telefone, WhatsApp, balcao); marketplace entra sozinho pela integracao.
+    // Nao reordeno o BORA_CANAIS porque `boraCanal()` casa origem na ordem da lista.
+    const DAcASA = ['Telefone', 'WhatsApp', 'Instagram', 'Site', 'Balcão', 'Delivery'];
+    const opcao = c => `<option value="${c.key}">${c.ic} ${c.key}</option>`;
+    const naLista = k => BORA_CANAIS.find(c => c.key === k);
+    $('origem').innerHTML =
+      '<optgroup label="Pedido que a loja atendeu">'
+      + DAcASA.map(naLista).filter(Boolean).map(opcao).join('')
+      + '</optgroup><optgroup label="Marketplace — normalmente entra sozinho">'
+      + BORA_CANAIS.filter(c => !DAcASA.includes(c.key)).map(opcao).join('')
+      + '</optgroup>';
 
     if (!produtos.length) {
       $('msg').textContent = 'Esta loja não tem produto ativo — cadastre em Produtos antes de lançar pedidos.';
@@ -261,12 +291,15 @@
     }
 
     $('cliente').addEventListener('change', aoTrocarCliente);
+    // Sem isto o campo "Bairro (define a taxa)" nao definia taxa nenhuma: ninguem escutava.
+    $('ncBairro').addEventListener('input', aoTrocarCliente);
+    $('ncBairro').addEventListener('change', aoTrocarCliente);
     $('origem').addEventListener('change', () => { aoTrocarCliente(); });
     $('taxa').addEventListener('input', renderTotais);
     $('retirada').addEventListener('change', renderTotais);
     $('usarCashback').addEventListener('change', renderTotais);
     $('produto').addEventListener('change', renderComplementos);
-    $('btnNovoCliente').addEventListener('click', () => alternarNovoCliente($('novoClienteBox').style.display === 'none'));
+    $('btnNovoCliente').addEventListener('click', () => alternarNovoCliente(!criandoCliente));
     await renderComplementos();
     render();
   }

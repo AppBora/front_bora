@@ -13,7 +13,10 @@ function elemento() {
     async __disparar(ev, evento = { preventDefault() {}, stopPropagation() {} }) {
       for (const fn of this.__ouvintes[ev] ?? []) await fn(evento);
     },
-    setAttribute() {}, appendChild() {}, focus() {}, querySelectorAll: () => [], querySelector: () => null,
+    // removeAttribute faltava, e toda tela que esconde/limpa atributo -- foto de produto, aria-*,
+    // disabled -- estourava no teste por falta do duble, nao por defeito da tela.
+    setAttribute() {}, removeAttribute() {}, getAttribute: () => null, hasAttribute: () => false,
+    appendChild() {}, focus() {}, querySelectorAll: () => [], querySelector: () => null,
     // Um <form> de verdade tem reset(). Sem isto, toda tela que chama `$('form').reset()` -- e varias
     // chamam, depois de salvar -- estourava no teste por falta do dublê, nao por defeito da tela.
     reset() { this.value = ''; this.checked = false; } };
