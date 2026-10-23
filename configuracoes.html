@@ -290,7 +290,7 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
     </details>
   </main>
 </div>
-<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20260930"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20260630"></script><script src="assets/js/configuracoes.js?v=20260907&_=20260623"></script>
+<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20260930"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20260630"></script><script src="assets/js/configuracoes.js?v=20261023b&_=20260623"></script>
 <script>
 /**
  * Lembra quais secoes desta tela ficaram abertas.
@@ -432,6 +432,15 @@ Sanfona.ligar(document);
     if (c.documento) partes.push(c.documento);
     partes.push(dinheiro(c.precoMensal) + (c.precoNegociado ? ' (negociado)' : ''));
     partes.push(c.assinatura ? (ASSINATURA[c.assinatura] || c.assinatura) : 'sem assinatura');
+    // Ate quando a loja pode usar o sistema. Era o numero que DECIDE se ela sai do ar e nao aparecia
+    // em lugar nenhum da tela -- daria para ver uma loja "⛔ sem assinatura" sem saber se ela cai
+    // amanha ou daqui a dois meses. Quando falta uma semana ou menos, sai em vermelho.
+    if (c.acessoAte) {
+      const dias = Math.ceil((new Date(c.acessoAte).getTime() - Date.now()) / 86400000);
+      const txt = dias < 0 ? 'acesso VENCIDO em ' + data(c.acessoAte)
+        : 'acesso até ' + data(c.acessoAte) + ' (' + dias + ' dia' + (dias === 1 ? '' : 's') + ')';
+      partes.push(dias <= 7 ? '<b style="color:#991b1b">' + txt + '</b>' : txt);
+    }
     partes.push(c.usuariosAtivos + '/' + c.maxUsuarios + ' usuários');
     partes.push('cliente desde ' + data(c.criadoEm));
     partes.push(c.ultimoPedidoEm ? 'último pedido ' + data(c.ultimoPedidoEm) : 'nenhum pedido ainda');
@@ -450,9 +459,15 @@ Sanfona.ligar(document);
     // sem isto o lojista paga, o sistema continua achando que nao, e o corte tira a loja do ar.
     // Aparece so para quem tem assinatura e esta devendo — nao faz sentido em quem esta em dia.
     const devendo = c.assinatura === 'INADIMPLENTE' || c.assinatura === 'PENDENTE';
+    // "Liberar acesso": a unica forma de devolver acesso era dizer que entrou dinheiro, e isso
+    // obrigava a lancar receita que nao existiu (cortesia, negociacao em andamento, ou um prazo que
+    // o Asaas encurtou). Aparece para quem tem data de vencimento ou assinatura cancelada -- quem
+    // esta em dia nao tem o que liberar.
+    const temPrazo = !!c.acessoAte || c.assinatura === 'CANCELADA' || devendo;
     return botao('entrar', c.id, 'Entrar na loja', '#4f46e5') + ' '
       + botao('renomear', c.id, 'Renomear', '#0369a1') + ' '
       + (devendo ? botao('pagamento', c.id, '💰 Recebi o pagamento', '#166534') + ' ' : '')
+      + (temPrazo ? botao('liberar', c.id, '🔓 Liberar acesso', '#7c3aed') + ' ' : '')
       + (c.situacao === 'SUSPENSA'
         ? botao('reativar', c.id, 'Reativar', '#166534')
         : botao('suspender', c.id, 'Suspender', '#b45309'))
@@ -660,6 +675,33 @@ Sanfona.ligar(document);
         }
         await carregarLojas();
         alert(r.recado);
+      } catch (e) { alert('Erro: ' + e.message); btn.disabled = false; }
+      return;
+    }
+    if (acao === 'liberar') {
+      // Isto NAO mexe em dinheiro: nao registra pagamento, nao mexe no Asaas, nao muda o status da
+      // assinatura. Mexe so na data que o bloqueio olha, e deixa no log quem liberou e por que.
+      const hoje = new Date();
+      const em30 = new Date(hoje.getTime() + 30 * 86400000);
+      const padrao = em30.getFullYear() + '-' + String(em30.getMonth() + 1).padStart(2, '0')
+        + '-' + String(em30.getDate()).padStart(2, '0');
+      const ate = prompt('Liberar o acesso de ' + nome + ' ATÉ que dia? (AAAA-MM-DD)\n\n'
+        + 'Isto NÃO registra pagamento nenhum e não mexe na cobrança do Asaas — muda só até quando '
+        + 'a loja pode usar o sistema.\n\nNo máximo 180 dias por vez.', padrao);
+      if (ate === null || !String(ate).trim()) return;
+      const motivo = prompt('Por que você está liberando?\n\n'
+        + 'Fica no log de auditoria com o seu nome. Ex.: "pagou R$ 398 em 15/10, o Asaas cancelou a '
+        + 'assinatura depois".', '');
+      if (motivo === null || !String(motivo).trim()) {
+        alert('Sem motivo não dá: acesso liberado sem motivo vira mistério daqui a três meses.');
+        return;
+      }
+      btn.disabled = true;
+      try {
+        const r = await Bora.api('/admin-bora/lojas/' + id + '/liberar-acesso',
+          { method: 'POST', body: JSON.stringify({ ate: String(ate).trim(), motivo: String(motivo).trim() }) });
+        await carregarLojas();
+        alert('Acesso de ' + nome + ' liberado até ' + String(ate).trim() + '.\n\n' + r.aviso);
       } catch (e) { alert('Erro: ' + e.message); btn.disabled = false; }
       return;
     }
