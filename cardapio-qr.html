@@ -7,6 +7,19 @@
     <header class="top"><div class="title"><h1>Cardápio Digital</h1><p>Compartilhe o QR Code — clientes pedem pelo próprio celular</p></div>
       <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></header>
 
+    <!--
+      QUEM ENTRA PELA PLATAFORMA NAO TEM LOJA NA SESSAO. Antes a tela caia para a loja 1 em
+      silencio: o link, o QR e o botao de imprimir saiam todos apontando para o cardapio de OUTRA
+      loja, e isso vai para a parede sem ninguem conferir. Agora ela pergunta.
+    -->
+    <div class="panel" id="semLoja" hidden>
+      <h2 style="margin-top:0">De qual loja é este cardápio?</h2>
+      <p style="color:var(--muted);max-width:620px">Você está entrando pela plataforma, sem loja
+        escolhida. Escolha abaixo — ou troque a loja no seletor do menu, à esquerda.</p>
+      <select id="escolhaLoja" style="font:inherit;padding:8px 10px;border-radius:8px;border:1px solid #cbd5e1;min-width:260px"></select>
+      <span id="semLojaMsg" style="font-size:14px;margin-left:10px;color:var(--muted)"></span>
+    </div>
+
     <div class="panel">
       <div class="field" style="max-width:320px;margin-bottom:18px">
         <label>WhatsApp para receber pedidos (opcional)</label>
@@ -58,21 +71,24 @@
     </div>
   </main>
 </div>
-<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20261023d"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261023d"></script><script src="assets/js/cardapio-qr.js?v=20261023d"></script><script src="assets/js/cardapio-impresso.js?v=20261023d"></script>
+<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20261023d"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261023d"></script><script src="assets/js/cardapio-qr.js?v=20261023e"></script><script src="assets/js/cardapio-impresso.js?v=20261023d"></script>
 <script>
   // A folha desenhada e uma pagina publica (le o mesmo /public/loja/{id}/cardapio que o cliente
   // le), por isso e um link e nao uma chamada de API. Mas a LOJA vem da sessao: sem isso o botao
   // abriria a folha de outra loja para quem digitasse o endereco na mao.
   document.getElementById('btnFolha').addEventListener('click', function () {
-    var u = (window.Bora && Bora.user && Bora.user()) || {};
+    // A loja sai do mesmo lugar que o QR desta tela usa: ou a da sessao, ou a que foi escolhida
+    // ali em cima. Duas respostas diferentes nesta pagina seria um QR e um papel discordando.
+    var loja = window.__lojaDoCardapio && window.__lojaDoCardapio();
     var aviso = document.getElementById('folhaMsg');
-    if (!u.lojaId) {
+    if (!loja) {
       aviso.style.color = '#b91c1c';
-      aviso.textContent = 'Nao achei a sua loja na sessao. Entre de novo e tente.';
+      aviso.textContent = 'Escolha a loja ali em cima primeiro — senão a folha sairia com o '
+        + 'cardápio de outra loja.';
       return;
     }
     aviso.textContent = '';
-    window.open('cardapio-folha.html?loja=' + u.lojaId, '_blank');
+    window.open('cardapio-folha.html?loja=' + loja, '_blank');
   });
 </script>
 </body></html>
