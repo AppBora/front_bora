@@ -218,41 +218,113 @@
       return { itens, erros };
     }
 
+    /**
+     * O produto que já existe com aquele nome.
+     *
+     * O import SÓ criava. Colar o cardapio da loja -- que é o que o lojista faz quando o preço
+     * muda -- enchia o catálogo de produtos repetidos, e o cliente passava a ver o mesmo item duas
+     * vezes, com preços diferentes. Agora o que já existe é ATUALIZADO.
+     */
+    function existente(nome) {
+      const n = String(nome || '').trim().toLowerCase();
+      return produtos.find(p => String(p.nome || '').trim().toLowerCase() === n) || null;
+    }
+
+    /**
+     * O corpo da edição: o que já estava no produto, mudando só preço e categoria.
+     *
+     * `estoque` e `imagemUrl` ficam FORA. O servidor ignora o estoque na edição justamente para
+     * não apagar as baixas do dia, e grava a imagemUrl quando ela vem -- e o que a lista devolve
+     * é o ENDEREÇO da foto, não a foto, então devolvê-lo trocaria a foto por um link para si
+     * mesma. Já `custo` e `estoqueMinimo` o servidor grava SEM CONDIÇÃO: vão de volta com o valor
+     * exato que vieram, senão o import apagaria o custo e, com ele, o CMV e a margem.
+     */
+    function corpoDeEdicao(p, item) {
+      return {
+        nome: p.nome,                      // mantém a grafia do cadastro
+        categoria: item.categoria,
+        preco: item.preco,
+        custo: p.custo,
+        estoqueMinimo: p.estoqueMinimo,
+        ativo: p.ativo !== false,          // não religa o que foi tirado do cardápio
+        codigoExterno: p.codigoExterno || '',
+      };
+    }
+
+    /** Separa o que vai ser criado, o que muda e o que já está certo. */
+    function separar(itens) {
+      const novos = [], mudam = [], iguais = [];
+      for (const i of itens) {
+        const p = existente(i.nome);
+        if (!p) { novos.push(i); continue; }
+        const mesmoPreco = Math.abs(Number(p.preco) - i.preco) < 0.005;
+        const mesmaCat = String(p.categoria || '').trim() === String(i.categoria || '').trim();
+        if (mesmoPreco && mesmaCat) iguais.push({ item: i, p });
+        else mudam.push({ item: i, p });
+      }
+      return { novos, mudam, iguais };
+    }
+
     document.getElementById('impConferir').onclick = () => {
       const r = parse(txt.value);
       lote = r.itens;
-      btnCriar.disabled = lote.length === 0;
+      const s = separar(lote);
+      btnCriar.disabled = (s.novos.length + s.mudam.length) === 0;
       prev.style.display = 'block';
-      const jaExiste = n => produtos.some(p => (p.nome || '').toLowerCase() === n.toLowerCase());
-      const repetidos = lote.filter(i => jaExiste(i.nome));
+      const linha = (cor, html) => '<div style="color:' + cor + '">' + html + '</div>';
       prev.innerHTML =
-        '<b>' + lote.length + ' produto(s) prontos para importar</b>'
-        + (repetidos.length ? '<br><span style="color:#b45309">' + repetidos.length
-            + ' já existem no catálogo com o mesmo nome e seriam duplicados: '
-            + repetidos.map(i => i.nome).join(', ') + '</span>' : '')
-        + (r.erros.length ? '<br><span style="color:#dc2626">' + r.erros.length + ' linha(s) com problema:<br>'
-            + r.erros.join('<br>') + '</span>' : '')
+        '<b>' + s.novos.length + ' a criar · ' + s.mudam.length + ' a atualizar · '
+        + s.iguais.length + ' já está igual</b>'
+        + (r.erros.length ? '<br><span style="color:#dc2626">' + r.erros.length
+            + ' linha(s) com problema:<br>' + r.erros.join('<br>') + '</span>' : '')
         + '<hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0">'
-        + lote.map(i => i.categoria + ' · <b>' + i.nome + '</b> · R$ '
-            + i.preco.toFixed(2).replace('.', ',')).join('<br>');
+        + s.novos.map(i => linha('#166534', '➕ <b>' + esc(i.nome) + '</b> · '
+            + esc(i.categoria) + ' · ' + money(i.preco))).join('')
+        + s.mudam.map(o => linha('#b45309', '✎ <b>' + esc(o.p.nome) + '</b>'
+            + (Math.abs(Number(o.p.preco) - o.item.preco) < 0.005 ? ''
+               : ' · ' + money(o.p.preco) + ' → <b>' + money(o.item.preco) + '</b>')
+            + (String(o.p.categoria || '').trim() !== String(o.item.categoria || '').trim()
+               ? ' · ' + esc(o.p.categoria || '(sem categoria)') + ' → <b>'
+                 + esc(o.item.categoria) + '</b>' : ''))).join('')
+        + s.iguais.map(o => linha('#94a3b8', '= ' + esc(o.p.nome) + ' (sem mudança)')).join('');
       msg.textContent = '';
     };
 
     btnCriar.onclick = async () => {
       if (!lote.length) return;
-      if (!confirm('Importar ' + lote.length + ' produtos para o catálogo desta loja?')) return;
+      const s = separar(lote);
+      const total = s.novos.length + s.mudam.length;
+      if (!total) return;
+      if (!confirm('Criar ' + s.novos.length + ' e atualizar ' + s.mudam.length
+          + ' produto(s) nesta loja?')) return;
       btnCriar.disabled = true;
       let ok = 0; const falhas = [];
-      for (const item of lote) {
+      const andar = () => { msg.style.color = 'var(--muted)';
+        msg.textContent = 'aplicando… ' + (ok + falhas.length) + '/' + total; };
+
+      for (const item of s.novos) {
         try { await Bora.api('/api/produtos', { method: 'POST', body: JSON.stringify(item) }); ok++; }
-        catch (e) { falhas.push(item.nome + ': ' + e.message); }
-        msg.style.color = 'var(--muted)';
-        msg.textContent = 'importando… ' + ok + '/' + lote.length;
+        catch (e) { falhas.push(item.nome + ': ' + (e && e.message || e)); }
+        andar();
       }
+      for (const o of s.mudam) {
+        try {
+          await Bora.api('/api/produtos/' + o.p.id,
+            { method: 'PUT', body: JSON.stringify(corpoDeEdicao(o.p, o.item)) });
+          ok++;
+        } catch (e) { falhas.push(o.p.nome + ': ' + (e && e.message || e)); }
+        andar();
+      }
+
       msg.style.color = falhas.length ? '#b45309' : '#166534';
-      msg.textContent = ok + ' importado(s)' + (falhas.length ? ' · ' + falhas.length + ' falharam' : ' ✓');
-      if (falhas.length) prev.innerHTML = '<span style="color:#dc2626">' + falhas.join('<br>') + '</span>';
-      else { prev.style.display = 'none'; txt.value = ''; lote = []; }
+      msg.textContent = ok + ' de ' + total + ' aplicado(s)'
+        + (falhas.length ? ' · ' + falhas.length + ' falharam' : ' ✓');
+      if (falhas.length) {
+        // Dizer "pronto" com falha no meio deixaria metade do cardápio com o preço velho.
+        prev.innerHTML = '<span style="color:#dc2626"><b>Estes não mudaram:</b><br>'
+          + falhas.join('<br>') + '<br><br>Conferir e aplicar de novo refaz só o que falta.</span>';
+      } else { prev.style.display = 'none'; txt.value = ''; lote = []; }
+      btnCriar.disabled = false;
       await lista();
     };
   })();
