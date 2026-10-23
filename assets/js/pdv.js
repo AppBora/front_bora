@@ -196,7 +196,15 @@
       // venda de balcão já entregue na hora
       let aviso = '';
       try { await Bora.mudarStatus(ped.id, 'ENTREGUE'); } catch (e) { aviso = 'Venda registrada, mas não consegui marcá-la como entregue (' + e.message + '). Finalize o pedido em Pedidos para ele sair da cozinha.'; }
-      cart = []; renderCart();
+      cart = [];
+      // Cada venda de balcao e uma pessoa diferente. Sem zerar o cliente aqui, o seletor continuava
+      // no anterior e `atualizarCashback()` logo abaixo voltava a oferecer o saldo DELE -- e, como
+      // ele so desmarca quando o saldo e zero, com saldo sobrando a marcacao ficava ligada para a
+      // venda seguinte. A proxima pessoa atendida gastava, ou acumulava, no nome errado.
+      // Zerar e DEPOIS de gravar: o pedido acima ja saiu com o cliente certo.
+      $('cliente').value = '';
+      $('usarCashback').checked = false;
+      renderCart();
       try { clientes = await Bora.clientes(); atualizarCashback(); } catch (e) {} // saldo de cashback atualizado
       $('finish').textContent = '✓ Venda registrada!';
       setTimeout(() => { $('finish').textContent = 'Finalizar venda'; }, 1500);
