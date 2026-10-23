@@ -41,8 +41,10 @@ test('pagina com script proprio carrega api.js ANTES dele', () => {
 });
 
 test('paginas de painel nao esquecem de exigir login (requireAuth)', () => {
+  // Documento solto servido junto com o painel, igual ao guia: nao e tela do produto, nao tem sessao
+  // e por isso nao chama requireAuth. O ROTEIRO-DE-TESTE.html e GERADO por roteiro-de-teste/gerar.py.
   const publicas = new Set(['index.html', 'login.html', 'cadastro.html', 'cardapio.html', 'acompanhar.html',
-    'ajuda.html', 'guia-zira.html', 'cardapio-qr.html']);
+    'ajuda.html', 'guia-zira.html', 'cardapio-qr.html', 'ROTEIRO-DE-TESTE.html']);
   const sem = [];
   for (const p of paginas.filter(f => !publicas.has(f))) {
     const html = fs.readFileSync(path.join(RAIZ, p), 'utf8');
