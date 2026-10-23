@@ -71,6 +71,17 @@
       const sub = $('relSub');
       if (sub && rel.loja) sub.textContent = rel.loja + ' · últimos ' + rel.dias + ' dias';
       $('kFat').textContent = money(rel.faturamento);
+      // Item 5.8 da varredura: o faturamento e o BRUTO que o cliente pagou, taxa de entrega
+      // incluida. Quando quem entrega e o marketplace, essa taxa e dele -- e estava somando aqui sem
+      // ninguem saber. Nao descontei do numero de proposito (isso e decisao do dono); o que entrou e
+      // dizer o tamanho embaixo. So aparece quando existe: loja sem marketplace nao ganha ruido.
+      const taxaMkt = Number(rel.taxaDoMarketplace || 0);
+      const slotTaxa = $('kTaxaMkt');
+      if (slotTaxa) {
+        slotTaxa.textContent = taxaMkt > 0
+          ? ' · inclui ' + money(taxaMkt) + ' de taxa de entrega do marketplace'
+          : '';
+      }
       $('kPed').textContent = rel.pedidos;
       $('kTicket').textContent = money(rel.ticketMedio);
       $('kMargem').textContent = money(rel.margem) + (Number(rel.faturamento) ? ` · ${rel.margemPct}%` : '');
