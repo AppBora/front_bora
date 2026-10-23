@@ -151,7 +151,10 @@ class H(http.server.SimpleHTTPRequestHandler):
             return self._json({"entregadores": [E.previa_acerto(e["nome"]) for e in E.entregadores],
                                "total": 0})
         tabela = {
-            "/api/dashboard/resumo": {"recebidos": 3, "emPreparo": 1, "saiuEntrega": 0, "entregues": 12,
+            # saiuParaEntrega / entreguesUltimaHora sao os nomes do servidor
+            # (PedidoService.resumo). Com saiuEntrega/entregues os KPIs de Entregas vinham VAZIOS.
+            "/api/dashboard/resumo": {"recebidos": 3, "emPreparo": 1,
+                                       "saiuParaEntrega": 0, "entreguesUltimaHora": 0,
                                        "faturamentoHoje": 480.5, "ticketMedio": 40.0, "pedidosHoje": 12,
                                        "ultimos": [], "porStatus": {}, "topProdutos": []},
             "/api/relatorios": {"faturamento": 5200.0, "pedidos": 130, "ticketMedio": 40.0,
@@ -316,11 +319,25 @@ class H(http.server.SimpleHTTPRequestHandler):
 
     def do_PATCH(self):
         corpo = self._corpo()
-        rota = urllib.parse.urlparse(self.path).path
+        partes = urllib.parse.urlparse(self.path)
+        rota = partes.path
+        # A TELA MANDA NA URL, nao no corpo: `PATCH /api/pedidos/5/status?status=PRONTO&motivo=...`
+        # e `PATCH /api/pedidos/5/entregador?nome=Carlos` (api.js:67-68). O controller real recebe
+        # assim, com @RequestParam (PedidoController.java:51,57). Este dublê lia do corpo, e com
+        # isso TODO botao de mudar status e de escolher motoboy nao fazia nada -- 13 itens do
+        # roteiro voltaram bloqueados por causa desta linha, e o pior era o entregador: a tela
+        # recebia 200 OK e o nome era apagado, calado.
+        q = urllib.parse.parse_qs(partes.query)
+
+        def param(nome):
+            # Query primeiro, porque e o que a tela usa. Corpo como reserva, para chamada por curl.
+            if nome in q and q[nome]:
+                return q[nome][0]
+            return corpo.get(nome)
 
         m = re.match(r"^/api/pedidos/(\d+)/status$", rota)
         if m:
-            ped, erro = E.mudar_status(int(m.group(1)), corpo.get("status"), corpo.get("motivo"))
+            ped, erro = E.mudar_status(int(m.group(1)), param("status"), param("motivo"))
             if erro:
                 conflito = ("ja esta" in erro) or ("voltar" in erro)
                 return self._erro(409 if conflito else 400, erro)
@@ -331,7 +348,8 @@ class H(http.server.SimpleHTTPRequestHandler):
             ped = next((x for x in E.pedidos if x["id"] == int(m.group(1))), None)
             if not ped:
                 return self._erro(404, "Pedido nao encontrado")
-            ped["entregador"] = (corpo.get("entregador") or "").strip() or None
+            # `?nome=`, nao `entregador` no corpo (api.js:68 / PedidoController.java:57).
+            ped["entregador"] = (param("nome") or param("entregador") or "").strip() or None
             ped["atualizadoEm"] = agora()
             return self._json(ped)
 

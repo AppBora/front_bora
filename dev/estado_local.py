@@ -202,8 +202,14 @@ class Estado:
     # ------------------------------------------------------------------- numeros derivados
 
     def board(self):
-        """Os pedidos do dia, como o board devolve. Cancelado sai da fila."""
-        return [p for p in self.pedidos if p["status"] != "CANCELADO"]
+        """
+        Os pedidos do dia, como o board devolve.
+
+        NAO esconde CANCELADO: o board de verdade filtra por DATA, nao por status
+        (PedidoService.board). Esconder aqui fazia a aba "Cancelados" do quadro nunca ter o que
+        mostrar, e um defeito de tela ficava escondido atras de um defeito meu.
+        """
+        return list(self.pedidos)
 
     def fechar_caixa(self):
         """
