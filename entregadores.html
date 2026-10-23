@@ -15,6 +15,15 @@
           <div class="field"><label>Nome</label><input id="nome" required></div>
           <div class="field"><label>Telefone / WhatsApp</label><input id="telefone" placeholder="(11) 99999-9999"></div>
           <div class="field"><label>Veículo</label><select id="veiculo"><option>Moto</option><option>Bike</option><option>Carro</option><option>A pé</option></select></div>
+          <!--
+            Sem esta caixa nao havia como desativar ninguem: so editar e excluir. E excluir leva o
+            historico de entregas do motoboy junto. Quem parou de rodar na sexta e volta na quarta
+            tinha de ser recadastrado, perdendo o ranking e o acerto antigo.
+          -->
+          <div class="field"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
+            <input type="checkbox" id="ativo" checked style="width:16px;height:16px">
+            Pode receber rota</label>
+            <small style="color:var(--muted)">Desmarque para afastar sem apagar o histórico dele.</small></div>
           <div class="field"><button class="btn" type="submit">Salvar</button> <button type="button" class="btn secondary" id="cancelar" style="display:none">Cancelar</button>
             <span id="msg" style="color:var(--danger);margin-left:8px"></span></div>
         </form>
@@ -26,5 +35,5 @@
     </section>
   </main>
 </div>
-<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20260930"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20260630"></script><script src="assets/js/entregadores.js?v=20260907d"></script>
+<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20260930"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20260630"></script><script src="assets/js/entregadores.js?v=20261023d"></script>
 </body></html>

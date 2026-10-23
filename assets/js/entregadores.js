@@ -36,11 +36,15 @@
 
   window.__edit = id => { const e = entregadores.find(x => x.id === id); if (!e) return;
     $('id').value = e.id; $('nome').value = e.nome || ''; $('telefone').value = e.telefone || ''; $('veiculo').value = e.veiculo || 'Moto';
+    // Traz a situacao ATUAL. Sem isto a caixa abriria sempre marcada e salvar religaria o inativo.
+    $('ativo').checked = e.ativo !== false;
     $('formTitulo').textContent = 'Editar entregador'; $('cancelar').style.display = 'inline-block'; window.scrollTo(0, 0); };
   window.__del = async id => { if (!confirm('Remover este entregador?')) return;
     try { await Bora.excluirEntregador(id); await carregar(); } catch (e) { alert(e.message); } };
 
-  function resetForm() { $('id').value = ''; $('form').reset(); $('formTitulo').textContent = 'Novo entregador'; $('cancelar').style.display = 'none'; $('msg').textContent = ''; }
+  // `form.reset()` devolve a caixa ao valor do HTML, que e marcado -- entregador novo nasce
+  // podendo rodar. Deixo explicito para nao depender desse detalhe.
+  function resetForm() { $('id').value = ''; $('form').reset(); $('ativo').checked = true; $('formTitulo').textContent = 'Novo entregador'; $('cancelar').style.display = 'none'; $('msg').textContent = ''; }
 
   async function carregar() {
     // Antes somava a vida inteira da loja porque o board vinha completo. Agora o intervalo é dito.
@@ -54,7 +58,11 @@
     $('cancelar').addEventListener('click', resetForm);
     $('form').addEventListener('submit', async e => {
       e.preventDefault(); $('msg').textContent = '';
-      const body = { nome: $('nome').value.trim(), telefone: $('telefone').value.trim(), veiculo: $('veiculo').value, ativo: true };
+      // `ativo: true` era FIXO aqui, no criar E no editar: mudar so o telefone de um motoboy
+      // desligado o religava, e ele reaparecia no seletor de despacho (entregas.js:12 filtra
+      // inativo). Mesmo defeito que ja foi pago no produto (item 13.4), em outra tela.
+      const body = { nome: $('nome').value.trim(), telefone: $('telefone').value.trim(),
+                     veiculo: $('veiculo').value, ativo: $('ativo').checked };
       if (!body.nome) { $('msg').textContent = 'Informe o nome'; return; }
       try {
         const id = $('id').value;
