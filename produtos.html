@@ -50,11 +50,32 @@
         </div>
         <div id="impPreview" style="display:none;margin-top:10px;font-size:13px;max-height:220px;overflow:auto;background:#f8fafc;border-radius:8px;padding:10px"></div>
       </div>
+      <!--
+        A categoria nao e um cadastro: e um campo de texto dentro de CADA produto. Sem esta caixa,
+        renomear uma categoria era abrir produto por produto e redigitar -- e uma letra errada em um
+        deles fazia esse produto virar uma categoria sozinha no cardapio do cliente.
+      -->
+      <div class="card"><h2>🏷 Renomear categoria</h2>
+        <p style="color:var(--muted);max-width:640px;margin-top:0">
+          Troca o nome da categoria em todos os produtos dela de uma vez. É o nome que o cliente lê
+          no cardápio digital. Preço, custo, foto e estoque não são tocados.
+        </p>
+        <div class="form">
+          <div class="field"><label>Categoria atual</label><select id="catDe"></select></div>
+          <div class="field"><label>Novo nome</label><input id="catPara" maxlength="60" placeholder="ex.: Especialidades da Casa"></div>
+          <div class="field full">
+            <button class="btn" type="button" id="catRenomear">Renomear</button>
+            <span id="catMsg" style="font-size:13px;margin-left:10px;color:var(--muted)"></span>
+          </div>
+        </div>
+        <div id="catAviso"></div>
+      </div>
+
       <div class="card"><h2>Catálogo da loja</h2>
         <table class="table"><thead><tr><th>Produto</th><th>Preço</th><th>Margem</th><th>Estoque</th><th></th></tr></thead><tbody id="lista"></tbody></table>
       </div>
     </section>
   </main>
 </div>
-<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20261023d"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261023d"></script><script src="assets/js/produtos.js?v=20260904"></script><script src="assets/js/complementos-gestao.js?v=20260930"></script>
+<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20261023d"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261023d"></script><script src="assets/js/produtos.js?v=20260904"></script><script src="assets/js/complementos-gestao.js?v=20260930"></script><script src="assets/js/renomear-categoria.js?v=20261023"></script>
 </body></html>
