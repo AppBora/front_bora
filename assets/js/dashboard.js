@@ -32,8 +32,28 @@
   }
   window.__promoRelampago = promoRelampago;
 
+  /**
+   * Quem pode ver dinheiro da loja. Item 8.3 da varredura.
+   *
+   * O termometro mostra o faturamento das ultimas 24h e a media esperada, em reais. A API passou a
+   * exigir papel (antes nao exigia nada), e o Dashboard e aberto ao OPERADOR de proposito -- e o
+   * balcao dele. Esconder o painel e melhor que deixar a chamada levar 403 e escrever "indisponivel":
+   * "indisponivel" parece defeito do sistema e gera pergunta para o lojista.
+   */
+  function podeVerNumeroDeDono() {
+    const u = (typeof Bora !== 'undefined' && Bora.user && Bora.user()) || null;
+    const papel = (u && u.papel) || '';
+    return papel === 'ADMINISTRADOR_LOJA' || papel === 'GERENTE' || papel === 'ADMINISTRADOR_BORA';
+  }
+
   async function renderTermometro() {
     const el = document.getElementById('termometro'); if (!el) return;
+    if (!podeVerNumeroDeDono()) {
+      const painel = document.getElementById('painelTermometro');
+      if (painel) painel.hidden = true;
+      el.innerHTML = '';
+      return;   // nem chama a API: 403 no console tambem e ruido
+    }
     try {
       const t = await Bora.termometro();
       const f = FAIXA[t.faixa] || FAIXA.SEM_DADOS;
