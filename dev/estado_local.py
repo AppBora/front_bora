@@ -234,17 +234,45 @@ class Estado:
             "cancelados": len([p for p in self.pedidos if p["status"] == "CANCELADO"]),
         }
 
-    def previa_acerto(self, entregador):
-        """O que o motoboy tem a receber e quanto de dinheiro esta com ele."""
+    def previa_acerto(self):
+        """
+        A previa do acerto, UMA LINHA POR ENTREGADOR.
+
+        A forma e a do servidor (AcertoLinha.java), nao uma que eu inventei: `entregador`,
+        `qtdeEntregas`, `valorTaxas`, `valorDinheiro`, `valorOutras`, `valorTotal`, `valorAPagar`.
+        Antes isto devolvia um objeto com nomes proprios (`entregas`, `taxas`, `dinheiroRecebido`)
+        e exigia `?entregador=`, que a tela nunca manda -- a tela chama com `?inicio=&fim=`
+        (api.js:141). O sintoma era o pior tipo: com o filtro em "Todos" a tela dizia "Nenhuma
+        entrega em aberto neste periodo" enquanto o motoboy estava com o dinheiro no bolso.
+        Errava CALADA, e bloqueou a secao 10 inteira na varredura.
+
+        A linha "(entregas sem motoboy escolhido)" tambem e do servidor
+        (AcertoEntregadorService:44,75): entrega que ninguem atribuiu nao pode sumir da conta.
+        """
+        SEM_DONO = "(entregas sem motoboy escolhido)"
         entregues = [p for p in self.pedidos
-                     if p["status"] == "ENTREGUE" and p.get("entregador") == entregador]
-        dinheiro = [p for p in entregues if (p.get("formaPagamento") or "").upper().startswith("DINHEIRO")]
-        return {
-            "entregador": entregador,
-            "entregas": len(entregues),
-            "taxas": round(sum(p.get("taxaEntrega") or 0 for p in entregues), 2),
-            "dinheiroRecebido": round(sum(p["valorTotal"] for p in dinheiro), 2),
-            "pedidos": [{"id": p["id"], "codigo": p["codigo"], "valorTotal": p["valorTotal"],
-                         "taxaEntrega": p.get("taxaEntrega") or 0,
-                         "formaPagamento": p.get("formaPagamento")} for p in entregues],
-        }
+                     if p["status"] == "ENTREGUE" and not p.get("acertoId")]
+
+        por_nome = {}
+        for p in entregues:
+            por_nome.setdefault(p.get("entregador") or SEM_DONO, []).append(p)
+
+        linhas = []
+        for nome, pedidos in sorted(por_nome.items()):
+            def soma(filtro):
+                return round(sum(x["valorTotal"] for x in pedidos if filtro(x)), 2)
+            em_dinheiro = lambda x: (x.get("formaPagamento") or "").upper().startswith("DINHEIRO")
+            taxas = round(sum(x.get("taxaEntrega") or 0 for x in pedidos), 2)
+            dinheiro = soma(em_dinheiro)
+            outras = soma(lambda x: not em_dinheiro(x))
+            linhas.append({
+                "entregador": nome,
+                "qtdeEntregas": len(pedidos),
+                "valorTaxas": taxas,
+                "valorDinheiro": dinheiro,
+                "valorOutras": outras,
+                "valorTotal": round(dinheiro + outras, 2),
+                # O que a loja paga ao motoboy: as taxas dele, menos o dinheiro que ja esta com ele.
+                "valorAPagar": round(taxas - dinheiro, 2),
+            })
+        return linhas

@@ -145,11 +145,12 @@ class H(http.server.SimpleHTTPRequestHandler):
         if rota == "/api/caixa" or rota == "/api/caixa/fechamento":
             return self._json(E.fechar_caixa())
         if rota == "/api/acertos/previa":
-            nome = (q.get("entregador") or [None])[0]
-            if nome:
-                return self._json(E.previa_acerto(nome))
-            return self._json({"entregadores": [E.previa_acerto(e["nome"]) for e in E.entregadores],
-                               "total": 0})
+            # A tela chama com ?inicio=&fim= e espera uma LISTA (api.js:141,
+            # AcertoEntregadorController:24). O periodo e ignorado aqui porque a memoria so tem o
+            # movimento desta sessao -- mas a FORMA e a do servidor, que e o que importa no duble.
+            return self._json(E.previa_acerto())
+        if rota == "/api/acertos/historico":
+            return self._json(E.acertos)
         tabela = {
             # saiuParaEntrega / entreguesUltimaHora sao os nomes do servidor
             # (PedidoService.resumo). Com saiuEntrega/entregues os KPIs de Entregas vinham VAZIOS.
