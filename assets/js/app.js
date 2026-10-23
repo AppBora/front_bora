@@ -144,7 +144,10 @@ function boraPrintComanda(p){
   const money=v=>'R$ '+Number(v||0).toFixed(2).replace('.',',');
   const loja=e((JSON.parse(localStorage.getItem('boraTheme')||'{}').name)||'BoraHapp');
   const itens=(p.itens||[]).map(i=>`<tr><td>${e(i.quantidade||1)}x</td><td>${e(i.descricao)}</td></tr>`).join('')||'<tr><td colspan="2">—</td></tr>';
-  const end=e([p.clienteEndereco,p.clienteBairro].filter(Boolean).join(' - '));
+  // O endereco DESTE pedido ganha do cadastro -- e o mesmo que pedidos.js:118 e entregas.js:42
+  // ja fazem. A comanda tinha ficado para tras: o quadro e a tela de Entregas mostravam o
+  // endereco novo e o PAPEL saia com o antigo. O motoboy leva o papel na mao.
+  const end=e([p.enderecoEntrega||p.clienteEndereco, p.bairroEntrega||p.clienteBairro].filter(Boolean).join(' - '));
   const w=window.open('','_print','width=320,height=600');
   if(!w){ boraToast('O navegador bloqueou a janela de impressão. Libere pop-ups para este site e clique em imprimir de novo.','erro'); return; }
   w.document.write(`<html><head><title>Comanda ${e(p.codigo||p.id)}</title><style>
@@ -154,7 +157,8 @@ function boraPrintComanda(p){
     .big{font-size:18px;font-weight:bold}</style></head><body>
     <h2>${loja}</h2>
     <div class="c">COMANDA ${p.canalExterno?('• '+e(p.origem)):''}</div>
-    <hr><div class="big">#${e(p.codigo||p.id)}</div>
+    <!-- o codigo ja vem com # (pedidos nascem como "#1001"); somar outro dava "##1001" -->
+    <hr><div class="big">${e(String(p.codigo||p.id).startsWith('#')?p.codigo:'#'+(p.codigo||p.id))}</div>
     ${p.idExterno?`<div class="c" style="font-size:11px">${e(p.origem||'Marketplace')}: ${e(p.idExterno)}</div>`:''}
     <div>${new Date(p.criadoEm||Date.now()).toLocaleString('pt-BR')}</div>
     <hr><div class="b">${e(p.clienteNome)||'Cliente avulso'}</div>
