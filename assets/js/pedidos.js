@@ -7,7 +7,11 @@
     { key: 'COZINHA', titulo: 'Cozinha', icon: '🍳', cor: '#f59e0b', inclui: ['RECEBIDO', 'CONFIRMADO', 'EM_PREPARO'] },
     { key: 'AGUARDANDO', titulo: 'Aguardando entrega', icon: '📦', cor: '#3b82f6', inclui: ['PRONTO'] },
     { key: 'SAIU', titulo: 'Saiu para entrega', icon: '🛵', cor: '#8b5cf6', inclui: ['SAIU_PARA_ENTREGA'] },
-    { key: 'ENTREGUE', titulo: 'Entregue', icon: '✓', cor: '#22c55e', inclui: ['ENTREGUE'] }
+    { key: 'ENTREGUE', titulo: 'Entregue', icon: '✓', cor: '#22c55e', inclui: ['ENTREGUE'] },
+    // Sem esta coluna a aba "Cancelados" existia e NUNCA mostrava nada: o filtro deixava o
+    // cancelado passar, e o render so emite card para quem cabe numa coluna. Quem cancelou por
+    // engano nao tinha onde conferir. Ela so aparece na aba propria -- ver `passaFiltro`.
+    { key: 'CANCELADO', titulo: 'Cancelados', icon: '✕', cor: '#94a3b8', inclui: ['CANCELADO'] }
   ];
   const PROXIMO = { RECEBIDO: 'EM_PREPARO', CONFIRMADO: 'EM_PREPARO', EM_PREPARO: 'PRONTO',
     PRONTO: 'SAIU_PARA_ENTREGA', SAIU_PARA_ENTREGA: 'ENTREGUE' };
@@ -96,8 +100,18 @@
     const origem = (p.origem || '').toUpperCase();
     if (filtro === 'CANCELADO') return p.status === 'CANCELADO';
     if (p.status === 'CANCELADO') return false; // cancelados só na aba própria
-    if (filtro === 'DELIVERY') return origem.includes('DELIVERY') || origem.includes('ENTREGA') || (!origem.includes('BALC'));
-    if (filtro === 'BALCAO') return origem.includes('BALC');
+    // Delivery e quem vai ser ENTREGUE, e isso esta no tipoEntrega -- nao no canal. O teste era
+    // "tudo que nao e balcao", e com isso pedido de RETIRADA feito por telefone contava como
+    // entrega: o lojista via delivery onde nao houve nenhum, e a conta por canal saia errada.
+    // Pedido antigo pode nao ter tipoEntrega; nesse caso cai no canal, como antes.
+    if (filtro === 'DELIVERY') {
+      if (p.tipoEntrega) return p.tipoEntrega === 'ENTREGA';
+      return origem.includes('DELIVERY') || origem.includes('ENTREGA');
+    }
+    if (filtro === 'BALCAO') {
+      if (p.tipoEntrega) return p.tipoEntrega === 'RETIRADA' || origem.includes('BALC');
+      return origem.includes('BALC');
+    }
     return true; // ATIVOS / TODOS
   }
 

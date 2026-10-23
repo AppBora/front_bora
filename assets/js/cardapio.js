@@ -106,7 +106,15 @@
     const wrap = document.getElementById('comp');
     document.getElementById('compTitulo').textContent = p.nome;
     document.getElementById('compGrupos').innerHTML = p.complementos.map(g => {
-      const tipo = g.maximo === 1 ? 'radio' : 'checkbox';
+      // Radio so onde a escolha e OBRIGATORIA e unica ("escolha 1 tamanho"): ali nao desmarcar
+      // e o certo, porque nenhuma opcao nao e resposta valida.
+      //
+      // Num grupo OPCIONAL de maximo 1 -- "Borda, ate 1 (opcional)" -- radio vira armadilha: o
+      // cliente toca em Catupiry (+R$ 8,00), muda de ideia, e nao tem como voltar atras a nao ser
+      // tirando o item do carrinho. Ele paga o que nao quis, ou desiste. Checkbox desmarca; o
+      // limite de 1 e garantido abaixo, desmarcando a outra quando ele escolhe uma.
+      const obrigatorio = (g.minimo || 0) > 0;
+      const tipo = (obrigatorio && g.maximo === 1) ? 'radio' : 'checkbox';
       const regra = g.minimo > 0 ? `escolha ${g.minimo === g.maximo ? g.minimo : g.minimo + ' a ' + g.maximo}` : `até ${g.maximo} (opcional)`;
       return `<div style="margin:12px 0" data-grupo="${g.id}" data-min="${g.minimo}" data-max="${g.maximo}" data-nome="${esc(g.nome)}">
         <div style="font-weight:800">${esc(g.nome)} <small style="color:#94a3b8;font-weight:600">· ${regra}</small></div>
@@ -116,6 +124,19 @@
         </label>`).join('')}
       </div>`;
     }).join('');
+    // Checkbox nao limita sozinho. Num grupo de maximo 1 que virou checkbox (o opcional), marcar
+    // uma solta a outra -- o cliente troca de borda sem precisar desmarcar antes, e continua
+    // podendo desmarcar tudo, que era o ponto. Grupos de maximo maior seguem sendo conferidos no
+    // "Adicionar", como ja eram.
+    for (const gDiv of document.querySelectorAll('#compGrupos [data-grupo]')) {
+      if (Number(gDiv.dataset.max) !== 1) continue;
+      gDiv.querySelectorAll('input[type="checkbox"]').forEach(cx => {
+        cx.addEventListener('change', () => {
+          if (!cx.checked) return;
+          gDiv.querySelectorAll('input[type="checkbox"]').forEach(o => { if (o !== cx) o.checked = false; });
+        });
+      });
+    }
     document.getElementById('compErr').textContent = '';
     wrap.hidden = false;
     document.getElementById('compOk').onclick = () => {
