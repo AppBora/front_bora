@@ -18,12 +18,28 @@
         <div>
           <h2 style="margin-top:0">Seu cardápio está no ar 🎉</h2>
           <p style="color:var(--muted)">Imprima o QR e cole na mesa, na vitrine ou no balcão. Quem apontar a câmera abre o cardápio e monta o pedido.</p>
+          <p id="qrEstado" style="font-size:13px;margin:0 0 8px"></p>
           <div class="linkrow"><input id="link" readonly><button class="btn" onclick="__copiar()">Copiar</button></div>
           <a class="btn secondary" id="abrir" target="_blank">👁 Pré-visualizar cardápio</a>
         </div>
       </div>
     </div>
+
+    <!--
+      Cardápio de papel, gerado do MESMO cardápio que o cliente vê. Antes isto era feito fora, num
+      editor, e o papel ficava mentindo toda vez que um preço mudava no painel.
+    -->
+    <div class="panel">
+      <h2 style="margin-top:0">🖨 Cardápio para imprimir</h2>
+      <p style="color:var(--muted);max-width:620px">
+        Gera uma folha A4 com os seus produtos, os preços de agora e o QR no rodapé — pronta para
+        colar na parede, deixar na mesa ou mandar para a gráfica. Como sai do próprio cardápio
+        digital, <b>preço mudado no painel já sai certo no próximo impresso</b>.
+      </p>
+      <button class="btn" id="btnImprimir" onclick="__gerarCardapioImpresso()">Gerar cardápio</button>
+      <span id="impMsg" style="font-size:14px;margin-left:10px"></span>
+    </div>
   </main>
 </div>
-<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20261023d"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261023d"></script><script src="assets/js/cardapio-qr.js?v=20260630"></script>
+<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20261023d"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261023d"></script><script src="assets/js/cardapio-qr.js?v=20261023d"></script><script src="assets/js/cardapio-impresso.js?v=20261023d"></script>
 </body></html>
