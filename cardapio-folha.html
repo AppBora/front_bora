@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cardápio para imprimir</title>
+<!--
+  A FOLHA DO CARDÁPIO — o cardápio de parede/mesa, com o QR que leva ao pedido pelo celular.
+
+  POR QUE ESTA PÁGINA EXISTE SEPARADA
+  Já havia um gerador de folha (assets/js/cardapio-impresso.js): ele monta uma lista de duas
+  colunas, igual para qualquer loja. Serve para a loja que não tem cardápio desenhado.
+  Esta aqui é a folha DESENHADA: blocos com foto, tamanhos em tira, "monte o seu" em quatro
+  colunas. É o formato de um cardápio de açaiteria de verdade.
+
+  DE ONDE VEM O CONTEÚDO — E POR QUE ISSO IMPORTA
+  Tudo vem de `/public/loja/{id}/cardapio`, a MESMA chamada que o cliente usa. Preço, foto, nome e
+  adicional saem do cadastro. Não existe uma segunda lista aqui dentro para divergir: se o preço
+  estiver velho nesta folha, ele está velho no sistema, e é no sistema que se corrige.
+
+  O que esta página tem de próprio é o ARRANJO: em que bloco cada produto entra, em que ordem, e
+  quais adicionais são fruta, calda, doce ou creme. Isso é desenho de cardápio, não é dado.
+
+  O QR
+  A imagem vem de fora (api.qrserver.com). A folha só é montada DEPOIS que ela carrega: sem
+  internet, ou com o serviço fora do ar, o lojista imprimiria a folha com um buraco branco e
+  colaria na parede — e ninguém confere o que já está na parede. Sem QR, nada é desenhado, e a
+  tela diz por quê. O endereço também sai escrito: quem não conseguir ler o código, digita.
+
+  O FUNDO IMPRESSO
+  O navegador NÃO imprime cor de fundo por padrão. Como aqui o fundo lilás e as faixas são parte
+  do cardápio, a página pede `print-color-adjust: exact` — sem isso a folha sairia branca e sem as
+  faixas, e só se descobre no papel.
+-->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  /* A cor é a da marca da loja, lida do cadastro; estes valores são só a reserva até ela chegar. */
+  :root {
+    --uva: #5B1A8B;
+    --uva-claro: #7B3FB0;
+    --amarelo: #FFD100;
+    --folha: #2F7A3D;
+    --tinta: #2A1B33;
+    --papel: #FBF7FE;
+    --lilas: #F1E7FA;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; background: #E8E2EE; }
+
+  body {
+    font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+    color: var(--tinta);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---------------------------------------------------------------- a folha A4 */
+  .folha {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 14px auto;
+    padding: 9mm 10mm 7mm;
+    background:
+      radial-gradient(circle at 12% 8%,  rgba(123,63,176,.10), transparent 42%),
+      radial-gradient(circle at 92% 4%,  rgba(255,209,0,.14),  transparent 38%),
+      radial-gradient(circle at 85% 95%, rgba(123,63,176,.09), transparent 45%),
+      var(--papel);
+    box-shadow: 0 2px 16px rgba(42,27,51,.18);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ---------------------------------------------------------------- topo */
+  .topo { text-align: center; position: relative; padding-bottom: 3.5mm; }
+  .topo img.logo { height: 13mm; width: auto; max-width: 60mm; object-fit: contain; }
+  /* A folha 2 e continuacao: repetir o cabecalho inteiro custava 25mm e empurrava a promocao
+     para uma terceira pagina. */
+  .topo.curto { padding-bottom: 3mm; }
+  .topo.curto .marca { font-size: 24pt; }
+  .topo.curto .tagline { font-size: 7.5pt; letter-spacing: 3px; }
+  .marca {
+    font-family: 'Baloo 2', cursive, sans-serif;
+    font-weight: 800; font-size: 25pt; line-height: .95;
+    color: var(--uva); margin: 0; letter-spacing: -1px;
+  }
+  .tagline {
+    font-weight: 800; font-size: 9pt; letter-spacing: 4px;
+    color: var(--uva-claro); text-transform: uppercase; margin: 1.5mm 0 0;
+  }
+  .fita {
+    display: inline-block; margin-top: 2mm; padding: 1.2mm 7mm;
+    background: var(--amarelo); color: var(--tinta);
+    font-weight: 800; font-size: 8.5pt; letter-spacing: 2.5px; text-transform: uppercase;
+    border-radius: 999px;
+  }
+
+  /* ---------------------------------------------------------------- título de bloco */
+  .bloco { margin-top: 3mm; break-inside: avoid; }
+  .cab {
+    display: flex; align-items: center; gap: 3mm;
+    margin: 0 0 2.8mm;
+  }
+  .cab h2 {
+    font-family: 'Baloo 2', cursive, sans-serif;
+    font-weight: 800; font-size: 15pt; letter-spacing: .5px;
+    color: var(--folha); margin: 0; white-space: nowrap; text-transform: uppercase;
+  }
+  .cab::before, .cab::after {
+    content: ''; flex: 1; height: 0; border-top: 1.2pt solid var(--folha); opacity: .4;
+  }
+  .cab .folhinha { color: var(--folha); font-size: 13pt; line-height: 1; }
+  .cab .sub {
+    font-weight: 700; font-size: 8pt; color: var(--uva-claro);
+    text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap;
+  }
+
+  /* ---------------------------------------------------------------- cartões com foto */
+  .vitrine { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
+  .vitrine.dois { grid-template-columns: repeat(2, 1fr); }
+  .card {
+    background: #fff; border: 1.2pt solid var(--lilas); border-radius: 5mm;
+    padding: 2.5mm 2.5mm 3mm; text-align: center; break-inside: avoid;
+    display: flex; flex-direction: column;
+  }
+  .card .foto {
+    width: 100%; aspect-ratio: 5 / 4; max-width: 100%; max-height: 32mm;
+    object-fit: cover; border-radius: 4mm; background: var(--lilas);
+    margin-bottom: 2mm;
+  }
+  .card .nome {
+    font-family: 'Baloo 2', cursive, sans-serif; font-weight: 700;
+    font-size: 11.5pt; line-height: 1.1; color: var(--uva); margin: 0 0 1mm;
+    text-transform: uppercase;
+  }
+  .card .detalhe { font-size: 7.6pt; color: #6A5C74; line-height: 1.3; margin: 0 0 2mm; }
+  .card .preco {
+    font-family: 'Baloo 2', cursive, sans-serif; font-weight: 800;
+    font-size: 14.5pt; color: var(--tinta); margin-top: auto; line-height: 1.1;
+  }
+  /* Sem isto, o cartao sem selo sobe o nome e a linha de nomes fica em degrau. */
+  .selo { min-height: 4.2mm; margin-bottom: 1.5mm; }
+  .gratis {
+    display: inline-block; background: var(--amarelo); color: var(--tinta);
+    font-weight: 800; font-size: 6.6pt; letter-spacing: .6px; text-transform: uppercase;
+    padding: .8mm 2.4mm; border-radius: 999px;
+  }
+
+  /* ---------------------------------------------------------------- tira de tamanhos */
+  .tira { display: grid; gap: 3mm; grid-auto-flow: column; grid-auto-columns: 1fr; }
+  .tam {
+    background: var(--uva); color: #fff; border-radius: 4mm;
+    padding: 3mm 2mm; text-align: center; break-inside: avoid;
+  }
+  .tam .ml {
+    font-weight: 800; font-size: 8pt; letter-spacing: 1.5px;
+    text-transform: uppercase; opacity: .85;
+  }
+  .tam .vl {
+    font-family: 'Baloo 2', cursive, sans-serif; font-weight: 800;
+    font-size: 15pt; color: var(--amarelo); line-height: 1.1;
+  }
+
+  /* ---------------------------------------------------------------- monte o seu */
+  .monte { background: #fff; border: 1.2pt solid var(--lilas); border-radius: 5mm; padding: 3mm 3.5mm; }
+  .colunas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm 5mm; }
+  /* DOCES tem 18 itens e os outros tem 1, 2 e 3: em quatro colunas iguais a folha estourava
+     para uma segunda pagina so por causa dessa coluna. Aqui ela ocupa a largura inteira e se
+     reparte por dentro. */
+  .colunas .largo { grid-column: 1 / -1; margin-top: 1mm; }
+  .colunas .largo ul { columns: 5; column-gap: 4mm; }
+  .colunas h3 {
+    font-weight: 800; font-size: 8pt; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--uva); margin: 0 0 1.5mm; padding-bottom: 1mm;
+    border-bottom: 1pt solid var(--lilas);
+  }
+  .colunas ul { list-style: none; margin: 0; padding: 0; }
+  /* break-inside no ITEM. Sem isto a coluna corta o adicional no meio: "Pasta de Amendoim"
+     terminava uma coluna com o preco, e "Integral" comecava a seguinte sem preco nenhum --
+     dois itens falsos no cardapio, e so se ve no papel. */
+  .colunas li {
+    display: flex; align-items: baseline; gap: 1mm;
+    font-size: 7.8pt; padding: .3mm 0; line-height: 1.22;
+    break-inside: avoid; -webkit-column-break-inside: avoid; page-break-inside: avoid;
+  }
+  .colunas li .pt {
+    flex: 1; min-width: 2mm; border-bottom: .9pt dotted #B9A8C6; transform: translateY(-.8mm);
+  }
+  .colunas li .v { font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .nota4 {
+    margin-top: 2mm; padding: 2mm 3mm; background: var(--lilas); border-radius: 3mm;
+    font-size: 7.6pt; line-height: 1.3;
+  }
+  .nota4 b { color: var(--uva); }
+
+  /* ---------------------------------------------------------------- lista simples */
+  .lista { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 8mm; }
+  .lista li {
+    display: flex; align-items: baseline; gap: 1.5mm; font-size: 9.5pt;
+    padding: 1mm 0; break-inside: avoid;
+  }
+  .lista .n { font-weight: 600; }
+  .lista .pt { flex: 1; min-width: 3mm; border-bottom: 1pt dotted #B9A8C6; transform: translateY(-1mm); }
+  .lista .v {
+    font-weight: 800; white-space: nowrap; color: var(--uva);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------------------------------------------------------------- faixa da promoção */
+  .promo {
+    background: var(--uva); color: #fff; border-radius: 5mm; padding: 3mm 5mm;
+    display: flex; align-items: center; gap: 5mm; break-inside: avoid;
+  }
+  .promo img { width: 23mm; height: 23mm; object-fit: cover; border-radius: 4mm; flex: none; }
+  .promo .t {
+    font-family: 'Baloo 2', cursive, sans-serif; font-weight: 800; font-size: 20pt;
+    color: var(--amarelo); line-height: 1; margin: 0;
+  }
+  .promo .d { font-size: 8.5pt; margin: 1.5mm 0 0; opacity: .92; line-height: 1.35; }
+  .promo .p {
+    font-family: 'Baloo 2', cursive, sans-serif; font-weight: 800; font-size: 22pt;
+    margin-left: auto; white-space: nowrap;
+  }
+
+  /* ---------------------------------------------------------------- o QR */
+  .pedido {
+    margin-top: 3mm; background: #fff; border: 1.6pt dashed var(--uva);
+    border-radius: 5mm; padding: 2.5mm 5mm;
+    display: flex; align-items: center; gap: 5mm; break-inside: avoid;
+  }
+  /* 29mm impressos. Câmera de celular lê a partir de uns 20mm, então ainda sobra folga para
+     papel um pouco borrado ou para quem fotografa de longe. Abaixo de 20mm não desça. */
+  .pedido img.qr { width: 29mm; height: 29mm; flex: none; }
+  .pedido .ch {
+    font-family: 'Baloo 2', cursive, sans-serif; font-weight: 800; font-size: 17pt;
+    color: var(--uva); margin: 0; line-height: 1.05;
+  }
+  .pedido .ps { font-size: 8.5pt; color: #5A4C64; margin: 1.5mm 0 2mm; line-height: 1.4; }
+  .pedido .url {
+    font-family: ui-monospace, 'Courier New', monospace; font-size: 8pt;
+    background: var(--lilas); padding: 1.2mm 2.5mm; border-radius: 2mm;
+    display: inline-block; word-break: break-all;
+  }
+  .pe {
+    margin-top: 4mm; text-align: center; font-size: 7.5pt; color: #8A7C94;
+  }
+
+  /* ---------------------------------------------------------------- barra de tela */
+  .barra {
+    position: sticky; top: 0; z-index: 9;
+    background: var(--uva); color: #fff; padding: 10px 16px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    font-size: 14px;
+  }
+  .barra button {
+    font: inherit; font-weight: 700; padding: 8px 16px; border: 0; border-radius: 8px;
+    background: var(--amarelo); color: #2A1B33; cursor: pointer;
+  }
+  .barra .obs { opacity: .9; font-size: 12.5px; }
+  .aviso {
+    max-width: 210mm; margin: 14px auto 0; padding: 14px 18px; border-radius: 10px;
+    background: #FEF2F2; border: 1px solid #FCA5A5; color: #7F1D1D;
+    font-size: 14px; line-height: 1.5;
+  }
+  .aviso.ok { background: #FFFBEB; border-color: #FCD34D; color: #78350F; }
+
+  /* ---------------------------------------------------------------- impressão */
+  @page { size: A4; margin: 0; }
+  @media print {
+    html, body { background: #fff; }
+    .barra, .aviso { display: none !important; }
+    .folha { margin: 0; box-shadow: none; page-break-after: always; }
+    .folha:last-of-type { page-break-after: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="barra">
+  <button type="button" id="btnImprimir">🖨 Imprimir / salvar em PDF</button>
+  <span class="obs" id="estado">Montando…</span>
+  <span class="obs">Esta barra não sai no papel. Nas opções de impressão, deixe
+    <b>“Gráficos de plano de fundo”</b> marcado.</span>
+</div>
+
+<div id="avisos"></div>
+<div id="saida"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ----------------------------------------------------------------- utilidades
+  const esc = (s) => String(s == null ? '' : s)
+    .replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const reais = (v) => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
+  const $ = (id) => document.getElementById(id);
+
+  const lojaId = Number(new URLSearchParams(location.search).get('loja')) || 18;
+
+  // ----------------------------------------------------------------- O ARRANJO
+  // Isto é desenho de cardápio, não é dado: diz em que bloco cada produto entra e em que ordem.
+  // O nome tem de ser IGUAL ao do cadastro -- é por ele que a folha encontra preço e foto. Produto
+  // que não existir é PULADO e aparece no aviso de tela, nunca como espaço em branco no papel.
+  const DESTAQUES = ['Barca de Açaí Gourmet', 'Titanic Tamanho Família', 'Roleta de Açaí Gourmet'];
+
+  // O "AÇAÍ PURO" do cardápio é o grupo Recipientes do produto Monte Seu Açaí: o preço do açaí
+  // puro é o preço do copo escolhido.
+  const PURO_ORDEM = ['Copo 300ml Puro', 'Copo 500ml Puro', 'Copo 700ml Puro', 'Pote 1L Puro',
+                      'Roleta 1L Puro', 'Barca G 1600ml Puro'];
+  const PURO_ROTULO = {
+    'Copo 300ml Puro': '300 ml', 'Copo 500ml Puro': '500 ml', 'Copo 700ml Puro': '770 ml',
+    'Pote 1L Puro': 'pote 1 L', 'Roleta 1L Puro': 'roleta 1 L', 'Barca G 1600ml Puro': 'barca 1,6 L',
+  };
+
+  // Em que coluna do "monte o seu" cada adicional entra. O que não estiver aqui cai em DOCES,
+  // de propósito: adicional novo no cadastro aparece na folha sozinho, em vez de desaparecer.
+  const COLUNA = {
+    'Banana': 'FRUTAS', 'Morango': 'FRUTAS',
+    'Calda de Chocolate': 'CALDAS', 'Calda de Morango': 'CALDAS',
+    'Creme de Avelã': 'CREMES', 'Creme de Leitinho': 'CREMES', 'Creme de Paçoca': 'CREMES',
+  };
+  // DOCES é a coluna comprida (18 itens hoje); ela sai na largura toda, repartida por dentro.
+  const LARGA = 'DOCES & CROCANTES';
+  const ORDEM_COLUNAS = ['FRUTAS', 'CALDAS', 'CREMES', LARGA];
+
+  // Os três da casa. Cada um pode ter tamanhos como produtos separados ("Ziraninho 500ml") ou
+  // existir só como nome solto -- a folha aceita os dois, porque hoje está no meio da mudança.
+  const CASA = [
+    { base: 'Ziraninho', alternativas: ['Ziraniho'] },   // o cadastro tem um "n" a menos
+    { base: 'Ziraçoca',  alternativas: [] },
+    { base: 'Ziratella', alternativas: [] },
+  ];
+  const TAMANHOS = ['300ml', '500ml', '770ml'];
+
+  const TRADICIONAL = [
+    ['Copo de Açaí 300ml', '300 ml'], ['Copo de Açaí 500ml', '500 ml'],
+    ['Copo de Açaí 770ml', '770 ml'], ['Pote de Açaí 1L', 'pote 1 L'],
+  ];
+  const COPOS = ['Copo da Patroa 500ml', 'Copo do Patrão 700ml'];
+  const PROMO = 'Leve 5 Pague 4 Açaí';
+  const GRATIS = '4 Adicionais Grátis';
+
+  const faltando = [];
+
+  // ----------------------------------------------------------------- o QR
+  function linkPublico() {
+    const base = location.origin + location.pathname.replace(/cardapio-folha\.html$/, '');
+    return base + 'cardapio.html?loja=' + lojaId;
+  }
+  function urlDoQr(link, px) {
+    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + px + 'x' + px
+      + '&margin=8&data=' + encodeURIComponent(link);
+  }
+  /** Só resolve quando a imagem REALMENTE veio. Sem QR a folha não é montada. */
+  function carregarQr(link) {
+    return new Promise((ok, erro) => {
+      const img = new Image();
+      const prazo = setTimeout(() => erro(new Error('o serviço de QR demorou demais')), 12000);
+      img.onload = () => { clearTimeout(prazo); ok(); };
+      img.onerror = () => { clearTimeout(prazo); erro(new Error('não consegui carregar o QR')); };
+      img.src = urlDoQr(link, 420);
+    });
+  }
+
+  // ----------------------------------------------------------------- pedaços da folha
+  function cabecalho(titulo, sub) {
+    return '<div class="cab"><span class="folhinha">&#127807;</span><h2>' + esc(titulo) + '</h2>'
+      + (sub ? '<span class="sub">' + esc(sub) + '</span>' : '')
+      + '<span class="folhinha">&#127807;</span></div>';
+  }
+
+  function temGratis(p) {
+    return (p.complementos || []).some((g) => g.nome === GRATIS);
+  }
+  function itensGratis(p) {
+    const g = (p.complementos || []).find((x) => x.nome === GRATIS);
+    return g ? (g.itens || []).map((i) => i.nome) : [];
+  }
+
+  function cartao(p, rotulo) {
+    const foto = p.imagem
+      ? '<img class="foto" src="' + esc(p.imagem) + '" alt="">'
+      : '<div class="foto"></div>';
+    const selo = '<div class="selo">'
+      + (temGratis(p) ? '<span class="gratis">4 adicionais grátis</span>' : '') + '</div>';
+    return '<div class="card">' + foto + selo
+      + '<p class="nome">' + esc(rotulo || p.nome) + '</p>'
+      + '<p class="preco">' + reais(p.preco) + '</p></div>';
+  }
+
+  /** Cartão de um dos três da casa: foto do que existe e uma linha por tamanho encontrado. */
+  function cartaoDaCasa(grupo, indice) {
+    const achados = [];
+    for (const t of TAMANHOS) {
+      const p = indice[(grupo.base + ' ' + t).toLowerCase()];
+      if (p) achados.push([t.replace('ml', ' ml'), p]);
+    }
+    let solto = indice[grupo.base.toLowerCase()];
+    if (!solto) {
+      for (const alt of grupo.alternativas) {
+        if (indice[alt.toLowerCase()]) { solto = indice[alt.toLowerCase()]; break; }
+      }
+    }
+    if (!achados.length && !solto) { faltando.push(grupo.base); return ''; }
+
+    const modelo = achados.length ? achados[0][1] : solto;
+    const foto = modelo.imagem
+      ? '<img class="foto" src="' + esc(modelo.imagem) + '" alt="">'
+      : '<div class="foto"></div>';
+
+    let precos;
+    if (achados.length) {
+      precos = '<div class="tira" style="grid-auto-flow:row;grid-auto-columns:auto;gap:1.5mm">'
+        + achados.map(([t, p]) =>
+          '<div class="tam" style="padding:1.6mm 2mm;display:flex;justify-content:space-between;'
+          + 'align-items:center;gap:2mm"><span class="ml">' + esc(t) + '</span>'
+          + '<span class="vl" style="font-size:12pt">' + reais(p.preco) + '</span></div>').join('')
+        + '</div>';
+    } else {
+      precos = '<p class="preco">' + reais(solto.preco) + '</p>';
+      faltando.push(grupo.base + ' — só existe um tamanho no cadastro ('
+        + solto.nome + '), então saiu com um preço só');
+    }
+
+    return '<div class="card">' + foto
+      + '<p class="nome">' + esc(grupo.base) + '</p>' + precos + '</div>';
+  }
+
+  function colunasDoMonte(monte) {
+    const baldes = {};
+    ORDEM_COLUNAS.forEach((c) => (baldes[c] = []));
+    for (const g of (monte.complementos || [])) {
+      if (g.nome === GRATIS || g.nome === 'Recipientes') continue;
+      for (const i of (g.itens || [])) {
+        const col = COLUNA[i.nome] || 'DOCES & CROCANTES';
+        if (!baldes[col].some((x) => x.nome === i.nome)) baldes[col].push(i);
+      }
+    }
+    return ORDEM_COLUNAS.filter((c) => baldes[c].length).map((c) =>
+      '<div' + (c === LARGA ? ' class="largo"' : '') + '><h3>' + esc(c) + '</h3><ul>'
+      + baldes[c]
+        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+        .map((i) => '<li><span>' + esc(i.nome) + '</span><span class="pt"></span>'
+          + '<span class="v">' + (Number(i.preco) ? reais(i.preco) : 'grátis') + '</span></li>')
+        .join('')
+      + '</ul></div>').join('');
+  }
+
+  function blocoDoQr(link) {
+    return '<div class="pedido">'
+      + '<img class="qr" src="' + esc(urlDoQr(link, 420)) + '" alt="Código do cardápio">'
+      + '<div><p class="ch">Peça pelo celular</p>'
+      + '<p class="ps">Aponte a câmera do celular para o código, monte o seu açaí e mande o pedido.'
+      + ' Não precisa instalar nada.</p>'
+      + '<span class="url">' + esc(link.replace(/^https?:\/\//, '')) + '</span></div></div>';
+  }
+
+  // ----------------------------------------------------------------- monta tudo
+  function montar(dados, link) {
+    const marca = dados.marca || {};
+    const nome = marca.nome || (dados.loja || {}).nome || 'Cardápio';
+    const produtos = dados.produtos || [];
+
+    const indice = {};
+    produtos.forEach((p) => (indice[String(p.nome).toLowerCase()] = p));
+    const achar = (n) => {
+      const p = indice[String(n).toLowerCase()];
+      if (!p) faltando.push(n);
+      return p;
+    };
+
+    const topo = (comFita) =>
+      '<div class="topo' + (comFita ? '' : ' curto') + '">'
+      + (comFita && marca.logoUrl
+        ? '<img class="logo" src="' + esc(marca.logoUrl) + '" alt="">' : '')
+      + '<p class="marca">' + esc(nome) + '</p>'
+      + '<p class="tagline">Açaí &bull; Crepe &bull; Sorvete</p>'
+      + (comFita ? '<span class="fita">Cardápio</span>' : '')
+      + '</div>';
+
+    // ---- página 1
+    const destaques = DESTAQUES.map(achar).filter(Boolean);
+    const monte = achar('Monte Seu Açaí');
+
+    let puro = '';
+    if (monte) {
+      const rec = (monte.complementos || []).find((g) => g.nome === 'Recipientes');
+      const itens = rec ? (rec.itens || []) : [];
+      const ordenados = PURO_ORDEM.map((n) => itens.find((i) => i.nome === n)).filter(Boolean);
+      // adicional de recipiente que eu não previ entra no fim, em vez de sumir da folha
+      itens.forEach((i) => { if (!ordenados.includes(i)) ordenados.push(i); });
+      if (ordenados.length) {
+        puro = '<div class="bloco">' + cabecalho('Açaí Puro', 'o preço é o do copo')
+          + '<div class="tira">' + ordenados.map((i) =>
+            '<div class="tam"><div class="ml">' + esc(PURO_ROTULO[i.nome] || i.nome) + '</div>'
+            + '<div class="vl">' + reais(i.preco) + '</div></div>').join('')
+          + '</div></div>';
+      }
+    }
+
+    let monteBloco = '';
+    if (monte) {
+      const quemTemGratis = produtos.filter(temGratis);
+      const sabores = quemTemGratis.length ? itensGratis(quemTemGratis[0]) : [];
+      monteBloco = '<div class="bloco">'
+        + cabecalho('Monte seu Açaí', 'escolha quantos quiser')
+        + '<div class="monte"><div class="colunas">' + colunasDoMonte(monte) + '</div>'
+        + (sabores.length
+          ? '<p class="nota4"><b>4 adicionais grátis</b> nos copos e nas barcas marcadas: '
+            + esc(sabores.join(', ')) + '. Os demais entram pelo preço da lista.</p>'
+          : '')
+        + '</div></div>';
+    }
+
+    const pag1 = '<div class="folha">' + topo(true)
+      + (destaques.length
+        ? '<div class="bloco">' + cabecalho('Especiais para compartilhar', 'serve de 2 a 4')
+          + '<div class="vitrine">' + destaques.map((p) => cartao(p)).join('') + '</div></div>'
+        : '')
+      + puro + monteBloco
+      + blocoDoQr(link)
+      + '</div>';
+
+    // ---- página 2
+    const casa = CASA.map((g) => cartaoDaCasa(g, indice)).filter(Boolean).join('');
+
+    const trad = TRADICIONAL.map(([n, r]) => {
+      const p = achar(n);
+      return p ? '<div class="tam"><div class="ml">' + esc(r) + '</div>'
+        + '<div class="vl">' + reais(p.preco) + '</div></div>' : '';
+    }).filter(Boolean).join('');
+
+    const copos = COPOS.map(achar).filter(Boolean);
+    const promo = achar(PROMO);
+
+    const pag2 = '<div class="folha">' + topo(false)
+      + (casa
+        ? '<div class="bloco">' + cabecalho('Especialidades da casa', 'os três da Zirá')
+          + '<div class="vitrine">' + casa + '</div></div>'
+        : '')
+      + (trad
+        ? '<div class="bloco">' + cabecalho('Zirá Tradicional', 'açaí com os 4 grátis')
+          + '<div class="tira">' + trad + '</div></div>'
+        : '')
+      + (copos.length
+        ? '<div class="bloco">' + cabecalho('Copos especiais')
+          + '<div class="tira">' + copos.map((p) =>
+            '<div class="tam"><div class="ml">' + esc(p.nome) + '</div>'
+            + '<div class="vl">' + reais(p.preco) + '</div></div>').join('')
+          + '</div></div>'
+        : '')
+      + (promo
+        ? '<div class="bloco"><div class="promo">'
+          + (promo.imagem ? '<img src="' + esc(promo.imagem) + '" alt="">' : '')
+          + '<div><p class="t">Pague 4, leve 5</p>'
+          + '<p class="d">Cinco copos de açaí pelo preço de quatro. Junta a família, junta a '
+          + 'turma do trabalho.</p></div>'
+          + '<p class="p">' + reais(promo.preco) + '</p></div></div>'
+        : '')
+      + blocoDoQr(link)
+      + '<p class="pe">Preços e itens deste cardápio saem do próprio sistema da loja. '
+      + 'Impresso em ' + new Date().toLocaleDateString('pt-BR') + '.</p>'
+      + '</div>';
+
+    return pag1 + pag2;
+  }
+
+  // ----------------------------------------------------------------- tocar
+  async function tocar() {
+    const estado = $('estado');
+    const avisos = $('avisos');
+    try {
+      const link = linkPublico();
+
+      // O QR primeiro, de propósito: sem ele não faz sentido desenhar folha nenhuma.
+      const [resposta] = await Promise.all([
+        fetch('/public/loja/' + lojaId + '/cardapio', { headers: { Accept: 'application/json' } }),
+        carregarQr(link),
+      ]);
+      if (!resposta.ok) throw new Error('o cardápio da loja respondeu ' + resposta.status);
+      const dados = await resposta.json();
+      if (!dados || !(dados.produtos || []).length) {
+        throw new Error('esta loja não tem nenhum produto ativo no cardápio');
+      }
+
+      $('saida').innerHTML = montar(dados, link);
+      document.title = 'Cardápio · ' + ((dados.marca || {}).nome || 'loja ' + lojaId);
+      estado.textContent = (dados.produtos || []).length + ' produtos no cardápio.';
+
+      // A folha pode crescer sozinha: produto novo, adicional novo, tamanho novo. Em vez de
+      // descobrir no papel que a pagina virou duas, ela se mede aqui e conta na tela.
+      const A4 = 297 * (96 / 25.4);
+      let estouradas = [];
+      try {
+        estouradas = [...document.querySelectorAll('.folha')]
+          .map((f, n) => [n + 1, f.getBoundingClientRect().height])
+          .filter(([, h]) => h > A4 + 2)
+          .map(([n, h]) => 'folha ' + n + ' passou ' + Math.ceil((h - A4) / (96 / 25.4)) + 'mm');
+      } catch (e) { /* sem medida, a folha sai sem o aviso */ }
+      if (estouradas.length) {
+        avisos.innerHTML = '<div class="aviso"><b>A folha nao cabe mais no A4.</b><br>'
+          + estouradas.map(esc).join('<br>')
+          + '<br><br>Ela vai sair com paginas a mais e com bloco cortado no meio. O cardapio '
+          + 'cresceu desde o desenho: tire um item, ou me chame para reequilibrar.</div>';
+      } else if (faltando.length) {
+        avisos.innerHTML = '<div class="aviso ok"><b>Dois recados antes de imprimir.</b><br>'
+          + 'O que o arranjo esperava e não achou no cadastro (foi pulado, não saiu em branco):'
+          + '<br>&bull; ' + faltando.map(esc).join('<br>&bull; ')
+          + '<br><br>Este aviso não sai no papel.</div>';
+      }
+    } catch (e) {
+      $('saida').innerHTML = '';
+      estado.textContent = 'não deu';
+      avisos.innerHTML = '<div class="aviso"><b>Não montei o cardápio:</b> '
+        + esc(e && e.message || e)
+        + '.<br>Nada foi desenhado — melhor isso do que uma folha com o código em branco colada '
+        + 'no balcão.</div>';
+    }
+  }
+
+  $('btnImprimir').addEventListener('click', () => window.print());
+  tocar();
+})();
+</script>
+</body>
+</html>

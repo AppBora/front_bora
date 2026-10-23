@@ -44,7 +44,11 @@ test('paginas de painel nao esquecem de exigir login (requireAuth)', () => {
   // Documento solto servido junto com o painel, igual ao guia: nao e tela do produto, nao tem sessao
   // e por isso nao chama requireAuth. O ROTEIRO-DE-TESTE.html e GERADO por roteiro-de-teste/gerar.py.
   const publicas = new Set(['index.html', 'login.html', 'cadastro.html', 'cardapio.html', 'acompanhar.html',
-    'ajuda.html', 'guia-zira.html', 'cardapio-qr.html', 'ROTEIRO-DE-TESTE.html']);
+    'ajuda.html', 'guia-zira.html', 'cardapio-qr.html', 'ROTEIRO-DE-TESTE.html',
+    // A folha impressa so mostra o que o cardapio.html ja mostra a qualquer um (o endpoint
+    // publico da loja). Exigir login impediria o lojista de abrir no celular ou mandar o link
+    // para a grafica, sem esconder nada que ja nao esteja aberto.
+    'cardapio-folha.html']);
   const sem = [];
   for (const p of paginas.filter(f => !publicas.has(f))) {
     const html = fs.readFileSync(path.join(RAIZ, p), 'utf8');

@@ -39,7 +39,40 @@
       <button class="btn" id="btnImprimir" onclick="__gerarCardapioImpresso()">Gerar cardápio</button>
       <span id="impMsg" style="font-size:14px;margin-left:10px"></span>
     </div>
+
+    <!--
+      A FOLHA DESENHADA. O botao de cima gera a folha simples: lista de duas colunas, serve para
+      qualquer loja. Esta e a folha com foto, tamanhos em tira e o "monte o seu" em colunas -- o
+      formato de cardapio de acaiteria. As duas leem o MESMO cardapio publico, entao nenhuma das
+      duas pode divergir do preco do painel.
+    -->
+    <div class="panel">
+      <h2 style="margin-top:0">&#127807; Folha desenhada, com foto</h2>
+      <p style="color:var(--muted);max-width:620px">
+        Duas folhas A4 com as fotos dos seus produtos, os tamanhos em faixa, o &ldquo;monte o
+        seu&rdquo; em colunas e o QR nas duas paginas. Abre numa aba nova: de la voce imprime ou
+        salva em PDF para mandar para a grafica.
+      </p>
+      <button class="btn" id="btnFolha" type="button">Abrir folha desenhada</button>
+      <span id="folhaMsg" style="font-size:14px;margin-left:10px"></span>
+    </div>
   </main>
 </div>
 <script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20261023d"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261023d"></script><script src="assets/js/cardapio-qr.js?v=20261023d"></script><script src="assets/js/cardapio-impresso.js?v=20261023d"></script>
+<script>
+  // A folha desenhada e uma pagina publica (le o mesmo /public/loja/{id}/cardapio que o cliente
+  // le), por isso e um link e nao uma chamada de API. Mas a LOJA vem da sessao: sem isso o botao
+  // abriria a folha de outra loja para quem digitasse o endereco na mao.
+  document.getElementById('btnFolha').addEventListener('click', function () {
+    var u = (window.Bora && Bora.user && Bora.user()) || {};
+    var aviso = document.getElementById('folhaMsg');
+    if (!u.lojaId) {
+      aviso.style.color = '#b91c1c';
+      aviso.textContent = 'Nao achei a sua loja na sessao. Entre de novo e tente.';
+      return;
+    }
+    aviso.textContent = '';
+    window.open('cardapio-folha.html?loja=' + u.lojaId, '_blank');
+  });
+</script>
 </body></html>
