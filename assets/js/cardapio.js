@@ -8,6 +8,40 @@
 
   let produtos = [], cart = []; // cart = linhas {produtoId, quantidade, complementos:[ids], rotulo, unit}
 
+  /**
+   * O que o produto custa DE VERDADE, no mais barato.
+   *
+   * Grupo com `minimo > 0` nao e opcional: o cliente TEM de escolher. O "Monte Seu Açaí" e o caso
+   * limite -- o recipiente e obrigatorio (minimo 1, maximo 1), e e ele que carrega o preco. O
+   * cartao mostrava `p.preco` cru, entao anunciava um numero que ninguem consegue pagar: hoje
+   * R$ 90,00 sem o copo, e R$ 0,00 assim que a base for zerada. Nos dois casos o cliente le um
+   * preco e paga outro no carrinho.
+   *
+   * O minimo honesto e o preco base mais os `minimo` itens mais baratos de cada grupo obrigatorio.
+   */
+  function extraObrigatorio(p) {
+    return (p.complementos || []).reduce((soma, g) => {
+      const quantos = Number(g.minimo) || 0;
+      if (quantos <= 0) return soma;
+      const precos = (g.itens || []).map(i => Number(i.preco) || 0).sort((a, b) => a - b);
+      return soma + precos.slice(0, quantos).reduce((a, b) => a + b, 0);
+    }, 0);
+  }
+
+  /**
+   * Os tamanhos a mostrar no cartao: o primeiro grupo de ESCOLHA UNICA e obrigatoria.
+   *
+   * E o que o cardapio de papel imprime como bloco proprio ("AÇAÍ PURO -- 300 ml, 500 ml..."). Sem
+   * isto, quem le o papel e escaneia o QR procura "Açaí Puro 300ml" e nao acha: no app aquilo e
+   * uma opcao escondida dentro de outro item.
+   *
+   * Grupo de ate 4 adicionais (minimo 1, maximo 4) NAO e tamanho -- por isso o maximo === 1.
+   */
+  function tamanhosDe(p) {
+    const g = (p.complementos || []).find(x => (Number(x.minimo) || 0) >= 1 && Number(x.maximo) === 1);
+    return g && (g.itens || []).length > 1 ? g.itens : null;
+  }
+
   function render() {
     const grupos = {};
     produtos.forEach(p => { const c = p.categoria || 'Outros'; (grupos[c] = grupos[c] || []).push(p); });
@@ -21,9 +55,23 @@
       // alguem pode comprar o ultimo. Isto aqui e so para o cliente nao tomar o susto no fim.
       itens.map(p => `<div class="menu-item"${p.esgotado ? ' style="opacity:.55"' : ''}>
         ${p.imagem ? `<img src="${p.imagem}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:10px;margin-right:10px;flex-shrink:0${p.esgotado ? ';filter:grayscale(1)' : ''}">` : ''}
-        <div class="mi"><div class="mn">${esc(p.nome)}</div><div class="mp">${p.esgotado
+        <div class="mi"><div class="mn">${esc(p.nome)}</div>${(() => {
+          // Os tamanhos saem ESCRITOS no cartao, com o preco ja somado ao da base -- e o que o
+          // cliente vai pagar, e o que o cardapio de papel promete.
+          const t = p.esgotado ? null : tamanhosDe(p);
+          if (!t) return '';
+          const mostra = t.slice(0, 6).map(i =>
+            esc(i.nome) + ' ' + money(Number(p.preco || 0) + (Number(i.preco) || 0))).join(' &middot; ');
+          return `<div class="mt" style="font-size:12px;color:#64748b;line-height:1.35;margin:2px 0">`
+            + mostra + (t.length > 6 ? ` &middot; +${t.length - 6}` : '') + `</div>`;
+        })()}<div class="mp">${p.esgotado
           ? '<span style="color:#dc2626;font-weight:700">Esgotado</span>'
-          : money(p.preco)}</div></div>
+          : (() => {
+            const desde = Number(p.preco || 0) + extraObrigatorio(p);
+            return desde > Number(p.preco || 0)
+              ? `<span style="font-size:12px;font-weight:400;color:#64748b">a partir de </span>${money(desde)}`
+              : money(p.preco);
+          })()}</div></div>
         ${p.esgotado
           ? '<button class="madd" disabled title="Esgotado" style="opacity:.4;cursor:not-allowed">+</button>'
           : `<button class="madd" onclick="__add(${p.id})">+</button>`}

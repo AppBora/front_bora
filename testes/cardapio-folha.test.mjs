@@ -145,12 +145,49 @@ test('os tres especiais saem com a foto e o preco DO CADASTRO', async () => {
 
 test('o Acai Puro sai com TODOS os recipientes do cadastro, nao com quatro na mao', async () => {
   const r = await abrir();
-  const rec = acha('Monte Seu Açaí').complementos.find((g) => g.nome === 'Recipientes');
+  const monte = acha('Monte Seu Açaí');
+  const rec = monte.complementos.find((g) => g.nome === 'Recipientes');
   assert.ok(rec.itens.length >= 4);
   for (const i of rec.itens) {
-    assert.ok(r.html.includes(money(i.preco)),
-      'o recipiente ' + i.nome + ' (' + money(i.preco) + ') nao saiu na tira do Acai Puro');
+    assert.ok(r.html.includes(money(Number(monte.preco) + Number(i.preco))),
+      'o recipiente ' + i.nome + ' nao saiu na tira do Acai Puro pelo preco que se paga');
   }
+});
+
+test('PREMISSA: o preco do Acai Puro no papel e BASE + COPO, nao so o copo', async () => {
+  // O recipiente e complemento do produto "Monte Seu Açaí": o carrinho cobra a base mais o copo.
+  // Enquanto a base estiver em R$ 90,00, imprimir so o copo prometeria R$ 10,00 numa coisa que
+  // sai R$ 100,00 no app -- o papel e a tela discordando no numero que mais importa.
+  const monte = acha('Monte Seu Açaí');
+  assert.ok(Number(monte.preco) > 0, 'a fixture zerou a base: este teste deixou de medir');
+  const copo = monte.complementos.find((g) => g.nome === 'Recipientes')
+    .itens.find((i) => i.nome === 'Copo 300ml Puro');
+
+  const r = await abrir();
+  assert.ok(r.html.includes(money(Number(monte.preco) + Number(copo.preco))),
+    'o papel nao somou a base ao copo');
+  assert.ok(!new RegExp('"vl">' + money(copo.preco).replace(/\$/, '\$')).test(r.html),
+    'o papel imprimiu o preco do copo sozinho, que ninguem consegue pagar');
+});
+
+test('com a base zerada, o papel passa a mostrar o preco do copo — igual ao cardapio novo', async () => {
+  const copia = JSON.parse(JSON.stringify(CARDAPIO));
+  const m = copia.produtos.find((p) => p.nome === 'Monte Seu Açaí');
+  m.preco = 0;
+  m.complementos.find((g) => g.nome === 'Recipientes')
+    .itens.find((i) => i.nome === 'Copo 300ml Puro').preco = 12.90;
+
+  const r = await abrir({ cardapio: copia });
+  assert.ok(r.html.includes('R$ 12,90'), 'com a base zerada o copo tem de sair pelo proprio preco');
+  assert.ok(!/base \+ copo/.test(r.html), 'continuou dizendo "base + copo" sem base nenhuma');
+});
+
+test('a folha diz ONDE pedir o Acai Puro no app', async () => {
+  // Quem le o papel procura "Açaí Puro 300ml" no celular e nao acha: no app aquilo e uma escolha
+  // dentro de outro item. Sem esta linha, o papel manda o cliente procurar o que nao existe.
+  const r = await abrir();
+  assert.match(r.html, /No celular[\s\S]{0,80}Monte Seu Açaí[\s\S]{0,40}escolha o tamanho/,
+    'a folha nao conta onde o Acai Puro fica no cardapio digital');
 });
 
 test('o "monte seu acai" separa fruta, calda e creme — e nao repete item entre colunas', async () => {

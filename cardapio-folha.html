@@ -190,6 +190,9 @@
     flex: 1; min-width: 2mm; border-bottom: .9pt dotted #B9A8C6; transform: translateY(-.8mm);
   }
   .colunas li .v { font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .comoPedir {
+    margin: 1.5mm 0 0; font-size: 7.6pt; color: #6A5C74; text-align: center;
+  }
   .nota4 {
     margin-top: 2mm; padding: 2mm 3mm; background: var(--lilas); border-radius: 3mm;
     font-size: 7.6pt; line-height: 1.3;
@@ -494,11 +497,23 @@
       // adicional de recipiente que eu não previ entra no fim, em vez de sumir da folha
       itens.forEach((i) => { if (!ordenados.includes(i)) ordenados.push(i); });
       if (ordenados.length) {
-        puro = '<div class="bloco">' + cabecalho('Açaí Puro', 'o preço é o do copo')
+        // O PRECO DO PAPEL TEM DE SER O QUE O CLIENTE PAGA. O recipiente e um complemento do
+        // produto "Monte Seu Açaí": o carrinho cobra a BASE mais o copo. Imprimir so o copo fazia
+        // a folha prometer R$ 10,00 numa coisa que sai R$ 100,00 no app, porque a base ainda esta
+        // em R$ 90,00. Com a base zerada os dois numeros viram o mesmo -- e e o que o cardapio
+        // novo quer. Ate la, o papel conta a verdade em vez de esconder o problema.
+        const base = Number(monte.preco) || 0;
+        puro = '<div class="bloco">'
+          + cabecalho('Açaí Puro', base ? 'base + copo' : 'o preço é o do copo')
           + '<div class="tira">' + ordenados.map((i) =>
             '<div class="tam"><div class="ml">' + esc(PURO_ROTULO[i.nome] || i.nome) + '</div>'
-            + '<div class="vl">' + reais(i.preco) + '</div></div>').join('')
-          + '</div></div>';
+            + '<div class="vl">' + reais(base + (Number(i.preco) || 0)) + '</div></div>').join('')
+          + '</div>'
+          // Quem le o papel e escaneia o QR procura "Açaí Puro 300ml" e nao acha: no app aquilo e
+          // uma escolha dentro do "Monte Seu Açaí". A folha diz onde fica.
+          + '<p class="comoPedir">No celular: abra <b>' + esc(monte.nome)
+          + '</b> e escolha o tamanho.</p>'
+          + '</div>';
       }
     }
 

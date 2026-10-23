@@ -68,6 +68,10 @@ export function subir(arquivo, { Bora, globais = {}, search = '' } = {}) {
     addEventListener: (ev, fn) => (ouvintes[ev] ??= []).push(fn),
     querySelector: () => null, querySelectorAll: () => [], createElement: () => elemento(),
     body: elemento(),
+    // A marca da loja entra por `BoraCores.aplicar(document.documentElement.style, marca)`. Sem
+    // o documentElement aqui, a avaliacao do ARGUMENTO estourava antes do stub rodar, e a tela
+    // escrevia o erro dentro do proprio #menu -- um teste que so olha ausencia passaria vazio.
+    documentElement: elemento(),
   };
   const store = new Map();
   const localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
