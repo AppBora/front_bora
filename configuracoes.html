@@ -172,6 +172,20 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
         </div>
       </details>
 
+      <details class="bloco" id="secCifragem">
+        <summary>🔐 Credenciais no banco <span class="pista">· o que vai junto em todo backup</span></summary>
+        <div class="conteudo">
+      <p style="color:var(--muted);font-size:13px;margin:0 0 10px">
+        A chave <code>BORA_SEGREDO_COLUNAS</code> protege o que for <b>gravado daqui para frente</b>.
+        O que já estava no banco antes dela continua em texto puro até ser regravado — é este botão
+        que fecha essa lacuna. Rodar duas vezes não estraga nada.
+      </p>
+      <div id="cifEstado" style="font-size:14px;margin-bottom:10px">Carregando…</div>
+      <button type="button" class="btn" id="btnCifrar" disabled>Cifrar o que já está gravado</button>
+      <span id="cifMsg" style="font-size:13px;margin-left:10px"></span>
+        </div>
+      </details>
+
       <details class="bloco" id="secNovaLoja">
         <summary>➕ Nova loja (cliente) <span class="pista">· o único caminho que grava o CNPJ</span></summary>
         <div class="conteudo">
@@ -391,6 +405,61 @@ Sanfona.ligar(document);
       msg.textContent = 'Salvo ✓'; setTimeout(() => msg.textContent = '', 3000);
     } catch (e) { t.checked = !alvo; msg.textContent = 'Erro: ' + e.message; }
   };
+  // Cifragem em repouso. O endpoint existia desde a v114 e NENHUMA tela chamava: ligar a chave
+  // protegia o que viesse depois e o que ja estava gravado ficava em texto puro para sempre, sem
+  // ninguem ter como descobrir nem como consertar pelo painel.
+  (() => {
+    const caixa = document.getElementById('cifEstado');
+    const botao = document.getElementById('btnCifrar');
+    const aviso = document.getElementById('cifMsg');
+    if (!caixa || !botao) return;
+
+    function pintar(r) {
+      const ligada = r.cifragemLigada === true;
+      const faltam = Number(r.total || 0);
+      const linhas = Object.entries(r.emTextoPuro || {})
+        .filter(([, n]) => Number(n) > 0)
+        .map(([col, n]) => '<li>' + col + ': <b>' + n + '</b></li>').join('');
+      if (!ligada) {
+        caixa.innerHTML = '<div style="background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px">'
+          + '<b>A chave está DESLIGADA no servidor.</b><br>'
+          + (faltam
+              ? faltam + ' credencial(is) estão em texto puro no banco — e em todo backup.<ul style="margin:6px 0 0 18px">' + linhas + '</ul>'
+              : 'Nada gravado ainda.')
+          + '<br><span style="font-size:13px">Defina <code>BORA_SEGREDO_COLUNAS</code> no servidor e reinicie a API. '
+          + 'Regravar sem a chave não protege nada, por isso o botão fica travado.</span></div>';
+        botao.disabled = true;
+        return;
+      }
+      if (!faltam) {
+        caixa.innerHTML = '<div style="background:#dcfce7;color:#166534;padding:10px;border-radius:8px">'
+          + 'Chave ligada e <b>nenhuma credencial em texto puro</b>. Nada a fazer.</div>';
+        botao.disabled = true;
+        return;
+      }
+      caixa.innerHTML = '<div style="background:#fef3c7;color:#92400e;padding:10px;border-radius:8px">'
+        + 'Chave ligada, mas <b>' + faltam + '</b> credencial(is) gravadas antes dela continuam em texto puro:'
+        + '<ul style="margin:6px 0 0 18px">' + linhas + '</ul></div>';
+      botao.disabled = false;
+    }
+
+    async function ler() {
+      try { pintar(await Bora.api('/admin-bora/seguranca/cifragem')); }
+      catch (e) { caixa.textContent = 'Não consegui ler o estado: ' + e.message; }
+    }
+
+    botao.onclick = async () => {
+      if (!confirm('Regravar as credenciais que estão em texto puro, cifradas? Rodar de novo não estraga nada.')) return;
+      botao.disabled = true; aviso.textContent = 'Cifrando…';
+      try {
+        const r = await Bora.api('/admin-bora/seguranca/cifragem', { method: 'POST' });
+        aviso.textContent = 'Pronto ✓ ' + (r.total || 0) + ' credencial(is) cifradas.';
+        await ler();
+      } catch (e) { aviso.textContent = 'Erro: ' + e.message; botao.disabled = false; }
+    };
+    ler();
+  })();
+
   // Liberação do Módulo IA por loja (add-on pago) + situação do cliente
   const wrap = document.getElementById('iaLojas');
   const verArquivadas = document.getElementById('verArquivadas');
