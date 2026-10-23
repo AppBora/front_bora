@@ -183,3 +183,51 @@ test('preco com ponto decimal continua entrando certo', async () => {
   const post = t.chamadas.find((c) => c.metodo === 'POST');
   assert.equal(post.corpo.preco, 16.90);
 });
+
+// ---------------------------------------------------------------- o controle de estoque
+//
+// O servidor marca esgotado quando `estoque != null && estoque < 1` (PublicController). Entao
+// criar com 0 poe o produto no cardapio APAGADO, escrito "Esgotado" e sem botao, ate alguem
+// lancar a contagem. E util -- e exatamente o que o lojista quer quando vai contar antes de abrir
+// -- mas NAO pode ser o padrao: quem importa um cardapio inteiro veria a loja toda esgotada.
+
+test('PREMISSA: por padrao o produto novo nasce SEM controle de estoque', async () => {
+  const t = await abrir();
+  await importar(t, LINHA_NOVA);
+  const post = t.chamadas.find((c) => c.metodo === 'POST');
+  assert.ok(!('estoque' in post.corpo),
+    'ligou o controle de estoque sem ninguem pedir: a loja inteira entraria esgotada no cardapio');
+});
+
+test('marcando a caixinha, o produto novo nasce com estoque 0', async () => {
+  const t = await abrir();
+  t.get('impEstoque').checked = true;
+  await importar(t, LINHA_NOVA);
+  const post = t.chamadas.find((c) => c.metodo === 'POST');
+  assert.equal(post.corpo.estoque, 0, 'a caixinha nao ligou o controle de estoque');
+});
+
+test('PREMISSA: a caixinha NAO mexe no estoque de quem ja existe', async () => {
+  // Produto que ja existe tem estoque de verdade. Mandar 0 seria apagar as baixas do dia.
+  const t = await abrir();
+  t.get('impEstoque').checked = true;
+  await importar(t, LINHA_MUDA);
+  const put = t.chamadas.find((c) => c.metodo === 'PUT');
+  assert.ok(!('estoque' in put.corpo),
+    'zerou o estoque de um produto que ja existia');
+});
+
+test('a previa AVISA que os novos vao aparecer como esgotado', async () => {
+  const t = await abrir();
+  t.get('impEstoque').checked = true;
+  await importar(t, LINHA_NOVA, { sóConferir: true });
+  assert.match(t.get('impPreview').innerHTML, /Esgotado/,
+    'deixou o lojista descobrir no cardapio do cliente que tudo entrou esgotado');
+});
+
+test('sem produto novo, a previa nao enche de aviso', async () => {
+  const t = await abrir();
+  t.get('impEstoque').checked = true;
+  await importar(t, LINHA_MUDA, { sóConferir: true });
+  assert.ok(!/Esgotado/.test(t.get('impPreview').innerHTML));
+});

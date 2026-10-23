@@ -251,6 +251,23 @@
       };
     }
 
+    /**
+     * Nascer no controle de estoque e uma ESCOLHA, nao o padrao.
+     *
+     * O servidor marca o produto como esgotado quando `estoque != null && estoque < 1`
+     * (PublicController). Entao produto criado com 0 entra no cardapio APAGADO, escrito
+     * "Esgotado" e sem o botao de adicionar, ate alguem lancar a contagem. Ligar isso para todo
+     * mundo faria qualquer lojista que importa um cardapio ver a loja inteira esgotada no
+     * primeiro dia -- por isso e uma caixinha, desmarcada.
+     *
+     * Vale so para o que e CRIADO. Produto que ja existe mantem o estoque que tem: o import nao
+     * manda esse campo na edicao, de proposito.
+     */
+    function comEstoqueZero() {
+      const c = document.getElementById('impEstoque');
+      return !!(c && c.checked);
+    }
+
     /** Separa o que vai ser criado, o que muda e o que já está certo. */
     function separar(itens) {
       const novos = [], mudam = [], iguais = [];
@@ -286,7 +303,13 @@
             + (String(o.p.categoria || '').trim() !== String(o.item.categoria || '').trim()
                ? ' · ' + esc(o.p.categoria || '(sem categoria)') + ' → <b>'
                  + esc(o.item.categoria) + '</b>' : ''))).join('')
-        + s.iguais.map(o => linha('#94a3b8', '= ' + esc(o.p.nome) + ' (sem mudança)')).join('');
+        + s.iguais.map(o => linha('#94a3b8', '= ' + esc(o.p.nome) + ' (sem mudança)')).join('')
+        + (comEstoqueZero() && s.novos.length
+          ? '<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#fffbeb;'
+            + 'border:1px solid #fcd34d;color:#78350f">Os ' + s.novos.length + ' produtos novos '
+            + 'nascem com <b>estoque 0</b>, e por isso aparecem como <b>Esgotado</b> no cardápio '
+            + 'até você lançar a contagem em Estoque.</div>'
+          : '');
       msg.textContent = '';
     };
 
@@ -302,8 +325,11 @@
       const andar = () => { msg.style.color = 'var(--muted)';
         msg.textContent = 'aplicando… ' + (ok + falhas.length) + '/' + total; };
 
+      const zerado = comEstoqueZero();
       for (const item of s.novos) {
-        try { await Bora.api('/api/produtos', { method: 'POST', body: JSON.stringify(item) }); ok++; }
+        // `estoque: 0` liga o controle; sem o campo, o produto nasce "livre" (nunca esgota).
+        const corpo = zerado ? Object.assign({}, item, { estoque: 0 }) : item;
+        try { await Bora.api('/api/produtos', { method: 'POST', body: JSON.stringify(corpo) }); ok++; }
         catch (e) { falhas.push(item.nome + ': ' + (e && e.message || e)); }
         andar();
       }
