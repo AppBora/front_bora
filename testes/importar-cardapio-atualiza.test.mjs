@@ -191,26 +191,30 @@ test('preco com ponto decimal continua entrando certo', async () => {
 // lancar a contagem. E util -- e exatamente o que o lojista quer quando vai contar antes de abrir
 // -- mas NAO pode ser o padrao: quem importa um cardapio inteiro veria a loja toda esgotada.
 
-test('PREMISSA: por padrao o produto novo nasce SEM controle de estoque', async () => {
+test('PREMISSA: por padrao o produto novo nasce no controle de estoque, em 0', async () => {
+  // Decisao do dono (23/10). O efeito medido: com estoque 0 o item entra no cardapio como
+  // "Esgotado" ate alguem lancar a contagem.
   const t = await abrir();
+  await importar(t, LINHA_NOVA);
+  const post = t.chamadas.find((c) => c.metodo === 'POST');
+  assert.equal(post.corpo.estoque, 0,
+    'o import deixou de cadastrar no controle de estoque: era para ser o padrao');
+});
+
+test('desmarcando a caixinha, o produto nasce livre (sem controle)', async () => {
+  // A saida para a loja que NAO controla estoque: sem isto, ela importa o cardapio e ve tudo
+  // esgotado, sem poder desfazer ate alguem subir uma versao.
+  const t = await abrir();
+  t.get('impEstoque').checked = false;
   await importar(t, LINHA_NOVA);
   const post = t.chamadas.find((c) => c.metodo === 'POST');
   assert.ok(!('estoque' in post.corpo),
-    'ligou o controle de estoque sem ninguem pedir: a loja inteira entraria esgotada no cardapio');
-});
-
-test('marcando a caixinha, o produto novo nasce com estoque 0', async () => {
-  const t = await abrir();
-  t.get('impEstoque').checked = true;
-  await importar(t, LINHA_NOVA);
-  const post = t.chamadas.find((c) => c.metodo === 'POST');
-  assert.equal(post.corpo.estoque, 0, 'a caixinha nao ligou o controle de estoque');
+    'desmarcar a caixinha nao desligou o controle: a loja fica presa com tudo esgotado');
 });
 
 test('PREMISSA: a caixinha NAO mexe no estoque de quem ja existe', async () => {
   // Produto que ja existe tem estoque de verdade. Mandar 0 seria apagar as baixas do dia.
   const t = await abrir();
-  t.get('impEstoque').checked = true;
   await importar(t, LINHA_MUDA);
   const put = t.chamadas.find((c) => c.metodo === 'PUT');
   assert.ok(!('estoque' in put.corpo),
@@ -219,7 +223,6 @@ test('PREMISSA: a caixinha NAO mexe no estoque de quem ja existe', async () => {
 
 test('a previa AVISA que os novos vao aparecer como esgotado', async () => {
   const t = await abrir();
-  t.get('impEstoque').checked = true;
   await importar(t, LINHA_NOVA, { sóConferir: true });
   assert.match(t.get('impPreview').innerHTML, /Esgotado/,
     'deixou o lojista descobrir no cardapio do cliente que tudo entrou esgotado');
@@ -227,7 +230,6 @@ test('a previa AVISA que os novos vao aparecer como esgotado', async () => {
 
 test('sem produto novo, a previa nao enche de aviso', async () => {
   const t = await abrir();
-  t.get('impEstoque').checked = true;
   await importar(t, LINHA_MUDA, { sóConferir: true });
   assert.ok(!/Esgotado/.test(t.get('impPreview').innerHTML));
 });

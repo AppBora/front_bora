@@ -252,21 +252,32 @@
     }
 
     /**
-     * Nascer no controle de estoque e uma ESCOLHA, nao o padrao.
+     * O produto importado NASCE no controle de estoque, em zero. E o padrao, por decisao do dono.
      *
-     * O servidor marca o produto como esgotado quando `estoque != null && estoque < 1`
-     * (PublicController). Entao produto criado com 0 entra no cardapio APAGADO, escrito
-     * "Esgotado" e sem o botao de adicionar, ate alguem lancar a contagem. Ligar isso para todo
-     * mundo faria qualquer lojista que importa um cardapio ver a loja inteira esgotada no
-     * primeiro dia -- por isso e uma caixinha, desmarcada.
+     * O QUE ISSO CAUSA, e esta medido: o servidor marca esgotado quando
+     * `estoque != null && estoque < 1` (PublicController). Entao o item recem-importado entra no
+     * cardapio do cliente APAGADO, escrito "Esgotado" e sem o botao de adicionar, ate alguem
+     * lancar a contagem em Estoque. Produto com estoque NULO nunca esgota -- era assim que o
+     * import criava antes, e e o estado de todos os produtos da producao hoje.
+     *
+     * A caixinha continua existindo, marcada, por duas razoes: a loja que nao controla estoque
+     * precisa conseguir desligar na hora, sem esperar deploy; e a previa avisa com o numero, para
+     * ninguem descobrir no cardapio do cliente.
      *
      * Vale so para o que e CRIADO. Produto que ja existe mantem o estoque que tem: o import nao
-     * manda esse campo na edicao, de proposito.
+     * manda esse campo na edicao, porque mandar 0 apagaria as baixas do dia.
      */
     function comEstoqueZero() {
       const c = document.getElementById('impEstoque');
-      return !!(c && c.checked);
+      return c ? !!c.checked : true;   // sem a caixinha na tela, vale a regra
     }
+
+    // O padrao vive AQUI, e nao so no atributo do HTML: assim ele e o mesmo numero que os testes
+    // medem, em vez de depender de quem leu o HTML.
+    (function () {
+      const c = document.getElementById('impEstoque');
+      if (c) c.checked = true;
+    })();
 
     /** Separa o que vai ser criado, o que muda e o que já está certo. */
     function separar(itens) {
