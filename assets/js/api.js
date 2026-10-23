@@ -112,6 +112,9 @@ const Bora = {
   termometro() { return this.api('/api/vendas/termometro'); },
   promocoes() { return this.api('/api/promocoes'); },
   criarPromocao(body) { return this.api('/api/promocoes', { method: 'POST', body: JSON.stringify(body) }); },
+  // Item 7.8: este endpoint existia no servidor desde o inicio e NENHUMA tela chamava. A promocao
+  // nao tinha como ser encerrada: so vencendo, ou batendo o limite de usos.
+  encerrarPromocao(id) { return this.api('/api/promocoes/' + id + '/encerrar', { method: 'PATCH' }); },
   plano() { return this.api('/api/plano'); },
   assinatura() { return this.api('/api/assinatura'); },
   assinar(cpfCnpj) { return this.api('/api/assinatura', { method: 'POST', body: JSON.stringify({ cpfCnpj }) }); },

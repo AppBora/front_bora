@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoraHapp - Promoções</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20260907b"></head><body>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoraHapp - Promoções</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20261023"></head><body>
 <div class="layout">
   <aside class="side">
     <div class="brand"><div class="logo"></div><div><b data-store>BoraHapp</b><br><small>Delivery em tempo real</small></div></div>
@@ -29,6 +29,11 @@
           <div class="field"><label>Código</label><input id="codigo" placeholder="BORA15"></div>
           <div class="field"><label>Desconto (%)</label><input id="desconto" type="number" min="0" max="100" value="15"></div>
           <div class="field"><label>Validade (horas)</label><input id="horas" type="number" min="1" value="3"></div>
+          <!-- Item 7.8: o limite era 20, fixo no codigo, sem campo e sem aviso. Loja que faz 50
+               pedidos numa noite via a promocao parar de valer no meio e nao tinha como saber por
+               que. Vazio = sem limite. -->
+          <div class="field"><label>Limite de usos</label>
+            <input id="limite" type="number" min="0" placeholder="sem limite"></div>
           <div class="field full"><label>Descrição</label><input id="descricao" placeholder="Ex.: 15% de desconto por 3 horas"></div>
           <div class="field full"><button class="btn" type="submit">Criar promoção</button> <span id="msg" style="color:var(--danger);margin-left:10px"></span></div>
         </form>
@@ -42,7 +47,7 @@
     <section class="row" style="grid-template-columns:1fr">
       <div class="card">
         <h2>Promoções da loja</h2>
-        <table class="table"><thead><tr><th>Código</th><th>Tipo</th><th>Desconto</th><th>Validade</th><th>Usos</th><th>Origem</th><th>Status</th></tr></thead><tbody id="lista"></tbody></table>
+        <table class="table"><thead><tr><th>Código</th><th>Tipo</th><th>Desconto</th><th>Validade</th><th>Usos</th><th>Origem</th><th>Status</th><th></th></tr></thead><tbody id="lista"></tbody></table>
       </div>
     </section>
     <section class="row" style="grid-template-columns:1fr;margin-top:16px">
@@ -62,10 +67,10 @@
     </section>
   </main>
 </div>
-<script src="assets/js/api.js?v=20260930"></script>
+<script src="assets/js/api.js?v=20261023"></script>
 <script src="assets/js/app.js?v=20260930"></script>
 <script src="assets/js/cores.js?v=20261009"></script>
 <script src="assets/js/whitelabel.js?v=20260630"></script>
-<script src="assets/js/promocoes.js?v=20260930"></script>
+<script src="assets/js/promocoes.js?v=20261023"></script>
 <script src="assets/js/cupons.js?v=20260930"></script>
 </body></html>

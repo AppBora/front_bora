@@ -30,11 +30,40 @@
       tbody.innerHTML = ps.map(p => {
         const vigente = p.ativa && (!p.fim || new Date(p.fim).getTime() > agora);
         const status = vigente ? '<span class="badge b-entregue">Ativa</span>' : '<span class="badge b-cancelado">Encerrada</span>';
+        // Item 7.8: quantos usos faltam. Sem isto, "12/20" so diz algo para quem sabe que existe
+        // limite -- e a promocao morria no 20o uso sem ninguem entender por que parou.
+        const usos = (p.usos || 0);
+        const temLimite = p.limiteUsos && p.limiteUsos > 0;
+        const faltam = temLimite ? Math.max(0, p.limiteUsos - usos) : null;
+        const usosTexto = temLimite
+          ? `${usos}/${p.limiteUsos}` + (vigente ? ` <small style="color:${faltam <= 3 ? 'var(--danger)' : 'var(--muted)'}">(faltam ${faltam})</small>` : '')
+          : `${usos} <small style="color:var(--muted)">(sem limite)</small>`;
+        // Item 7.8: o endpoint de encerrar existia no servidor e nenhuma tela chamava.
+        const acao = vigente
+          ? `<button class="btn" style="padding:5px 10px;font-size:12px" onclick="__encerrar(${p.id}, '${esc(p.codigo) || ''}')">Encerrar</button>`
+          : '';
         return `<tr><td>${esc(p.codigo) || '—'}</td><td>${esc(p.tipo) || '—'}</td><td>${p.percentualDesconto != null ? p.percentualDesconto + '%' : '—'}</td>` +
-          `<td>${dt(p.fim)}</td><td>${(p.usos || 0)}${p.limiteUsos ? '/' + p.limiteUsos : ''}</td><td>${esc(p.origem) || '—'}</td><td>${status}</td></tr>`;
-      }).join('') || '<tr><td colspan="7" style="color:var(--muted)">Nenhuma promoção ainda.</td></tr>';
-    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger)">${esc(e.message)}</td></tr>`; }
+          `<td>${dt(p.fim)}</td><td>${usosTexto}</td><td>${esc(p.origem) || '—'}</td><td>${status}</td>` +
+          `<td style="text-align:right">${acao}</td></tr>`;
+      }).join('') || '<tr><td colspan="8" style="color:var(--muted)">Nenhuma promoção ainda.</td></tr>';
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger)">${esc(e.message)}</td></tr>`; }
   }
+
+  /**
+   * Encerra a promocao agora. Item 7.8.
+   *
+   * Pergunta antes porque o cliente que estiver com o codigo na mao perde o desconto na hora -- e
+   * nao ha como desencerrar pela tela.
+   */
+  window.__encerrar = async (id, codigo) => {
+    if (!confirm('Encerrar a promoção ' + (codigo || '#' + id) + ' agora?\n\n'
+      + 'Quem estiver com o código na mão perde o desconto imediatamente, e não dá para reabrir '
+      + 'por esta tela.')) return;
+    try {
+      await Bora.encerrarPromocao(id);
+      carregarLista();
+    } catch (ex) { alert(ex.message); }
+  };
 
   document.getElementById('form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -47,12 +76,29 @@
         codigo: document.getElementById('codigo').value.trim() || 'BORA',
         percentualDesconto: Number(document.getElementById('desconto').value || 0),
         descricao: document.getElementById('descricao').value.trim(),
-        inicio: new Date().toISOString(), fim: fim.toISOString(), limiteUsos: 20
+        inicio: new Date().toISOString(), fim: fim.toISOString(),
+        // Item 7.8: era `limiteUsos: 20` fixo. Loja que faz 50 pedidos numa noite via a promocao
+        // parar de valer no meio, sem aviso nenhum na tela. Vazio = sem limite (o servidor trata
+        // nulo e zero como "sem limite", nos dois lugares que conferem).
+        limiteUsos: limiteDigitado()
       });
       document.getElementById('form').reset();
       carregarLista();
     } catch (ex) { msg.textContent = ex.message; }
   });
+
+  /**
+   * O limite que o lojista digitou. Vazio, zero ou bobagem = sem limite.
+   *
+   * A primeira versao tinha um `if (bruto == null || trim() === '') return null` antes do parseInt.
+   * A rodada de mutacao mostrou que ele era REDUNDANTE: `parseInt('')`, `parseInt(null)` e
+   * `parseInt(undefined)` ja dao NaN, e NaN nao passa no `Number.isFinite`. Tirei em vez de deixar
+   * codigo que nao decide nada -- linha que nenhum mutante consegue quebrar e linha que nao faz nada.
+   */
+  function limiteDigitado() {
+    const n = parseInt((document.getElementById('limite') || {}).value, 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
 
   document.addEventListener('DOMContentLoaded', () => { renderTermometro(); carregarLista(); });
 })();

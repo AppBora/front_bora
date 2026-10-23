@@ -5,7 +5,15 @@ import fs from 'node:fs';
 function elemento() {
   const e = { textContent: '', innerHTML: '', value: '', checked: false, hidden: false, style: {},
     dataset: {}, children: [], classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
-    addEventListener() {}, setAttribute() {}, appendChild() {}, focus() {}, querySelectorAll: () => [], querySelector: () => null,
+    // Guarda os ouvintes em vez de engoli-los, e deixa o teste disparar o evento. Sem isto, tela
+    // que faz o trabalho no `submit` do formulario -- Promocoes, Ajustes, Configuracoes -- so dava
+    // para testar por dentro, chamando funcao interna, que e medir outra coisa.
+    __ouvintes: {},
+    addEventListener(ev, fn) { (this.__ouvintes[ev] ??= []).push(fn); },
+    async __disparar(ev, evento = { preventDefault() {}, stopPropagation() {} }) {
+      for (const fn of this.__ouvintes[ev] ?? []) await fn(evento);
+    },
+    setAttribute() {}, appendChild() {}, focus() {}, querySelectorAll: () => [], querySelector: () => null,
     // Um <form> de verdade tem reset(). Sem isto, toda tela que chama `$('form').reset()` -- e varias
     // chamam, depois de salvar -- estourava no teste por falta do dublê, nao por defeito da tela.
     reset() { this.value = ''; this.checked = false; } };

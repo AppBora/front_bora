@@ -305,3 +305,45 @@ body.kds-mode{background:#0b1220;color:#e2e8f0}
 .oficial-box .usercode{font-family:ui-monospace,monospace;font-size:26px;font-weight:800;letter-spacing:.16em;
   background:#fff;border:1px dashed #a78bfa;border-radius:10px;padding:12px;text-align:center;margin:8px 0}
 .oficial-box a{color:#6d28d9;font-weight:600}
+
+/* ===================== CELULAR DE VERDADE (ITEM 7.9 DA VARREDURA) =====================
+ *
+ * O que estava errado, medido em 23/10/2026:
+ *
+ *   1. O menor ponto de quebra do painel era 900px. Abaixo disso -- ou seja, em TODO celular, que
+ *      tem 360 a 430px -- nao havia regra nenhuma. O bloco de 900px servia tablet, nao telefone.
+ *
+ *   2. 14 telas escrevem `grid-template-columns` em `style="..."` direto no HTML. Estilo em linha
+ *      vence qualquer regra de folha, inclusive dentro de media query -- entao o
+ *      `.grid,.row{grid-template-columns:1fr}` la de cima nunca valia nessas telas. Era o caso de
+ *      Caixa, Configuracoes, Contagem, Dashboard, Desempenho, Entregadores, Entregas, Estoque,
+ *      Insumos, Novo Pedido, Promocoes, Rede e Relatorios: no celular, tres colunas de 300px
+ *      dentro de uma tela de 390px, com rolagem lateral na pagina inteira.
+ *
+ *   3. Tabela de 6 colunas (Entregas) sem conteiner de rolagem: ela empurrava a largura da PAGINA,
+ *      e aí todo o resto saia de lugar junto.
+ *
+ * O `!important` aqui NAO e preguica: e a unica coisa que vence estilo em linha. A alternativa seria
+ * reescrever as 14 telas tirando o estilo de dentro do HTML -- mais arriscado, e sem ganho nenhum
+ * para quem usa. O seletor `[style*=...]` acerta exatamente o que o item descreve e nada mais.
+ */
+@media(max-width:560px){
+  /* 1 e 2: qualquer grade, inclusive a declarada em linha, vira uma coluna */
+  [style*="grid-template-columns"]{grid-template-columns:1fr !important}
+  .grid,.row,.plans,.form,.seg,.kpis,.oplive,.kboard,.kanban{grid-template-columns:1fr !important}
+
+  /* 3: tabela larga rola DENTRO do cartao, em vez de empurrar a pagina */
+  .card,.panel{overflow-x:auto;padding:14px}
+  .table{min-width:520px}
+  .table th,.table td{padding:9px;font-size:13px}
+
+  /* a pagina nunca rola de lado: se algo passar, o defeito aparece como corte, nao como rolagem
+   * horizontal que desalinha a tela toda */
+  html,body{overflow-x:hidden}
+  .main{padding:14px 14px 84px}
+  .title h1{font-size:21px}
+  .top{flex-wrap:wrap;gap:10px}
+  .kpi .num{font-size:24px}
+  /* botao de 44px e o minimo para o dedo acertar */
+  .btn{padding:12px 14px;min-height:44px}
+}
