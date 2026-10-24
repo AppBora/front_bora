@@ -7,10 +7,14 @@
     <header class="top"><div class="title"><h1>Controle de Estoque</h1><p>Baixa automática a cada venda · alertas de ruptura</p></div>
       <div style="display:flex;gap:10px"><a class="btn" href="contagem.html" style="background:#059669">📋 Fazer contagem</a><a class="btn" href="produtos.html">+ Cadastrar produto</a></div></header>
 
-    <section class="kpis" style="grid-template-columns:repeat(3,1fr)">
+    <section class="kpis" style="grid-template-columns:repeat(4,1fr)">
       <div class="statcard"><div class="ico money">💰</div><div class="v" id="kValor">—</div><div class="l">Valor em estoque (custo)</div></div>
       <div class="statcard"><div class="ico ticket">⚠️</div><div class="v" id="kBaixo">—</div><div class="l">Abaixo do mínimo</div></div>
       <div class="statcard"><div class="ico cancel">⛔</div><div class="v" id="kRuptura">—</div><div class="l">Em ruptura (zerado)</div></div>
+      <!-- "Sem contagem" e "ruptura" eram o mesmo numero nesta tela, e nao sao a mesma coisa:
+           zerado BLOQUEIA a venda quando existe ficha; sem contagem nao bloqueia nada. Juntar os
+           dois dizia que uma loja cheia de mercadoria tinha 42 rupturas. -->
+      <div class="statcard"><div class="ico">📋</div><div class="v" id="kSemContagem">—</div><div class="l">Insumo sem contagem</div></div>
     </section>
 
     <div class="panel">

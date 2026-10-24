@@ -60,7 +60,20 @@ async function usar(t, texto, { sóConferir = false } = {}) {
 }
 
 // ---------------------------------------------------------------- o caminho feliz
-test('cadastra os insumos novos, com estoque zerado', async () => {
+test('cadastra os insumos novos SEM CONTAGEM — e nao em zero', async () => {
+  // Esta asserção estava invertida, e o estrago foi real. Eu exigia `estoque === 0`, atendendo ao
+  // "deixa com zero mas deixa cadastrado". Mas no banco `0` e `NULL` nao sao a mesma coisa:
+  //
+  //   `0`    = "nao tem nenhum" → BLOQUEIA a venda. Assim que o insumo entra numa ficha tecnica, o
+  //            cardapio marca o produto como `esgotado` (`InsumoService.fichaDaParaFazer`, provado
+  //            em `VendaSemEstoqueTest.fichaDaParaFazer_insumoEmZERO_APAGA_oProdutoDoCardapio`).
+  //   `NULL` = "esta loja nao controla o estoque deste item" → nao bloqueia nada, a ficha pula.
+  //
+  // Na importacao a verdade e NULL: a loja TEM a mercadoria na prateleira, o que ela nao tem e a
+  // contagem. Zero afirma o contrario, e a afirmacao fica inofensiva so ate a primeira ficha ser
+  // salva — ai apaga o cardapio inteiro para o cliente final, sem erro nenhum na tela do lojista.
+  //
+  // Medido na Zira em 24/10/2026: 43 insumos, 42 em zero por causa desta linha.
   const t = await abrir();
   await usar(t, ['Copo 500ml ; un ; 0,38', 'Água Mineral 500ml ; un ; 1,20'].join('\n'));
 
@@ -70,7 +83,9 @@ test('cadastra os insumos novos, com estoque zerado', async () => {
   assert.equal(copo.nome, 'Copo 500ml');
   assert.equal(copo.unidade, 'un');
   assert.equal(copo.custo, 0.38);
-  assert.equal(copo.estoque, 0, 'o insumo tem de nascer no controle de estoque, em zero');
+  assert.equal(copo.estoque, null,
+    'nascer em ZERO apaga o produto do cardapio assim que a ficha tecnica existir');
+  assert.notEqual(copo.estoque, 0, 'zero diz "nao tem nenhum"; a verdade na importacao e "nao contei"');
 });
 
 test('o custo e opcional', async () => {

@@ -75,10 +75,85 @@ test('o produto com estoque controlado continua aparecendo', async () => {
   assert.match(html(t), /Coca-Cola Lata/);
 });
 
-test('o que NAO controla estoque fica de fora, dos dois lados', async () => {
+// ---------------------------------------------------------------- nao contado NAO e zero
+//
+// Esta regra MUDOU em 24/10/2026, e o teste que estava aqui travava a versao antiga. Ele exigia que
+// insumo com `estoque = null` ficasse FORA da tela. Estava errado, e o erro era caro:
+//
+// No banco, `0` e `NULL` sao estados diferentes e o cardapio depende da diferenca. `0` e "nao tem
+// nenhum" e BLOQUEIA a venda — assim que existe ficha tecnica, o produto sai `esgotado: true` no
+// cardapio publico (`InsumoService.fichaDaParaFazer`, provado em `VendaSemEstoqueTest`). `NULL` e
+// "esta loja nao controla o estoque deste item" e nao bloqueia nada.
+//
+// Medido na Zira: 43 insumos, 42 em `0` porque o importador gravava zero fixo. Eram 42 itens que a
+// loja TEM na prateleira, marcados como "nao tem nenhum". E o estado honesto (`NULL`, "nao contei")
+// era o unico que a tela escondia — ou seja, a tela mostrava a mentira e sumia com a verdade.
+//
+// Agora: insumo aparece SEMPRE, e sem contagem aparece como tal. Produto segue filtrado, e isso e
+// deliberado: produto sem controle de estoque e o caso normal (123 na producao) e listar todos
+// afogaria a tela. Insumo existe PARA ser item de estoque; produto, nao necessariamente.
+
+test('insumo SEM CONTAGEM aparece na tela — e e a lista de tarefas da loja', async () => {
+  const t = await abrir();
+  assert.match(html(t), /Polpa de Açaí/,
+    'o insumo sem contagem foi escondido: some da tela justamente o que falta contar');
+  const linha = html(t).split('<tr>').find((l) => l.includes('Polpa de Açaí'));
+  assert.match(linha, /SEM CONTAGEM/, 'tem de dizer que falta contar');
+  assert.ok(!/RUPTURA/.test(linha),
+    'sem contagem NAO e ruptura: ruptura bloqueia venda, sem contagem nao bloqueia nada');
+});
+
+test('produto sem controle de estoque CONTINUA de fora', async () => {
+  // Nao e inconsistencia: sao 123 na producao, a maioria nao controla estoque, e listar todos
+  // afogaria a tela com linhas que nao pedem acao nenhuma.
   const t = await abrir();
   assert.ok(!/Barca de Açaí/.test(html(t)), 'produto sem controle entrou na tela de estoque');
-  assert.ok(!/Polpa de Açaí/.test(html(t)), 'insumo sem controle entrou na tela de estoque');
+});
+
+test('o insumo zerado e o sem contagem NAO se confundem na tela', async () => {
+  const t = await abrir();
+  const copo = html(t).split('<tr>').find((l) => l.includes('Copo 500ml'));   // estoque 0
+  const polpa = html(t).split('<tr>').find((l) => l.includes('Polpa de Açaí')); // estoque null
+  assert.match(copo, /RUPTURA/, 'zero e ruptura de verdade: bloqueia venda quando ha ficha');
+  assert.match(polpa, /SEM CONTAGEM/);
+  assert.ok(!/SEM CONTAGEM/.test(copo), 'o zerado foi rotulado como "sem contagem"');
+});
+
+test('sem contagem NAO mostra os botoes + e −, que o servidor recusaria', async () => {
+  // `mexerNoEstoque` com tipo AJUSTAR e estoque nulo devolve 409: "nao controla estoque. Informe
+  // uma quantidade inicial antes de usar os botoes de ajuste". Mostrar o botao e convidar ao erro.
+  const t = await abrir();
+  const polpa = html(t).split('<tr>').find((l) => l.includes('Polpa de Açaí'));
+  assert.ok(!/__ajustar/.test(polpa),
+    'botao de ajuste num insumo sem contagem: o lojista clica e leva 409');
+  assert.match(polpa, /__definir/, 'tem de haver o campo para digitar a contagem');
+});
+
+test('o contador de SEM CONTAGEM conta, e a ruptura para de inflar', async () => {
+  const t = await abrir();
+  // Fixture: 1 insumo sem contagem (Polpa), 1 insumo em zero (Copo), 0 produtos em zero.
+  assert.equal(t.get('kSemContagem').textContent, 1, 'nao contou os sem contagem');
+  assert.equal(t.get('kRuptura').textContent, 1,
+    'o sem contagem entrou na conta de ruptura — diria que uma loja cheia esta em ruptura');
+});
+
+test('apagar o campo do insumo manda NULL: para de controlar estoque', async () => {
+  // O servidor ja entendia isso (`MexerNoEstoqueRequest`: "quantidade null quer dizer para de
+  // controlar estoque, que e o 'vazio = nao controla' da tela"), mas NENHUMA tela conseguia mandar:
+  // o `Math.max(0, v)` e o `isNaN` barravam o vazio em silencio. Capacidade documentada e
+  // inalcancavel — e e justamente o caminho de saida do zero mentiroso.
+  const t = await abrir();
+  await t.janela.__definir('insumo', 2, '');
+  assert.deepEqual(t.chamadas, [{ o: 'insumo', k: 'DEFINIR', id: 2, q: null }],
+    'apagar o campo nao mandou null: nao ha como desligar o controle de estoque pela tela');
+});
+
+test('apagar o campo de um PRODUTO nao manda nada', async () => {
+  // Produto com estoque nulo some desta lista. Apagar o campo faria a linha desaparecer sem
+  // explicacao nenhuma, que e pior que nao fazer nada.
+  const t = await abrir();
+  await t.janela.__definir('produto', 7, '');
+  assert.deepEqual(t.chamadas, [], 'o vazio no produto virou uma gravacao');
 });
 
 test('cada linha diz se e produto ou insumo', async () => {

@@ -12,14 +12,22 @@
  * (un, kg, g, L, ml); qualquer outra coisa é recusada na conferência, porque o servidor aceitaria
  * calado e o insumo ficaria com uma unidade que nenhuma tela entende.
  *
- * O ESTOQUE NASCE EM ZERO
- * É de propósito, e é o pedido: o insumo entra no controle de estoque já, esperando a contagem.
- * Diferente do produto acabado — esse nasce livre, porque quem controla estoque numa açaiteria é
- * o insumo, pela ficha técnica.
+ * O ESTOQUE NASCE SEM CONTAGEM (nulo), E ANTES NASCIA EM ZERO
+ * O pedido foi "deixa com zero mas deixa cadastrado", e eu gravava `estoque: 0`. Estava errado, e
+ * o cabeçalho antigo deste arquivo já descrevia o motivo sem que eu tirasse a conclusão:
  *
- * O QUE ISSO CAUSA, E PRECISA ESTAR ESCRITO: depois que o insumo entrar em alguma ficha técnica,
- * o cardápio passa a marcar o produto como esgotado enquanto o insumo estiver zerado
- * (`InsumoService.fichaDaParaFazer`). Enquanto não houver ficha, nada muda no cardápio.
+ * `0` significa "não tem nenhum" e **bloqueia a venda** — assim que o insumo entra numa ficha, o
+ * cardápio marca o produto como esgotado (`InsumoService.fichaDaParaFazer`). `NULL` significa
+ * "esta loja não controla o estoque deste item" e não bloqueia nada: a ficha pula a linha.
+ *
+ * Na importação, a verdade é NULL. A loja tem a mercadoria na prateleira; o que ela não tem é a
+ * contagem. Gravar zero afirma o contrário, e a afirmação fica inofensiva só até a primeira ficha
+ * ser salva — aí apaga o cardápio inteiro para o cliente final, sem erro nenhum na tela.
+ *
+ * Medido na Zirá em 24/10/2026: 43 insumos, 42 em zero por causa desta linha.
+ *
+ * O item aparece na tela de Estoque como SEM CONTAGEM, que é a lista de tarefas da loja; digitar a
+ * contagem lá liga o controle, e apagar o campo desliga.
  *
  * O QUE JÁ EXISTE NÃO É TOCADO
  * Insumo repetido quebra a ficha técnica, e custo é dado de dono: se o nome já está lá, esta tela
@@ -78,7 +86,7 @@
         erros.push('linha ' + (n + 1) + ': custo inválido "' + p[2] + '"');
         return;
       }
-      itens.push({ nome, unidade: casa, custo, estoque: 0, estoqueMinimo: null });
+      itens.push({ nome, unidade: casa, custo, estoque: null, estoqueMinimo: null });
     });
     return { itens, erros };
   }
@@ -122,7 +130,7 @@
       + '<hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0">'
       + s.novos.map((i) => '<div style="color:#166534">➕ <b>' + esc(i.nome) + '</b> · '
           + esc(i.unidade) + (i.custo ? ' · ' + money(i.custo) + '/' + esc(i.unidade) : '')
-          + ' · estoque 0</div>').join('');
+          + ' · sem contagem</div>').join('');
     $('insImpMsg').textContent = '';
   }
 
@@ -139,7 +147,10 @@
         : 'Cole a lista na caixa acima primeiro.';
       return;
     }
-    if (!confirm('Cadastrar ' + s.novos.length + ' insumo(s) nesta loja, com estoque zerado?')) return;
+    if (!confirm('Cadastrar ' + s.novos.length + ' insumo(s) nesta loja?\n\n'
+        + 'Eles entram SEM CONTAGEM (e não em zero): aparecem na tela de Estoque como '
+        + '"SEM CONTAGEM" e não bloqueiam venda nenhuma. Zero diria "não tem nenhum" e apagaria o '
+        + 'produto do cardápio assim que a ficha técnica existisse.')) return;
 
     $('insImpCriar').disabled = true;
     let ok = 0; const falhas = [];
