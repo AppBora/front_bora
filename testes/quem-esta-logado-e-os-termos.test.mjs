@@ -79,10 +79,13 @@ function rodarQuemSouEu(user) {
 }
 
 test('PREMISSA: #21b o menu passa a dizer QUEM esta logado e com que papel', () => {
-  const box = rodarQuemSouEu({ nome: 'Maria Souza', papel: 'BALCONISTA', lojaId: 18 });
+  // OPERADOR de proposito: e um papel que EXISTE no enum, e e o mais comum na loja. Este teste
+  // usava "BALCONISTA", que eu tinha inventado -- e por isso nao pegou o defeito.
+  const box = rodarQuemSouEu({ nome: 'Maria Souza', papel: 'OPERADOR', lojaId: 18 });
   assert.ok(box, 'nada foi inserido no menu');
   assert.match(box.innerHTML, /Maria Souza/);
-  assert.match(box.innerHTML, /Balconista/, 'o papel saiu em CAIXA_ALTA_DE_BANCO para o lojista ler');
+  assert.match(box.innerHTML, /Operador/, 'o papel saiu em CAIXA_ALTA_DE_BANCO para o lojista ler');
+  assert.ok(!/OPERADOR/.test(box.innerHTML), 'saiu o nome interno do papel');
 });
 
 test('#21b o papel e traduzido, nao o nome interno', () => {
@@ -132,4 +135,27 @@ test('PREMISSA: #21b alguem CHAMA o renderQuemSouEu na carga da pagina', () => {
   assert.ok(carga, 'não achei o handler de DOMContentLoaded do app.js');
   assert.match(carga[1], /renderQuemSouEu\(\)/,
     'ninguém chama o renderQuemSouEu: a caixa não aparece em tela nenhuma');
+});
+
+test('PREMISSA: #21b o mapa de papeis bate com o enum do servidor', () => {
+  // Eu tinha inventado "BALCONISTA" e "ENTREGADOR" aqui. Os testes acima passavam assim: eles
+  // mediam o FALLBACK (papel desconhecido sai cru), e por isso o OPERADOR -- o papel mais comum
+  // da loja -- aparecia em CAIXA ALTA na tela, que e exatamente o que a caixa queria evitar.
+  // Quem achou foi o QA de tela, abrindo o painel com esse papel.
+  const java = fs.readFileSync(
+    'C:/Users/user/OneDrive/Desktop/Bora/bora-fase-3-backend-java/src/main/java/br/com/bora/entity/Papel.java',
+    'utf8');
+  const doServidor = [...java.matchAll(/\b(ADMINISTRADOR_BORA|ADMINISTRADOR_LOJA|GERENTE|OPERADOR)\b/g)]
+    .map((m) => m[1]);
+  const reais = [...new Set(doServidor)].sort();
+  assert.ok(reais.length >= 4, 'não consegui ler os papéis do enum — este teste parou de medir');
+
+  const js = ler('assets/js/app.js');
+  const mapa = js.match(/const papeis = \{([\s\S]*?)\};/);
+  assert.ok(mapa, 'não achei o mapa de papéis');
+  const noMapa = [...mapa[1].matchAll(/^\s*([A-Z_]+):/gm)].map((m) => m[1]).sort();
+
+  assert.deepEqual(noMapa, reais,
+    'o mapa de papéis não bate com o enum do servidor — papel real sai em CAIXA ALTA na tela, '
+    + 'e papel inventado fica aqui enganando quem ler');
 });

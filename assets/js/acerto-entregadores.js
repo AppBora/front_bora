@@ -28,7 +28,13 @@
     periodo = { inicio, fim };
     el('corpo').innerHTML = '<tr><td colspan="7" style="color:var(--muted)">Carregando...</td></tr>';
     try {
-      linhas = await Bora.acertoPrevia(inicio, fim) || [];
+      // Array.isArray, e não o "||" que estava aqui: o "||" só pega nulo. Se a resposta vier como
+      // objeto, o linhas deixa de ser lista e o botão de imprimir estoura com "linhas.filter is
+      // not a function" — foi o que o QA viu contra um dublê que devolvia objeto. A API real
+      // devolve lista (AcertoEntregadorController.previa), então hoje não morde; o guarda custa
+      // nada e fecha a porta.
+      const previa = await Bora.acertoPrevia(inicio, fim);
+      linhas = Array.isArray(previa) ? previa : [];
       renderPrevia();
     } catch (e) {
       el('corpo').innerHTML = `<tr><td colspan="7" style="color:var(--danger)">${esc(e.message)}</td></tr>`;
@@ -127,7 +133,7 @@
         <td>${dataHoraBR(a.criadoEm)}</td>
         <td><b>${esc(a.entregador)}</b></td>
         <td>${dataBR(a.periodoInicio)} a ${dataBR(a.periodoFim)}</td>
-        <td style="text-align:right">${a.qtdeEntregas}</td>
+        <td style="text-align:right">${a.qtdeEntregas ?? 0}</td>
         <td style="text-align:right">${money(a.valorAPagar)}</td>
         <td style="text-align:right">${money(a.valorPago)}</td>
         <td style="text-align:right">${money(a.descontos)}</td>
@@ -135,6 +141,15 @@
       </tr>`).join('');
     } catch (e) { el('historico').innerHTML = `<tr><td colspan="8" style="color:var(--danger)">${esc(e.message)}</td></tr>`; }
   }
+
+  // Sobre o `?? 0` na coluna de entregas do histórico, logo acima: sem ele, campo ausente escreve
+  // a PALAVRA "undefined" na tela do lojista. Os vizinhos já degradam bem — money(undefined) vira
+  // "R$ 0,00" e dataBR(undefined) vira "—" — e só aquele não degradava.
+  //
+  // Este comentário vive FORA do template literal de propósito. Eu o escrevi dentro, como
+  // comentário de HTML, e as crases dele fecharam a template: o arquivo inteiro parou de compilar
+  // e a tela de Acerto morreu (nenhum ouvinte registrado, o botão Buscar sem reação). Não chegou a
+  // produção porque o QA pegou antes do deploy.
 
   // ---- Impressão ----
   function imprimir() {

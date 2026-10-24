@@ -188,12 +188,17 @@ function renderQuemSouEu() {
   const brand = document.querySelector('.side .brand') || document.querySelector('.brand');
   if (!brand || document.getElementById('quemSouEu')) return;
 
+  // Os quatro papeis que EXISTEM, conferidos contra o enum em
+  // `bora-fase-3-backend-java/src/main/java/br/com/bora/entity/Papel.java`.
+  //
+  // Eu tinha escrito aqui "BALCONISTA" e "ENTREGADOR", que nao existem -- inventei. O efeito era
+  // o contrario do que a caixa serve: o OPERADOR, que e o papel mais comum da loja, aparecia cru
+  // e em caixa alta. O teste que eu escrevi passava porque media o FALLBACK, nao o mapa.
   const papeis = {
     ADMINISTRADOR_BORA: 'Plataforma',
     ADMINISTRADOR_LOJA: 'Administrador',
     GERENTE: 'Gerente',
-    BALCONISTA: 'Balconista',
-    ENTREGADOR: 'Entregador',
+    OPERADOR: 'Operador',
   };
   const esc = s => String(s == null ? '' : s)
     .replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
