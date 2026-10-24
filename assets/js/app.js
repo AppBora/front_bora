@@ -173,6 +173,41 @@ function boraPrintComanda(p){
 }
 
 // ---- Rede multi-loja: seletor de loja no menu (aparece só para quem tem 2+ lojas vinculadas) ----
+/**
+ * Quem esta logado, escrito no menu.
+ *
+ * Nenhuma tela dizia com que CONTA e com que PAPEL voce esta. Quem opera com duas contas -- o
+ * dono e a do balconista -- nao tinha como saber de qual lado estava, e o papel muda o que cada
+ * tela deixa fazer. Descobrir isso por tentativa ("por que esse botao nao aparece?") custa mais
+ * caro que uma linha de texto.
+ */
+function renderQuemSouEu() {
+  if (typeof Bora === 'undefined' || !Bora.token()) return;
+  const u = Bora.user();
+  if (!u || !u.nome) return;
+  const brand = document.querySelector('.side .brand') || document.querySelector('.brand');
+  if (!brand || document.getElementById('quemSouEu')) return;
+
+  const papeis = {
+    ADMINISTRADOR_BORA: 'Plataforma',
+    ADMINISTRADOR_LOJA: 'Administrador',
+    GERENTE: 'Gerente',
+    BALCONISTA: 'Balconista',
+    ENTREGADOR: 'Entregador',
+  };
+  const esc = s => String(s == null ? '' : s)
+    .replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  const box = document.createElement('div');
+  box.id = 'quemSouEu';
+  box.style.cssText = 'margin:6px 12px 0;padding:7px 9px;border-radius:8px;background:rgba(255,255,255,.08);'
+    + 'font-size:12px;line-height:1.35';
+  box.innerHTML = '<b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+    + esc(u.nome) + '</b>'
+    + '<span style="opacity:.75">' + esc(papeis[u.papel] || u.papel || '') + '</span>';
+  brand.insertAdjacentElement('afterend', box);
+}
+
 async function renderLojaSwitcher(){
   if(typeof Bora==='undefined' || !Bora.token()) return;
   try{
@@ -221,7 +256,7 @@ async function renderLojaSwitcher(){
   if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
 })();
 
-document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();renderLojaSwitcher();});
+document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();renderQuemSouEu();renderLojaSwitcher();});
 
 // ---- Plataforma sem loja: avisa em vez de deixar a tela vazia ou quebrada ----------------------
 // O ADMINISTRADOR_BORA logado na plataforma não tem loja. As telas de operação dependem dela: umas
