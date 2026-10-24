@@ -65,6 +65,31 @@
         <a href="configuracoes.html#cardIA">Configurações</a>.
       </p>
 
+      <!--
+        A ficha se monta produto a produto, no botao 🧪. Numa acaiteria com 35 produtos e 43
+        insumos isso e centenas de cliques -- e enquanto a ficha nao existe, VENDER NAO BAIXA
+        NADA do estoque.
+      -->
+      <div class="card"><h2>🧪 Importar fichas técnicas (lista)</h2>
+        <p style="color:var(--muted);max-width:680px;margin-top:0">
+          Uma linha por ingrediente, no formato <b>Produto ; Insumo ; Quantidade</b>. As linhas do
+          mesmo produto formam a ficha dele. A quantidade é <b>para uma unidade do produto</b>, na
+          unidade do insumo — polpa em kg, copo em peça.<br>
+          <b>Atenção:</b> gravar <b>substitui a ficha inteira</b> do produto. A conferência avisa
+          quais já têm ficha antes de você gravar.
+        </p>
+        <textarea id="fiTexto" rows="7"
+          placeholder="Copo de Açaí 300ml ; Polpa de Açaí ; 0,3&#10;Copo de Açaí 300ml ; Copo 300ml ; 1&#10;Copo de Açaí 300ml ; Tampa 300ml ; 1"
+          style="width:100%;font-family:ui-monospace,monospace;font-size:13px;padding:10px;border:1px solid #cbd5e1;border-radius:8px"></textarea>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn" type="button" id="fiConferir" style="background:#64748b">Conferir</button>
+          <button class="btn" type="button" id="fiCriar">Gravar fichas</button>
+          <span id="fiMsg" style="font-size:13px"></span>
+          <span id="fiResumo" style="font-size:12px;color:var(--muted);margin-left:auto"></span>
+        </div>
+        <div id="fiPreview" style="display:none;margin-top:10px;font-size:13px;max-height:300px;overflow:auto;background:#f8fafc;border-radius:8px;padding:10px"></div>
+      </div>
+
       <div class="card"><h2>🏷 Renomear categoria</h2>
         <p style="color:var(--muted);max-width:640px;margin-top:0">
           Troca o nome da categoria em todos os produtos dela de uma vez. É o nome que o cliente lê
@@ -87,5 +112,5 @@
     </section>
   </main>
 </div>
-<script src="assets/js/api.js?v=20261024"></script><script src="assets/js/app.js?v=20261024"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261024"></script><script src="assets/js/produtos.js?v=20261024b"></script><script src="assets/js/complementos-gestao.js?v=20260930"></script><script src="assets/js/renomear-categoria.js?v=20261023"></script>
+<script src="assets/js/api.js?v=20261024b"></script><script src="assets/js/app.js?v=20261024"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261024"></script><script src="assets/js/produtos.js?v=20261024c"></script><script src="assets/js/complementos-gestao.js?v=20260930"></script><script src="assets/js/renomear-categoria.js?v=20261023"></script><script src="assets/js/importar-fichas.js?v=20261024"></script>
 </body></html>
