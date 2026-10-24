@@ -14,11 +14,13 @@
  * ativos e os adicionais de cada um. É literalmente o que o cliente enxerga.
  *
  * O QR
- * A imagem vem de um serviço de fora (api.qrserver.com). Por isso este gerador **confere que ela
- * carregou antes de abrir a janela de impressão**: sem internet, ou com o serviço fora, a tela
- * dizia "Seu cardápio está no ar 🎉" com um ícone de imagem quebrada do lado, e o lojista imprimia
- * uma folha com um buraco branco e colava no balcão. Agora ele não consegue imprimir sem o QR, e
- * o endereço também sai escrito por extenso — quem não conseguir ler o código, digita.
+ * É desenhado AQUI DENTRO (assets/js/qr.js). Antes vinha de um serviço de fora
+ * (api.qrserver.com): sem internet, ou com ele fora do ar, a tela dizia "Seu cardápio está no ar
+ * 🎉" com um ícone de imagem quebrada do lado, e o lojista imprimia uma folha com um buraco
+ * branco e colava no balcão.
+ *
+ * A trava continua: **sem QR montado, nada é impresso**. O endereço também sai escrito por
+ * extenso — quem não conseguir ler o código, digita.
  */
 (function () {
   if (!Bora.requireAuth()) return;
@@ -37,20 +39,22 @@
     return base + 'cardapio.html?loja=' + lojaId;
   }
 
-  function urlDoQr(link, tamanho) {
-    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + tamanho + 'x' + tamanho
-      + '&margin=8&data=' + encodeURIComponent(link);
+  /** O QR, desenhado aqui dentro. Ver assets/js/qr.js. */
+  function urlDoQr(link) {
+    return BoraQR.dataUri(link, { margem: 4 });
   }
 
-  /** Carrega a imagem e só resolve quando ela REALMENTE veio. */
+  /**
+   * Monta o QR e so devolve quando ele REALMENTE existe.
+   *
+   * Antes isto era uma espera de rede, porque a imagem vinha de fora. Agora o desenho e local --
+   * mas a promessa continua: se o gerador estourar (texto longo demais, por exemplo), ninguem
+   * imprime. Folha com buraco branco no lugar do codigo vai para a parede e ninguem mais confere.
+   */
   function carregarQr(link) {
     return new Promise((ok, erro) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      const prazo = setTimeout(() => erro(new Error('o serviço de QR demorou demais')), 12000);
-      img.onload = () => { clearTimeout(prazo); ok(img); };
-      img.onerror = () => { clearTimeout(prazo); erro(new Error('não consegui carregar o QR')); };
-      img.src = urlDoQr(link, 420);
+      try { ok(urlDoQr(link)); }
+      catch (e) { erro(new Error('não consegui montar o QR: ' + (e && e.message || e))); }
     });
   }
 
@@ -176,7 +180,7 @@
 ${secoes}
 ${extras ? `<section class="sec"><h2>Monte o seu</h2><div class="grupos">${extras}</div></section>` : ''}
 <footer>
-  <img src="${esc(urlDoQr(link, 420))}" alt="QR do cardápio">
+  <img src="${esc(urlDoQr(link))}" alt="QR do cardápio">
   <div>
     <p class="chamada">Peça pelo celular</p>
     <p class="passos">Aponte a câmera para o código, escolha o que quiser e mande o pedido.

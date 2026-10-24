@@ -15,6 +15,8 @@
 // QR apontando para uma loja e um papel para outra.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
 import { subir } from './harness.mjs';
 
 const RAIZ = process.env.BORA_FRONT
@@ -35,7 +37,12 @@ function montar({ lojaDaSessao = null, lojas = LOJAS, falhaNaLista = null } = {}
     minhasLojas: async () => { if (falhaNaLista) throw new Error(falhaNaLista); return lojas; },
     logout() {},
   };
-  const t = subir(TELA, { Bora, globais: { window: janela } });
+  // O gerador de QR de verdade: a tela desenha o codigo com ele, e um duble esconderia um
+  // estouro do gerador justamente no caminho que importa.
+  const ctxQr = { console, TextEncoder };
+  vm.createContext(ctxQr);
+  vm.runInContext(fs.readFileSync(RAIZ + '/assets/js/qr.js', 'utf8'), ctxQr);
+  const t = subir(TELA, { Bora, globais: { window: janela, BoraQR: ctxQr.BoraQR } });
   return { ...t, janela };
 }
 
@@ -74,9 +81,15 @@ test('escolhida a loja, o link e o QR saem COM ELA', async () => {
 
   assert.match(t.get('link').value, /loja=18/, 'o link nao pegou a loja escolhida');
   assert.ok(!/loja=1(\D|$)/.test(t.get('link').value), 'o link voltou para a loja 1');
-  assert.match(String(t.get('qr').src), /qrserver/, 'o QR nao foi desenhado depois da escolha');
-  assert.match(decodeURIComponent(String(t.get('qr').src)), /loja=18/,
-    'o QR foi desenhado com um endereco que nao e o da loja escolhida');
+  // O QR agora e desenhado aqui dentro, entao o endereco nao aparece no `src`. A asserçao fica
+  // mais forte: o codigo tem de ser EXATAMENTE o do link da loja 18 -- byte a byte.
+  assert.match(String(t.get('qr').src), /^data:image\/svg\+xml/,
+    'o QR nao foi desenhado depois da escolha');
+  const ctx2 = { console, TextEncoder };
+  vm.createContext(ctx2);
+  vm.runInContext(fs.readFileSync(RAIZ + '/assets/js/qr.js', 'utf8'), ctx2);
+  assert.equal(String(t.get('qr').src), ctx2.BoraQR.dataUri(t.get('link').value, { margem: 4 }),
+    'o QR desenhado nao corresponde ao link que a tela mostra');
   assert.equal(t.get('qrEstado').textContent, '', 'o aviso de "escolha a loja" ficou na tela');
 });
 

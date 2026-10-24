@@ -27,12 +27,25 @@ test('nenhuma pagina aponta para script ou css que nao existe', () => {
   assert.deepEqual(quebrados, []);
 });
 
+test('PREMISSA: as bibliotecas da lista de excecao nao dependem do Bora', () => {
+  // A regra de ordem acima abre excecao para elas. Se uma passar a chamar `Bora.`, a excecao vira
+  // mentira e a tela quebra em silencio -- na ordem certa das vezes, e nao nas outras.
+  for (const lib of ['qr.js', 'cores.js']) {
+    const js = fs.readFileSync(path.join(RAIZ, 'assets/js/' + lib), 'utf8');
+    assert.ok(!/Bora\./.test(js),
+      lib + ' passou a usar o Bora: tire-o da lista de excecao da ordem de scripts');
+  }
+});
+
 test('pagina com script proprio carrega api.js ANTES dele', () => {
   const erros = [];
   for (const p of paginas) {
     const html = fs.readFileSync(path.join(RAIZ, p), 'utf8');
     const srcs = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(m => m[1].split('?')[0]);
-    const propria = srcs.find(s => s.startsWith('assets/js/') && !/api\.js|app\.js|whitelabel\.js|mock-data\.js/.test(s));
+    // `qr.js` entra na lista dos que nao contam: ele e BIBLIOTECA, nao tela -- nao toca em
+    // `Bora` nenhuma vez, entao nao depende do api.js ter carregado. O teste logo abaixo guarda
+    // essa afirmacao, para a excecao nao virar mentira no dia em que alguem puser um `Bora.` ali.
+    const propria = srcs.find(s => s.startsWith('assets/js/') && !/api\.js|app\.js|whitelabel\.js|mock-data\.js|cores\.js|qr\.js/.test(s));
     if (!propria) continue;
     const iApi = srcs.findIndex(s => s.endsWith('assets/js/api.js'));
     if (iApi < 0 || iApi > srcs.indexOf(propria)) erros.push(p);

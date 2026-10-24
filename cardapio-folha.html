@@ -22,16 +22,17 @@
   quais adicionais são fruta, calda, doce ou creme. Isso é desenho de cardápio, não é dado.
 
   O QR
-  A imagem vem de fora (api.qrserver.com). A folha só é montada DEPOIS que ela carrega: sem
-  internet, ou com o serviço fora do ar, o lojista imprimiria a folha com um buraco branco e
-  colaria na parede — e ninguém confere o que já está na parede. Sem QR, nada é desenhado, e a
-  tela diz por quê. O endereço também sai escrito: quem não conseguir ler o código, digita.
+  É desenhado aqui dentro (assets/js/qr.js). Antes vinha de fora (api.qrserver.com), e sem
+  internet o lojista imprimiria a folha com um buraco branco e colaria na parede — ninguém
+  confere o que já está na parede. A trava continua: sem QR, nada é desenhado, e a tela diz por
+  quê. O endereço também sai escrito: quem não conseguir ler o código, digita.
 
   O FUNDO IMPRESSO
   O navegador NÃO imprime cor de fundo por padrão. Como aqui o fundo lilás e as faixas são parte
   do cardápio, a página pede `print-color-adjust: exact` — sem isso a folha sairia branca e sem as
   faixas, e só se descobre no papel.
 -->
+<script src="assets/js/qr.js?v=20261024"></script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap">
@@ -354,18 +355,21 @@
     const base = location.origin + location.pathname.replace(/cardapio-folha\.html$/, '');
     return base + 'cardapio.html?loja=' + lojaId;
   }
-  function urlDoQr(link, px) {
-    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + px + 'x' + px
-      + '&margin=8&data=' + encodeURIComponent(link);
+  /** O QR, desenhado aqui dentro. Ver assets/js/qr.js. */
+  function urlDoQr(link) {
+    return BoraQR.dataUri(link, { margem: 4 });
   }
-  /** Só resolve quando a imagem REALMENTE veio. Sem QR a folha não é montada. */
+  /**
+   * Monta o QR e só segue quando ele existe. Sem QR a folha não é montada.
+   *
+   * Antes isto era espera de REDE: a imagem vinha do api.qrserver.com. O desenho agora é local, e
+   * a regra continua de pé — se o gerador estourar, nada é desenhado. Folha com o código em
+   * branco vai para a parede e ninguém mais confere.
+   */
   function carregarQr(link) {
     return new Promise((ok, erro) => {
-      const img = new Image();
-      const prazo = setTimeout(() => erro(new Error('o serviço de QR demorou demais')), 12000);
-      img.onload = () => { clearTimeout(prazo); ok(); };
-      img.onerror = () => { clearTimeout(prazo); erro(new Error('não consegui carregar o QR')); };
-      img.src = urlDoQr(link, 420);
+      try { urlDoQr(link); ok(); }
+      catch (e) { erro(new Error('não consegui montar o QR: ' + (e && e.message || e))); }
     });
   }
 
@@ -455,7 +459,7 @@
 
   function blocoDoQr(link) {
     return '<div class="pedido">'
-      + '<img class="qr" src="' + esc(urlDoQr(link, 420)) + '" alt="Código do cardápio">'
+      + '<img class="qr" src="' + esc(urlDoQr(link)) + '" alt="Código do cardápio">'
       + '<div><p class="ch">Peça pelo celular</p>'
       + '<p class="ps">Aponte a câmera do celular para o código, monte o seu açaí e mande o pedido.'
       + ' Não precisa instalar nada.</p>'

@@ -78,7 +78,10 @@
           + 'esta tela agora -- o codigo sairia em branco.';
       }
     };
-    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=' + encodeURIComponent(link);
+    // O QR e desenhado AQUI, sem servico de fora. Antes vinha do api.qrserver.com: se aquele
+    // site caisse, mudasse de endereco ou passasse a cobrar, nenhuma loja imprimia cardapio -- e
+    // o endereco de cada loja era enviado para um terceiro a cada impressao.
+    img.src = BoraQR.dataUri(link, { margem: 4 });
     localStorage.setItem('boraCardapioWa', document.getElementById('wa').value);
   }
 

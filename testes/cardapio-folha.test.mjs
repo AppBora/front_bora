@@ -21,11 +21,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 
 const RAIZ = process.env.BORA_FRONT
   || 'C:/Users/user/OneDrive/Desktop/Bora/bora-fase-2-frontend';
 
 const PAGINA = fs.readFileSync(path.join(RAIZ, 'cardapio-folha.html'), 'utf8');
+
+// O gerador de QR DE VERDADE, nao um duble: a folha so e desenhada se ele devolver o codigo, e
+// um duble que sempre devolve string esconderia justamente o caso de ele estourar.
+const ctxQr = { console, TextEncoder };
+vm.createContext(ctxQr);
+vm.runInContext(fs.readFileSync(path.join(RAIZ, 'assets/js/qr.js'), 'utf8'), ctxQr);
+const BORA_QR = ctxQr.BoraQR;
 const CARDAPIO = JSON.parse(
   fs.readFileSync(path.join(RAIZ, 'testes/fixtures/cardapio-loja-18.json'), 'utf8'));
 
@@ -66,9 +74,12 @@ async function abrir({ qrFalha = false, cardapio = CARDAPIO, status = 200,
       querySelectorAll: (sel) => (sel === '.folha' ? folhasFalsas() : []),
     },
     location: { origin: 'https://borahapp.com.br', pathname: '/cardapio-folha.html', search: '?loja=18' },
-    // O QR: ou carrega, ou estoura. É o interruptor do teste.
-    Image: function () {
-      setTimeout(() => (qrFalha ? this.onerror && this.onerror() : this.onload && this.onload()), 0);
+    // O QR: ou monta, ou estoura. É o interruptor do teste.
+    BoraQR: {
+      dataUri: (texto, o) => {
+        if (qrFalha) throw new Error('texto longo demais para o QR');
+        return BORA_QR.dataUri(texto, o);
+      },
     },
     fetch: async () => ({
       ok: status >= 200 && status < 300,
@@ -122,7 +133,7 @@ test('sao duas folhas A4, e as duas levam o QR', async () => {
   const r = await abrir();
   assert.equal((r.html.match(/class="folha"/g) || []).length, 2,
     'a folha mudou de quantidade de paginas');
-  assert.equal((r.html.match(/api\.qrserver\.com/g) || []).length, 2,
+  assert.equal((r.html.match(/data:image\/svg\+xml/g) || []).length, 2,
     'cada pagina precisa do seu QR: quem pega a folha 2 na mesa tambem tem de poder pedir');
 });
 
@@ -322,7 +333,7 @@ test('PREMISSA: se a regua quebrar, a folha sai do mesmo jeito', async () => {
       querySelectorAll: () => { throw new Error('sem regua'); },
     },
     location: { origin: 'https://borahapp.com.br', pathname: '/cardapio-folha.html', search: '?loja=18' },
-    Image: function () { setTimeout(() => this.onload && this.onload(), 0); },
+    BoraQR: BORA_QR,
     fetch: async () => ({ ok: true, status: 200, json: async () => CARDAPIO }),
     URLSearchParams, Promise, setTimeout, clearTimeout, Date, console,
   };

@@ -18,10 +18,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 
 const RAIZ = process.env.BORA_FRONT
   || 'C:/Users/user/OneDrive/Desktop/Bora/bora-fase-2-frontend';
 const ler = (f) => fs.readFileSync(path.join(RAIZ, f), 'utf8');
+
+// O gerador de QR de verdade (ver cardapio-folha.test.mjs para o porquê).
+const ctxQr = { console, TextEncoder };
+vm.createContext(ctxQr);
+vm.runInContext(ler('assets/js/qr.js'), ctxQr);
+const BORA_QR = ctxQr.BoraQR;
 
 const CARDAPIO = {
   loja: { id: 17, nome: 'Pizzaria Bella Napoli' },
@@ -55,9 +62,12 @@ async function rodar({ qrFalha = false, cardapio = CARDAPIO } = {}) {
       getElementById: el,
       addEventListener: () => {},
     },
-    // O QR: ou carrega, ou estoura. É o interruptor do teste.
-    Image: function () {
-      setTimeout(() => (qrFalha ? this.onerror && this.onerror() : this.onload && this.onload()), 0);
+    // O QR: ou monta, ou estoura. É o interruptor do teste.
+    BoraQR: {
+      dataUri: (texto, o) => {
+        if (qrFalha) throw new Error('texto longo demais para o QR');
+        return BORA_QR.dataUri(texto, o);
+      },
     },
     location: { origin: 'https://borahapp.com.br', pathname: '/cardapio-qr.html' },
     setTimeout, clearTimeout, Promise,
@@ -110,7 +120,7 @@ test('com o QR carregado, a folha sai com os produtos e os precos', async () => 
 
 test('a folha leva o QR e tambem o endereco escrito', async () => {
   const r = await rodar();
-  assert.match(r.html, /api\.qrserver\.com/, 'a folha saiu sem o QR');
+  assert.match(r.html, /data:image\/svg\+xml/, 'a folha saiu sem o QR');
   assert.ok(r.html.includes('cardapio.html?loja=17'),
     'quem nao conseguir ler o codigo precisa poder digitar o endereco');
 });
