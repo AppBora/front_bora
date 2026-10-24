@@ -99,8 +99,17 @@ const Bora = {
       { method: 'PUT', body: JSON.stringify({ tipo, quantidade }) });
   },
   definirEstoqueInsumo(id, quantidade) {
+    return this.mexerNoEstoqueInsumo(id, 'DEFINIR', quantidade);
+  },
+  // O ajuste do insumo faltava: a tela de Estoque passou a mostrar insumo (24/10) e os botoes
+  // +/- precisam somar NO BANCO, e nao gravar um absoluto calculado numa lista velha -- a mesma
+  // armadilha que ja apagou venda de uma noite inteira no produto.
+  ajustarEstoqueInsumo(id, delta) {
+    return this.mexerNoEstoqueInsumo(id, 'AJUSTAR', delta);
+  },
+  mexerNoEstoqueInsumo(id, tipo, quantidade) {
     return this.api('/api/insumos/' + id + '/estoque',
-      { method: 'PUT', body: JSON.stringify({ tipo: 'DEFINIR', quantidade }) });
+      { method: 'PUT', body: JSON.stringify({ tipo, quantidade }) });
   },
   relatorios(dias, lojaId) { return this.api('/api/relatorios?dias=' + (dias || 30) + (lojaId ? '&lojaId=' + lojaId : '')); },
   insumos() { return this.api('/api/insumos'); },

@@ -32,11 +32,14 @@ test('estoque.js: o + e o − mandam o DELTA, não a conta feita no navegador', 
   // Antes: `(p.estoque || 0) + delta`, a partir de uma lista carregada minutos antes, gravado como
   // valor absoluto. Clicar "+1" às 21h com a lista de 18h gravava 31 e apagava as vendas da noite.
   const js = lerCodigo('estoque.js');
-  const fn = js.match(/window\.__ajustar = async \(id, delta\) => \{([\s\S]*?)\n  \};/);
+  // A assinatura ganhou o `tipo` em 24/10, quando a tela passou a mostrar insumo também. O que
+  // este teste guarda não mudou: a conta é do BANCO, nunca da lista que a tela carregou.
+  const fn = js.match(/window\.__ajustar = async \(tipo, id, delta\) => \{([\s\S]*?)\n  \};/);
   assert.ok(fn, 'não achei o __ajustar');
-  assert.doesNotMatch(fn[1], /p\.estoque/,
-    'o __ajustar não pode mais ler o estoque da lista local — a conta é do banco');
-  assert.match(fn[1], /ajustarEstoqueProduto\(id, delta\)/, 'manda o delta cru');
+  assert.doesNotMatch(fn[1], /\.estoque/,
+    'o __ajustar não pode ler o estoque da lista local — a conta é do banco');
+  assert.match(fn[1], /ajustarEstoqueProduto\(id, delta\)/, 'manda o delta cru do produto');
+  assert.match(fn[1], /ajustarEstoqueInsumo\(id, delta\)/, 'manda o delta cru do insumo');
 });
 
 test('contagem.js: manda só o estoque', () => {
@@ -86,8 +89,15 @@ test('api.js: as funcoes de estoque existem e batem com os endpoints do servidor
   const js = lerCodigo('api.js');
   assert.match(js, /'\/api\/produtos\/' \+ id \+ '\/estoque'/);
   assert.match(js, /'\/api\/insumos\/' \+ id \+ '\/estoque'/);
-  assert.match(js, /tipo: 'DEFINIR'/);
+  // Os dois lados passam pelo mesmo atalho `mexerNoEstoque*`, com o tipo explícito. O literal
+  // `tipo: 'DEFINIR'` saiu do insumo quando ele ganhou o AJUSTAR e virou um atalho só — a tela de
+  // Estoque passou a mostrar insumo, e os botões + e − precisam somar no banco também lá.
+  assert.match(js, /mexerNoEstoqueProduto\(id, 'DEFINIR', quantidade\)/);
   assert.match(js, /mexerNoEstoqueProduto\(id, 'AJUSTAR', delta\)/);
+  assert.match(js, /mexerNoEstoqueInsumo\(id, 'DEFINIR', quantidade\)/);
+  assert.match(js, /mexerNoEstoqueInsumo\(id, 'AJUSTAR', delta\)/);
+  assert.match(js, /JSON\.stringify\(\{ tipo, quantidade \}\)/,
+    'o corpo precisa levar tipo e quantidade, que é o que o MexerNoEstoqueRequest espera');
 });
 
 test('o atalho atualizarProduto NAO existe mais em nenhum lugar', () => {
