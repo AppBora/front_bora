@@ -16,6 +16,8 @@
     return `<b style="color:${Number(i.estoque) <= 0 ? '#dc2626' : baixo ? '#f59e0b' : '#0f172a'}">${Number(i.estoque)} ${esc(i.unidade)}${baixo ? ' ⚠' : ''}</b>`;
   }
 
+  // A importacao em lote vive noutro arquivo e precisa redesenhar esta tabela depois de cadastrar.
+  // Sem isto, o lojista cadastra 35 insumos e continua olhando a lista vazia.
   async function lista() {
     insumos = await Bora.insumos();
     $('lista').innerHTML = insumos.length ? insumos.map(i =>
@@ -54,4 +56,5 @@
     catch (ex) { $('msg').textContent = ex.message; } });
 
   document.addEventListener('DOMContentLoaded', () => lista().catch(e => $('lista').innerHTML = `<tr><td colspan="4" style="color:var(--danger)">${e.message}</td></tr>`));
+  window.__recarregarInsumos = lista;
 })();

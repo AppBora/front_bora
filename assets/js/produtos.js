@@ -252,33 +252,17 @@
     }
 
     /**
-     * O produto importado NASCE no controle de estoque, em zero. E o padrao, por decisao do dono.
+     * PRODUTO ACABADO NAO E ITEM DE ESTOQUE.
      *
-     * O QUE ISSO CAUSA, e esta medido: o servidor marca esgotado quando
-     * `estoque != null && estoque < 1` (PublicController). Entao o item recem-importado entra no
-     * cardapio do cliente APAGADO, escrito "Esgotado" e sem o botao de adicionar, ate alguem
-     * lancar a contagem em Estoque. Produto com estoque NULO nunca esgota -- era assim que o
-     * import criava antes, e e o estado de todos os produtos da producao hoje.
+     * Em 23/10 eu fiz o import nascer com `estoque: 0`, por ter entendido errado um pedido. Isso
+     * esta desfeito. O que se estoca numa acaiteria e copo, agua, leite condensado, polpa -- e
+     * isso sao INSUMOS, ligados ao produto pela ficha tecnica. O produto em si nasce livre.
      *
-     * A caixinha continua existindo, marcada, por duas razoes: a loja que nao controla estoque
-     * precisa conseguir desligar na hora, sem esperar deploy; e a previa avisa com o numero, para
-     * ninguem descobrir no cardapio do cliente.
-     *
-     * Vale so para o que e CRIADO. Produto que ja existe mantem o estoque que tem: o import nao
-     * manda esse campo na edicao, porque mandar 0 apagaria as baixas do dia.
+     * Vale lembrar por que importava: o servidor marca esgotado quando
+     * `estoque != null && estoque < 1` (PublicController). Entao nascer com 0 punha o item
+     * recem-importado no cardapio APAGADO, escrito "Esgotado" e sem botao -- a loja inteira
+     * esgotada logo depois de importar o cardapio.
      */
-    function comEstoqueZero() {
-      const c = document.getElementById('impEstoque');
-      return c ? !!c.checked : true;   // sem a caixinha na tela, vale a regra
-    }
-
-    // O padrao vive AQUI, e nao so no atributo do HTML: assim ele e o mesmo numero que os testes
-    // medem, em vez de depender de quem leu o HTML.
-    (function () {
-      const c = document.getElementById('impEstoque');
-      if (c) c.checked = true;
-    })();
-
     /** Separa o que vai ser criado, o que muda e o que já está certo. */
     function separar(itens) {
       const novos = [], mudam = [], iguais = [];
@@ -314,13 +298,7 @@
             + (String(o.p.categoria || '').trim() !== String(o.item.categoria || '').trim()
                ? ' · ' + esc(o.p.categoria || '(sem categoria)') + ' → <b>'
                  + esc(o.item.categoria) + '</b>' : ''))).join('')
-        + s.iguais.map(o => linha('#94a3b8', '= ' + esc(o.p.nome) + ' (sem mudança)')).join('')
-        + (comEstoqueZero() && s.novos.length
-          ? '<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#fffbeb;'
-            + 'border:1px solid #fcd34d;color:#78350f">Os ' + s.novos.length + ' produtos novos '
-            + 'nascem com <b>estoque 0</b>, e por isso aparecem como <b>Esgotado</b> no cardápio '
-            + 'até você lançar a contagem em Estoque.</div>'
-          : '');
+        + s.iguais.map(o => linha('#94a3b8', '= ' + esc(o.p.nome) + ' (sem mudança)')).join('');
       msg.textContent = '';
     };
 
@@ -336,11 +314,8 @@
       const andar = () => { msg.style.color = 'var(--muted)';
         msg.textContent = 'aplicando… ' + (ok + falhas.length) + '/' + total; };
 
-      const zerado = comEstoqueZero();
       for (const item of s.novos) {
-        // `estoque: 0` liga o controle; sem o campo, o produto nasce "livre" (nunca esgota).
-        const corpo = zerado ? Object.assign({}, item, { estoque: 0 }) : item;
-        try { await Bora.api('/api/produtos', { method: 'POST', body: JSON.stringify(corpo) }); ok++; }
+        try { await Bora.api('/api/produtos', { method: 'POST', body: JSON.stringify(item) }); ok++; }
         catch (e) { falhas.push(item.nome + ': ' + (e && e.message || e)); }
         andar();
       }

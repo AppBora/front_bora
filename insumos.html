@@ -18,11 +18,35 @@
           <div class="field full"><button class="btn" type="submit" id="btnSalvar">Salvar insumo</button> <button type="button" class="btn secondary" id="cancelar" style="display:none">Cancelar</button> <span id="msg" style="color:var(--danger);margin-left:10px"></span></div>
         </form>
       </div>
+      <!--
+        A tela cadastra um insumo por vez. Uma acaiteria tem copo de 300, 500 e 770, pote, barca,
+        roleta, polpa, granola, leite condensado e mais vinte adicionais -- perto de quarenta
+        linhas. Na mao e meia hora de clique, e o erro de digitacao nao aparece: vira um insumo
+        repetido com nome quase igual, e a ficha tecnica aponta para o errado.
+      -->
+      <div class="card"><h2>📦 Importar insumos (lista)</h2>
+        <p style="color:var(--muted);max-width:660px;margin-top:0">
+          Uma linha por insumo, no formato <b>nome ; unidade ; custo</b>. O custo é opcional e a
+          unidade pode ser <b>un, kg, g, L</b> ou <b>ml</b>. Todos entram com
+          <b>estoque zerado</b>, esperando a contagem. O que já estiver cadastrado é pulado — não
+          duplico nem mexo no custo.
+        </p>
+        <textarea id="insImpTexto" rows="6"
+          placeholder="Copo 500ml ; un ; 0,38&#10;Água Mineral 500ml ; un ; 1,20&#10;Leite Condensado ; un ; 5,90"
+          style="width:100%;font-family:ui-monospace,monospace;font-size:13px;padding:10px;border:1px solid #cbd5e1;border-radius:8px"></textarea>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn" type="button" id="insImpConferir" style="background:#64748b">Conferir</button>
+          <button class="btn" type="button" id="insImpCriar" disabled>Cadastrar</button>
+          <span id="insImpMsg" style="font-size:13px"></span>
+        </div>
+        <div id="insImpPreview" style="display:none;margin-top:10px;font-size:13px;max-height:260px;overflow:auto;background:#f8fafc;border-radius:8px;padding:10px"></div>
+      </div>
+
       <div class="card"><h2>Insumos cadastrados</h2>
         <table class="table"><thead><tr><th>Insumo</th><th>Custo</th><th>Estoque</th><th></th></tr></thead><tbody id="lista"></tbody></table>
       </div>
     </section>
   </main>
 </div>
-<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20261023d"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261023d"></script><script src="assets/js/insumos.js?v=20260930"></script>
+<script src="assets/js/api.js?v=20261023"></script><script src="assets/js/app.js?v=20261023d"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261023d"></script><script src="assets/js/insumos.js?v=20261023"></script><script src="assets/js/importar-insumos.js?v=20261023"></script>
 </body></html>

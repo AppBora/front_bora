@@ -186,50 +186,30 @@ test('preco com ponto decimal continua entrando certo', async () => {
 
 // ---------------------------------------------------------------- o controle de estoque
 //
-// O servidor marca esgotado quando `estoque != null && estoque < 1` (PublicController). Entao
-// criar com 0 poe o produto no cardapio APAGADO, escrito "Esgotado" e sem botao, ate alguem
-// lancar a contagem. E util -- e exatamente o que o lojista quer quando vai contar antes de abrir
-// -- mas NAO pode ser o padrao: quem importa um cardapio inteiro veria a loja toda esgotada.
+// PRODUTO ACABADO NAO E ITEM DE ESTOQUE. Numa acaiteria o que se estoca e copo, agua, leite
+// condensado, polpa -- e isso sao INSUMOS, ligados ao produto pela ficha tecnica.
+//
+// Em 23/10 o import chegou a criar com `estoque: 0`, por um mal-entendido meu. O efeito, medido
+// em PublicController: o servidor marca esgotado quando `estoque != null && estoque < 1`, entao
+// a loja inteira entrava esgotada no cardapio logo depois de importar. Desfeito.
 
-test('PREMISSA: por padrao o produto novo nasce no controle de estoque, em 0', async () => {
-  // Decisao do dono (23/10). O efeito medido: com estoque 0 o item entra no cardapio como
-  // "Esgotado" ate alguem lancar a contagem.
+test('PREMISSA: o produto importado nasce LIVRE, sem controle de estoque', async () => {
   const t = await abrir();
-  await importar(t, LINHA_NOVA);
-  const post = t.chamadas.find((c) => c.metodo === 'POST');
-  assert.equal(post.corpo.estoque, 0,
-    'o import deixou de cadastrar no controle de estoque: era para ser o padrao');
-});
-
-test('desmarcando a caixinha, o produto nasce livre (sem controle)', async () => {
-  // A saida para a loja que NAO controla estoque: sem isto, ela importa o cardapio e ve tudo
-  // esgotado, sem poder desfazer ate alguem subir uma versao.
-  const t = await abrir();
-  t.get('impEstoque').checked = false;
   await importar(t, LINHA_NOVA);
   const post = t.chamadas.find((c) => c.metodo === 'POST');
   assert.ok(!('estoque' in post.corpo),
-    'desmarcar a caixinha nao desligou o controle: a loja fica presa com tudo esgotado');
+    'o produto nasceu com estoque: o cardapio inteiro entra como "Esgotado" depois do import');
 });
 
-test('PREMISSA: a caixinha NAO mexe no estoque de quem ja existe', async () => {
-  // Produto que ja existe tem estoque de verdade. Mandar 0 seria apagar as baixas do dia.
+test('PREMISSA: atualizar tambem nao mexe no estoque de quem ja existe', async () => {
   const t = await abrir();
   await importar(t, LINHA_MUDA);
   const put = t.chamadas.find((c) => c.metodo === 'PUT');
-  assert.ok(!('estoque' in put.corpo),
-    'zerou o estoque de um produto que ja existia');
+  assert.ok(!('estoque' in put.corpo), 'zerou o estoque de um produto que ja existia');
 });
 
-test('a previa AVISA que os novos vao aparecer como esgotado', async () => {
+test('a previa nao fala de estoque, porque o import nao mexe nisso', async () => {
   const t = await abrir();
   await importar(t, LINHA_NOVA, { sóConferir: true });
-  assert.match(t.get('impPreview').innerHTML, /Esgotado/,
-    'deixou o lojista descobrir no cardapio do cliente que tudo entrou esgotado');
-});
-
-test('sem produto novo, a previa nao enche de aviso', async () => {
-  const t = await abrir();
-  await importar(t, LINHA_MUDA, { sóConferir: true });
   assert.ok(!/Esgotado/.test(t.get('impPreview').innerHTML));
 });
