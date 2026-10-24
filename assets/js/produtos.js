@@ -59,18 +59,23 @@
   function payload() {
     const p = { nome: $('nome').value.trim(), categoria: $('categoria').value.trim(),
       preco: Number($('preco').value || 0), custo: num($('custo').value),
-      estoque: num($('estoque').value), estoqueMinimo: num($('estoqueMinimo').value),
+      estoqueMinimo: num($('estoqueMinimo').value),
       // Item 7.7: isto era `ativo: true` FIXO. Produto que o lojista tirou do cardapio voltava a
       // aparecer na primeira vez que alguem editasse o preco -- e nao havia como desativar pelo
       // painel, entao ele nem tinha como desfazer. Agora a tela tem a caixinha, e editar preserva o
       // que esta nela. Cadastro novo nasce ativo, que e o que se espera.
       ativo: $('ativo') ? $('ativo').checked : true,
-      // `estoque` fica no corpo porque a CRIACAO precisa dele (quantidade inicial). Na edicao o
-      // servidor IGNORA este campo -- quem mexe em estoque e o PUT /api/produtos/{id}/estoque, numa
-      // chamada separada e so quando o lojista realmente mudou o numero. Ver `salvarEstoqueSeMudou`.
+      // `estoque` SO vai na CRIACAO, onde ele e a quantidade inicial. Na edicao ele nao e mandado:
+      // o servidor ja ignora o campo de proposito (ProdutoService.java:73), mas mandar assim mesmo
+      // deixava a armadilha armada -- quem "consertar" o backend para honrar o corpo ressuscita o
+      // bug das 21h, em que corrigir o preco a noite apagava as vendas do dia.
+      //
+      // Quem mexe em estoque e o PUT /api/produtos/{id}/estoque, numa chamada separada e so quando
+      // o lojista realmente mudou o numero. Ver `salvarEstoqueSeMudou`.
       // Vazio vai como string vazia de proposito: o servidor converte para nulo. Mandar sempre
       // permite APAGAR o codigo de um produto que ja tinha um.
       codigoExterno: $('codigoExterno').value.trim() };
+    if (!$('id').value) p.estoque = num($('estoque').value);   // so na criacao
     if (fotoAtual !== null) p.imagemUrl = fotoAtual;
     return p;
   }

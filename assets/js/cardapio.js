@@ -339,9 +339,16 @@
     $('ckResumo').textContent = qtdItens + (qtdItens === 1 ? ' item · ' : ' itens · ') + money(totalCarrinho());
     $('ckOpPix').hidden = !pixDisponivel;
     if (!pixDisponivel) document.querySelector('input[name="ckForma"][value="ENTREGA"]').checked = true;
-    // A escolha entre entrega e retirada so aparece quando a loja cadastrou bairro: sem tabela de
-    // frete, perguntar o bairro so atrapalharia e nao mudaria preco nenhum.
-    $('ckTipoWrap').hidden = !bairros.length;
+    // A ESCOLHA ENTRE ENTREGA E RETIRADA APARECE SEMPRE.
+    //
+    // Antes ela so aparecia quando a loja tinha bairro cadastrado -- e o HTML ja traz ENTREGA
+    // marcada. Resultado: a loja que so faz balcao, ou que ainda nao cadastrou a tabela de frete,
+    // recebia TODO pedido como entrega, com frete zero. O entregador sai para buscar um pedido que
+    // o cliente ia retirar, ou o pedido fica esperando uma entrega que ninguem vai fazer.
+    //
+    // Sem bairro a loja segue sem tabela de frete (o `freteEscolhido` devolve 0, como antes). O que
+    // muda e que o cliente consegue DIZER que vai retirar -- e a cozinha passa a saber disso.
+    $('ckTipoWrap').hidden = false;
     atualizarEntrega();
     atualizarCpf();
     $('checkout').hidden = false;

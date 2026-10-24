@@ -33,7 +33,17 @@ async function aplicarWhiteLabel() {
     // Cores da loja + as derivadas de contraste (ver assets/js/cores.js). O botao "Finalizar venda"
     // da Frente de Caixa tinha texto branco fixo em cima da secundaria: na Zira isso dava 1,46:1.
     BoraCores.aplicar(document.documentElement.style, c);
-    if (c.nomeExibicao) document.querySelectorAll('[data-store]').forEach(e => e.textContent = c.nomeExibicao);
+    // O nome da loja, com uma rede de seguranca.
+    //
+    // Era `if (c.nomeExibicao)`: apagar o campo em Configuracoes grava "", que e falsy, entao a
+    // tela ficava com o texto do HTML -- que era "Sorveteria da Rosa", nome de uma loja de
+    // verdade. O lojista via o nome de outra pessoa no proprio painel.
+    //
+    // Agora cai para o nome da sessao antes de desistir. Se nem isso houver, o HTML ja traz um
+    // texto neutro.
+    const nomeDaLoja = (c.nomeExibicao || '').trim()
+      || (((window.Bora && Bora.user && Bora.user()) || {}).lojaNome || '').trim();
+    if (nomeDaLoja) document.querySelectorAll('[data-store]').forEach(e => e.textContent = nomeDaLoja);
     if (c.logoUrl) document.querySelectorAll('.logo').forEach(e => {
       e.style.backgroundImage = `url(${c.logoUrl})`; e.style.backgroundSize = 'cover'; e.textContent = '';
     });

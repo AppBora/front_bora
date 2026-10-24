@@ -59,14 +59,32 @@ export function helpersDoApp(raiz = 'C:/Users/user/OneDrive/Desktop/Bora/bora-fa
   };
 }
 
-export function subir(arquivo, { Bora, globais = {}, search = '' } = {}) {
+export function subir(arquivo, { Bora, globais = {}, search = '', comSeletores = false } = {}) {
   const els = new Map();
   const ouvintes = {};
   const get = id => { if (!els.has(id)) els.set(id, elemento()); return els.get(id); };
+
+  // querySelector de verdade, OPCIONAL.
+  //
+  // O padrao devolve null, e varias telas fazem `document.querySelector(...).checked = true` --
+  // que estoura. O teste entao parava ANTES de mexer na tela, e todo assert de `hidden` lia o
+  // valor inicial do duble em vez do que a tela fez: teste verde medindo nada. Aconteceu de
+  // verdade com a escolha entrega/retirada.
+  //
+  // Fica opcional para nao mudar o comportamento dos testes que ja existem. Com `comSeletores`,
+  // cada seletor vira um elemento proprio e estavel, que o teste alcanca por `porSeletor`.
+  const seletores = new Map();
+  const porSeletor = sel => {
+    if (!seletores.has(sel)) seletores.set(sel, elemento());
+    return seletores.get(sel);
+  };
+
   const document = {
     getElementById: get, hidden: false,
     addEventListener: (ev, fn) => (ouvintes[ev] ??= []).push(fn),
-    querySelector: () => null, querySelectorAll: () => [], createElement: () => elemento(),
+    querySelector: comSeletores ? porSeletor : () => null,
+    querySelectorAll: comSeletores ? (sel => [porSeletor(sel)]) : () => [],
+    createElement: () => elemento(),
     body: elemento(),
     // A marca da loja entra por `BoraCores.aplicar(document.documentElement.style, marca)`. Sem
     // o documentElement aqui, a avaliacao do ARGUMENTO estourava antes do stub rodar, e a tela
@@ -80,7 +98,7 @@ export function subir(arquivo, { Bora, globais = {}, search = '' } = {}) {
     window: { open() {}, location: { origin: 'http://t' } }, URLSearchParams, encodeURIComponent, ...globais });
   vm.runInContext(fs.readFileSync(arquivo, 'utf8'), ctx, { filename: arquivo });
   return {
-    els, get,
+    els, get, seletores, porSeletor,
     async carregarPagina() {          // dispara DOMContentLoaded e deixa as promessas assentarem
       for (const f of ouvintes.DOMContentLoaded ?? []) await f();
       for (let i = 0; i < 5; i++) await new Promise(r => setImmediate(r));
