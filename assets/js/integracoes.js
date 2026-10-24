@@ -239,7 +239,20 @@
           ? '<div style="margin-top:8px;padding:8px;border-radius:6px;background:#fef2f2;'
             + 'border:1px solid #fca5a5;color:#7f1d1d"><b>Último erro:</b><br>'
             + esc(d.ultimoErro) + '</div>'
-          : '<div style="margin-top:8px;color:#15803d">Nenhum erro registrado.</div>');
+          : '<div style="margin-top:8px;color:#15803d">Nenhum erro registrado.</div>')
+        // O recado entra AQUI também, e não é detalhe: este é o diagnóstico que o lojista abre
+        // quando "não chega pedido". Sem esta linha ele lia "Nenhum erro registrado" enquanto um
+        // pedido dele estava parado no marketplace -- a tela afirmando que está tudo bem é pior
+        // que a tela calada.
+        + (d.ultimoAviso
+          ? '<div style="margin-top:8px;padding:8px;border-radius:6px;background:#fffbeb;'
+            + 'border:1px solid #fde68a;color:#92400e"><b>⚠️ Um pedido ficou parado lá dentro:</b><br>'
+            + esc(d.ultimoAviso)
+            + (d.ultimoAvisoEm ? '<br><small>Em ' + esc(new Date(d.ultimoAvisoEm)
+                .toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))
+              + '</small>' : '')
+            + '</div>'
+          : '');
     } catch (e) {
       cx.innerHTML = '<span style="color:#b91c1c">Não consegui diagnosticar: '
         + esc(e && e.message || e) + '</span>';
@@ -247,6 +260,39 @@
   };
 
   // Canais com integração oficial (iFood, 99Food): a credencial é da plataforma, não do lojista.
+  /**
+   * As duas linhas que a integração pode ter para o lojista — e elas NÃO são a mesma coisa.
+   *
+   * **Último erro** = a integração está com problema (polling caiu, credencial recusada). Some
+   * sozinho quando volta a funcionar, e tem de sumir: erro de uma integração que já está boa só
+   * ensina o lojista a ignorar a tela.
+   *
+   * **Recado** = a integração está boa, mas **um pedido seu ficou parado lá dentro**. Isso não
+   * deixa de ser verdade porque a consulta seguinte funcionou, então nada o apaga sozinho — só o
+   * botão "Já vi".
+   *
+   * O defeito que isto fecha (achado pelo QA em 24/10/2026): os dois moravam no mesmo campo, e a
+   * consulta ao marketplace — que acontece a cada 30 segundos — apagava o recado junto com o erro.
+   * O lojista tinha até meio minuto para ver, e só se estivesse com esta tela aberta naquele
+   * instante. Na prática, nunca via. E o recado é o que explica por que o cliente final continua
+   * vendo "em preparo" no aplicativo depois de ter recebido a comida.
+   */
+  function recados(i) {
+    const erro = i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : '';
+    if (!i.ultimoAviso) return erro;
+    const q = i.ultimoAvisoEm ? new Date(i.ultimoAvisoEm) : null;
+    const quando = q ? q.toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+    }) : '';
+    return erro + `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px;margin-top:8px">
+      <b>⚠️ Um pedido seu ficou parado no ${esc(i.label)}</b>
+      <p style="margin:6px 0">${esc(i.ultimoAviso)}</p>
+      ${quando ? `<small style="color:#92400e">Em ${esc(quando)}</small>` : ''}
+      <p style="margin:6px 0 0"><button class="btn secondary" style="padding:4px 10px;font-size:12px"
+        onclick="__avisoLido('${i.canal}')">Já vi, tirar da tela</button></p>
+    </div>`;
+  }
+
   // O que o lojista faz aqui é autorizar a nossa aplicação a operar a loja dele.
   function corpoOficial(i) {
     if (!i.appConfigurado) {
@@ -260,7 +306,7 @@
           <input id="os-${i.canal}" type="password" placeholder="${i.temSecret ? '•••••• (em branco mantém o atual)' : 'cole o segredo aqui'}"></div>
         <p style="font-size:12px;color:#64748b">Salve o App Shop ID e a credencial, ative o recebimento e clique em Conectar.</p>
         <button class="btn" onclick="__vincular('${i.canal}')">🔗 Conectar ao ${esc(i.label)}</button>`}
-        ${i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : ''}
+        ${recados(i)}
       </div>`;
     }
     if (i.userCode) {
@@ -294,22 +340,38 @@
           <p>A conexão com o ${esc(i.label)} foi autorizada, só falta dizer <b>qual é a sua loja lá</b>.
           Informe o <b>${esc(i.label === 'iFood' ? 'Merchant ID' : 'ID da loja')}</b> no campo abaixo e salve —
           sem ele os pedidos não chegam.</p>
-          ${i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : ''}
+          ${recados(i)}
         </div>`;
       }
       return `<div class="oficial-box ok">
         <b>🟢 Conectado — os pedidos chegam sozinhos</b>
         <p>Última consulta ao ${esc(i.label)}: ${quando}. A loja fica online no aplicativo enquanto esta consulta acontecer.</p>
-        ${i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : ''}
+        ${recados(i)}
       </div>`;
     }
     return `<div class="oficial-box passo">
       <b>Passo 1 — conectar a loja</b>
       <p>Salve o ${i.canal === 'NOVE_NOVE' ? 'App Shop ID' : 'Merchant ID'} abaixo e clique em conectar. Você não precisa de senha do ${esc(i.label)}: quem se identifica é o BoraHapp.</p>
       <button class="btn" onclick="__vincular('${i.canal}')">🔗 Conectar ao ${esc(i.label)}</button>
-      ${i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : ''}
+      ${recados(i)}
     </div>`;
   }
+
+  /**
+   * O lojista leu o recado e mandou tirar da tela.
+   *
+   * Pergunta antes porque o recado é o único aviso que ele vai receber sobre aquele pedido: depois
+   * de dispensado não há de onde recuperá-lo, e o pedido pode continuar parado no marketplace.
+   */
+  window.__avisoLido = async canal => {
+    if (!confirm('Tirar este recado da tela?\n\nEle não volta. Se o pedido ainda estiver parado no '
+      + 'marketplace, confira lá dentro antes de dispensar.')) return;
+    try {
+      await Bora.api('/api/integracoes/' + encodeURIComponent(canal) + '/aviso-lido',
+        { method: 'POST' });
+      await carregar(canal);
+    } catch (e) { alert('Não foi possível tirar o recado: ' + e.message); }
+  };
 
   window.__vincular = async canal => {
     try {
