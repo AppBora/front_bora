@@ -281,7 +281,6 @@
       const r = parse(txt.value);
       lote = r.itens;
       const s = separar(lote);
-      btnCriar.disabled = (s.novos.length + s.mudam.length) === 0;
       prev.style.display = 'block';
       const linha = (cor, html) => '<div style="color:' + cor + '">' + html + '</div>';
       prev.innerHTML =
@@ -303,10 +302,18 @@
     };
 
     btnCriar.onclick = async () => {
-      if (!lote.length) return;
+      // Mesmo defeito do import de insumo: o botao nascia `disabled` e so ligava depois do
+      // Conferir. Quem colava e clicava direto em Importar via a tela nao fazer NADA, calada.
+      if (!lote.length) document.getElementById('impConferir').onclick();
       const s = separar(lote);
       const total = s.novos.length + s.mudam.length;
-      if (!total) return;
+      if (!total) {
+        msg.style.color = '#b45309';
+        msg.textContent = lote.length
+          ? 'Nada a fazer: os ' + lote.length + ' itens da lista já estão iguais no catálogo.'
+          : 'Cole a lista na caixa acima primeiro.';
+        return;
+      }
       if (!confirm('Criar ' + s.novos.length + ' e atualizar ' + s.mudam.length
           + ' produto(s) nesta loja?')) return;
       btnCriar.disabled = true;

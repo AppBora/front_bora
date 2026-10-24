@@ -107,7 +107,6 @@
     const r = parse($('insImpTexto').value);
     lote = r.itens;
     const s = separar(lote);
-    $('insImpCriar').disabled = s.novos.length === 0;
     $('insImpPreview').style.display = 'block';
     $('insImpPreview').innerHTML =
       '<b>' + s.novos.length + ' a cadastrar · ' + s.pulados.length + ' já existe'
@@ -128,8 +127,18 @@
   }
 
   async function importar() {
+    // O BOTAO NAO PODE MORRER CALADO. Ele nascia `disabled` e so ligava depois do Conferir:
+    // quem colava a lista e clicava direto em Cadastrar via a tela nao fazer NADA, sem uma
+    // palavra. Agora ele confere sozinho, e quando nao ha o que fazer, ele diz por que.
+    if (!lote.length) conferir();
     const s = separar(lote);
-    if (!s.novos.length) return;
+    if (!s.novos.length) {
+      $('insImpMsg').style.color = '#b45309';
+      $('insImpMsg').textContent = lote.length
+        ? 'Nada a cadastrar: todos os ' + lote.length + ' da lista já existem.'
+        : 'Cole a lista na caixa acima primeiro.';
+      return;
+    }
     if (!confirm('Cadastrar ' + s.novos.length + ' insumo(s) nesta loja, com estoque zerado?')) return;
 
     $('insImpCriar').disabled = true;

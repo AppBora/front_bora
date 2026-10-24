@@ -213,3 +213,36 @@ test('a previa nao fala de estoque, porque o import nao mexe nisso', async () =>
   await importar(t, LINHA_NOVA, { sóConferir: true });
   assert.ok(!/Esgotado/.test(t.get('impPreview').innerHTML));
 });
+
+// ---------------------------------------------------------------- o botao mudo
+//
+// Mesmo defeito que o dono bateu no import de insumo (24/10): o botao nascia `disabled` e so
+// ligava depois do Conferir. Quem colava e clicava direto via a tela nao fazer nada, calada.
+
+test('PREMISSA: colar e clicar em Importar DIRETO funciona, sem passar pelo Conferir', async () => {
+  const t = await abrir();
+  t.get('impTexto').value = LINHA_NOVA;
+  await t.get('impCriar').onclick();
+  await assentar();
+
+  const post = t.chamadas.find((c) => c.metodo === 'POST');
+  assert.ok(post, 'o botao Importar nao fez nada sem o Conferir');
+  assert.equal(post.corpo.nome, 'Açaí Puro 300ml');
+});
+
+test('clicar em Importar com a caixa vazia diz o que fazer', async () => {
+  const t = await abrir();
+  await t.get('impCriar').onclick();
+  await assentar();
+  assert.equal(t.chamadas.length, 0);
+  assert.match(t.get('impMsg').textContent, /cole a lista/i);
+});
+
+test('quando tudo ja esta igual, a tela DIZ em vez de ficar muda', async () => {
+  const t = await abrir();
+  t.get('impTexto').value = LINHA_IGUAL;
+  await t.get('impCriar').onclick();
+  await assentar();
+  assert.equal(t.chamadas.length, 0);
+  assert.match(t.get('impMsg').textContent, /j[áa] est[ãa]o iguais/i);
+});

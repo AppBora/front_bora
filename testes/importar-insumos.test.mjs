@@ -181,3 +181,37 @@ test('falha num insumo nao impede os outros', async () => {
   await usar(t, ['Copo 500ml ; un', 'Copo 300ml ; un'].join('\n'));
   assert.equal(t.chamadas.length, 2, 'parou no primeiro erro em vez de seguir');
 });
+
+// ---------------------------------------------------------------- o botao mudo
+//
+// DEFEITO DE VERDADE, achado pelo dono usando (24/10): ele colou a lista, clicou em "Cadastrar" e
+// a tela NAO FEZ NADA, sem uma palavra. O botao nascia `disabled` e so ligava depois do
+// "Conferir" -- e nada na tela dizia isso. Botao que morre calado e pior que botao que da erro.
+
+test('PREMISSA: colar e clicar em Cadastrar DIRETO funciona, sem passar pelo Conferir', async () => {
+  const t = await abrir();
+  t.get('insImpTexto').value = ['Copo 500ml ; un ; 0,38', 'Copo 300ml ; un'].join('\n');
+  await t.get('insImpCriar').__disparar('click');
+  await assentar();
+
+  assert.equal(t.chamadas.length, 2,
+    'o botao Cadastrar nao fez nada sem o Conferir -- foi assim que o dono bateu de cara');
+  assert.equal(t.chamadas[0].corpo.nome, 'Copo 500ml');
+});
+
+test('clicar em Cadastrar com a caixa VAZIA diz o que fazer, em vez de ficar mudo', async () => {
+  const t = await abrir();
+  await t.get('insImpCriar').__disparar('click');
+  await assentar();
+  assert.equal(t.chamadas.length, 0);
+  assert.match(t.get('insImpMsg').textContent, /cole a lista/i);
+});
+
+test('quando tudo da lista ja existe, a tela DIZ, em vez de ficar muda', async () => {
+  const t = await abrir();
+  t.get('insImpTexto').value = 'Granola ; kg';
+  await t.get('insImpCriar').__disparar('click');
+  await assentar();
+  assert.equal(t.chamadas.length, 0);
+  assert.match(t.get('insImpMsg').textContent, /j[áa] existem/i);
+});
