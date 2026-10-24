@@ -117,6 +117,17 @@ const Bora = {
   excluirInsumo(id) { return this.api('/api/insumos/' + id, { method: 'DELETE' }); },
   ficha(produtoId) { return this.api('/api/produtos/' + produtoId + '/ficha'); },
   salvarFicha(produtoId, itens) { return this.api('/api/produtos/' + produtoId + '/ficha', { method: 'PUT', body: JSON.stringify(itens) }); },
+  // O diagnostico existia no servidor desde sempre e NENHUMA tela chamava: quando o iFood parava
+  // de mandar pedido, o lojista nao tinha como ver por que.
+  diagnosticoDoCanal(canal) {
+    return this.api('/api/integracoes/' + encodeURIComponent(canal) + '/diagnostico');
+  },
+  // Suporte: o pedido como o marketplace mandou, antes de qualquer traducao nossa. O servidor
+  // exige ADMINISTRADOR_BORA e grava linha de auditoria com quem consultou.
+  pedidoBrutoDoMarketplace(lojaId, canal, pedido) {
+    return this.api('/admin-bora/marketplace/pedido-bruto?lojaId=' + encodeURIComponent(lojaId)
+      + '&canal=' + encodeURIComponent(canal) + '&pedido=' + encodeURIComponent(pedido));
+  },
   configuracao() { return this.api('/api/configuracao'); },
   termometro() { return this.api('/api/vendas/termometro'); },
   promocoes() { return this.api('/api/promocoes'); },

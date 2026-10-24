@@ -172,6 +172,38 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
         </div>
       </details>
 
+      <!--
+        O "pedido bruto" existia no servidor e NENHUMA tela chamava (item 25). Quando um pedido do
+        iFood chega torto -- item que nao casa, endereco faltando, valor diferente -- a unica
+        forma de ver o que o marketplace REALMENTE mandou era abrir o banco. Agora o suporte vê
+        pela tela, e o servidor grava quem consultou.
+      -->
+      <details class="bloco" id="secPedidoBruto">
+        <summary>🔎 Pedido bruto do marketplace <span class="pista">· o que o iFood/99 mandou, sem tradução</span></summary>
+        <div class="conteudo">
+          <p style="color:var(--muted);font-size:13px;margin-top:0">
+            Serve quando um pedido chega torto e é preciso saber se o erro veio de lá ou da nossa
+            leitura. <b>Fica registrado quem consultou.</b>
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <div class="field" style="margin:0"><label>Loja (id)</label>
+              <input id="pbLoja" type="number" min="1" style="width:110px" placeholder="18"></div>
+            <div class="field" style="margin:0"><label>Canal</label>
+              <select id="pbCanal" style="min-width:130px">
+                <option value="IFOOD">iFood</option>
+                <option value="NOVE_NOVE">99Food</option>
+              </select></div>
+            <div class="field" style="margin:0"><label>Código do pedido no marketplace</label>
+              <input id="pbPedido" style="min-width:240px" placeholder="ex.: 3f2a9c1e-..."></div>
+            <button class="btn" type="button" id="pbBuscar">Buscar</button>
+          </div>
+          <span id="pbMsg" style="font-size:13px"></span>
+          <pre id="pbSaida" hidden style="white-space:pre-wrap;word-break:break-word;background:#0f172a;
+               color:#e2e8f0;border-radius:8px;padding:12px;margin-top:10px;font-size:12px;
+               max-height:420px;overflow:auto"></pre>
+        </div>
+      </details>
+
       <details class="bloco" id="secCifragem">
         <summary>🔐 Credenciais no banco <span class="pista">· o que vai junto em todo backup</span></summary>
         <div class="conteudo">
@@ -376,6 +408,40 @@ Sanfona.ligar(document);
       aviso(e.message || 'Não foi possível trocar a senha.', true);
     } finally { btn.disabled = false; }
   };
+})();
+
+// O pedido bruto do marketplace. Vive dentro do card da Plataforma, que ja so aparece para o
+// ADMINISTRADOR_BORA -- e o servidor confere de novo (requireAdminBora) e audita a consulta.
+(function () {
+  const botao = document.getElementById('pbBuscar');
+  if (!botao) return;
+  const $ = (id) => document.getElementById(id);
+  botao.addEventListener('click', async () => {
+    const loja = ($('pbLoja').value || '').trim();
+    const pedido = ($('pbPedido').value || '').trim();
+    const msg = $('pbMsg');
+    const saida = $('pbSaida');
+    if (!loja || !pedido) {
+      msg.style.color = '#b45309';
+      msg.textContent = 'Preencha a loja e o codigo do pedido.';
+      return;
+    }
+    msg.style.color = 'var(--muted)';
+    msg.textContent = 'Buscando no marketplace...';
+    saida.hidden = true;
+    try {
+      const r = await Bora.pedidoBrutoDoMarketplace(loja, $('pbCanal').value, pedido);
+      saida.hidden = false;
+      saida.textContent = JSON.stringify(r, null, 2);
+      msg.style.color = '#166534';
+      msg.textContent = 'Resposta do marketplace abaixo.';
+    } catch (e) {
+      msg.style.color = '#b91c1c';
+      // O erro do servidor ja vem em portugues e diz a causa (loja sem integracao, canal sem
+      // integracao oficial, marketplace nao devolveu). Repetir com outras palavras so confundiria.
+      msg.textContent = (e && e.message) || 'Nao consegui buscar.';
+    }
+  });
 })();
 
 // Chave do módulo fiscal — o card só aparece para ADMINISTRADOR_BORA (a API também bloqueia com 403).

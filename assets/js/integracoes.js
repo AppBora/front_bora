@@ -182,7 +182,10 @@
         <div class="intfoot">
           <button class="btn" onclick="__salvar('${i.canal}')">💾 Salvar conexão</button>
           ${zap ? '' : `<button class="btn secondary" onclick="__simular('${i.canal}')" ${i.webhookPath ? '' : 'disabled title="Salve a conexão primeiro"'}>🧪 Simular pedido</button>`}
+          ${zap ? '' : `<button class="btn secondary" onclick="__diagnosticar('${i.canal}')">🩺 Diagnosticar conexão</button>`}
         </div>
+        <div id="diag-${i.canal}" hidden style="margin-top:10px;font-size:13px;line-height:1.5;
+             background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px"></div>
         ${zap ? boxMeta(i) : ''}
         ${i.canal === 'NOVE_NOVE' ? boxOpenDelivery() : ''}
         ${webhookFull && !zap && !i.oficial ? `<div class="webhook-box"><label style="font-size:12px;color:#64748b;font-weight:700">URL de Webhook (cole no painel do ${esc(i.label)})</label>
@@ -192,6 +195,56 @@
     </div>`;
   }
 
+
+  /**
+   * Diagnóstico da conexão com o marketplace.
+   *
+   * O endpoint existia desde sempre e NENHUMA tela chamava (item 25). Quando o iFood parava de
+   * mandar pedido, o lojista via só "Pedidos recebidos: 0" e não tinha como saber se o problema
+   * era credencial, loja fechada do lado de lá, ou a nossa busca parada. Isso vira ligação para o
+   * suporte, e o suporte também não tinha onde olhar sem abrir o banco.
+   *
+   * O que ele responde, em português: se está online agora, quando foi a última busca, qual foi o
+   * último erro e quando o token expira.
+   */
+  window.__diagnosticar = async (canal) => {
+    const cx = document.getElementById('diag-' + canal);
+    cx.hidden = false;
+    cx.innerHTML = 'Perguntando ao servidor…';
+    try {
+      const d = await Bora.diagnosticoDoCanal(canal);
+      const quando = (v) => (v ? new Date(v).toLocaleString('pt-BR') : '—');
+      const sim = (v) => (v ? '✅ sim' : '❌ não');
+
+      // O "online" do iFood depende da nossa busca estar rodando: sem ela a loja aparece FECHADA
+      // para o cliente do marketplace, mesmo com tudo certo aqui.
+      const linhas = [
+        ['Recebendo agora', d.onlineNoMarketplace ? '🟢 sim' : '🔴 não'],
+        ['Conexão ativa', sim(d.ativo)],
+        ['Situação', esc(d.status || '—')],
+        ['Código da loja lá', esc(d.merchantId || '— (sem ele, nenhum pedido casa com esta loja)')],
+        ['Última busca', quando(d.ultimoPollingEm)],
+        ['Última sincronização', quando(d.ultimaSync)],
+        ['Pedidos recebidos', String(d.pedidosRecebidos || 0)],
+        ['Token expira em', quando(d.tokenExpiraEm)],
+      ];
+      if (d.integracaoOficial) linhas.push(['App do BoraHapp configurado', sim(d.appDaPlataformaConfigurado)]);
+
+      cx.innerHTML = '<b>' + esc(d.label || canal) + '</b>'
+        + '<table style="width:100%;margin-top:6px;border-collapse:collapse">'
+        + linhas.map(([k, v]) => '<tr><td style="padding:2px 8px 2px 0;color:#64748b;'
+          + 'white-space:nowrap">' + esc(k) + '</td><td style="padding:2px 0"><b>' + v + '</b></td></tr>').join('')
+        + '</table>'
+        + (d.ultimoErro
+          ? '<div style="margin-top:8px;padding:8px;border-radius:6px;background:#fef2f2;'
+            + 'border:1px solid #fca5a5;color:#7f1d1d"><b>Último erro:</b><br>'
+            + esc(d.ultimoErro) + '</div>'
+          : '<div style="margin-top:8px;color:#15803d">Nenhum erro registrado.</div>');
+    } catch (e) {
+      cx.innerHTML = '<span style="color:#b91c1c">Não consegui diagnosticar: '
+        + esc(e && e.message || e) + '</span>';
+    }
+  };
 
   // Canais com integração oficial (iFood, 99Food): a credencial é da plataforma, não do lojista.
   // O que o lojista faz aqui é autorizar a nossa aplicação a operar a loja dele.
