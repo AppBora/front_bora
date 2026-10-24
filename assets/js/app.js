@@ -21,6 +21,51 @@ function boraCanal(origem){
   return { key: origem || 'Outros', ic:'🧾', cor:'#94a3b8' };
 }
 /**
+ * A forma de pagamento como o lojista a reconhece — e como ela deve ser AGRUPADA.
+ *
+ * O DEFEITO (medido na produção em 24/10/2026): o "Por forma de pagamento" do Fechar Caixa usava o
+ * texto CRU como chave de agrupamento (`pag[p.formaPagamento]`). O campo é preenchido por caminhos
+ * diferentes — cardápio, PDV, novo pedido, marketplace — e cada um escreve do seu jeito. O que
+ * estava gravado:
+ *
+ *   `Pix` (12)   ·  `PIX (pago)` (1)                    -> duas linhas de PIX
+ *   `Dinheiro` (3)  ·  `Dinheiro (atualizado)` (2)      -> duas linhas de dinheiro
+ *   `CREDIT` (5)                                        -> código do marketplace, em inglês
+ *   `Pago online: Crédito Visa R$ 17,00 + Pago online: Crédito Master R$ 10,00` (2)
+ *                                                       -> uma FRASE, com valores dentro, de rótulo
+ *   nulo (2)                                            -> linha sem nome
+ *
+ * Dez linhas para um punhado de formas reais, na tela em que o lojista confere o dinheiro do dia.
+ * Duas de PIX que ele tem de somar de cabeça, e uma cujo rótulo é maior que o gráfico.
+ *
+ * A regra fica AQUI, com `boraCanal` e `boraEhVenda`, porque o mesmo texto cru vai para o cartão do
+ * KDS (`pedidos.js`) — era de lá que saía o "CREDIT" na cara do operador.
+ *
+ * O que esta função NÃO faz: inventar bucket para o que não reconhece. Forma desconhecida volta com
+ * o próprio texto, aparada. Jogar o desconhecido num "Outros" esconderia uma forma nova de
+ * pagamento justamente de quem precisa conferir se o dinheiro entrou.
+ *
+ * A ordem dos testes importa: a frase composta contém "online" E "crédito". Para quem está fechando
+ * o caixa, o que decide é se o dinheiro está na mão ou na conta — então "pago online" ganha de
+ * "crédito". PIX vem antes de tudo porque o lojista pensa nele como coisa própria, mesmo sendo
+ * online.
+ */
+function boraFormaPagamento(fp) {
+  const bruto = String(fp == null ? '' : fp).trim();
+  if (!bruto) return 'Não informado';
+  // Sem acento e em minúsculas: `Vale Refeicao` e `Vale Refeição` são a mesma forma.
+  const s = bruto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  if (s.includes('pix')) return 'PIX';
+  if (s.includes('pago online') || s.includes('online')) return 'Pago online';
+  if (s.includes('dinheiro') || s.includes('cash')) return 'Dinheiro';
+  if (s.includes('credit') || s.includes('credito')) return 'Crédito';
+  if (s.includes('debit') || s.includes('debito')) return 'Débito';
+  if (s.includes('vale') || s.includes('voucher') || s.includes('meal')) return 'Vale';
+  if (s.includes('entrega')) return 'Na entrega';
+  return bruto;
+}
+
+/**
  * Este pedido conta como VENDA do dia?
  *
  * A regra existe num lugar só de propósito. Ela estava copiada em três telas, com duas versões

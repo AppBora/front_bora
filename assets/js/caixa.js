@@ -58,7 +58,14 @@
 
       const pag = {}, can = {};
       vendas.forEach(p => {
-        const fp = p.formaPagamento || 'Não informado';
+        // Agrupa pela forma NORMALIZADA (boraFormaPagamento, em app.js). Com o texto cru, `Pix` e
+        // `PIX (pago)` eram duas linhas, `Dinheiro` e `Dinheiro (atualizado)` outras duas, e uma
+        // frase inteira com valores dentro virava rótulo de barra. Dez linhas na tela em que o
+        // lojista confere o dinheiro do dia -- e ele somando PIX de cabeça.
+        //
+        // O total NÃO muda: só a chave do agrupamento. O teste cobra essa invariante, porque esta é
+        // a tela do dinheiro e um agrupamento que perde centavos é pior que dez linhas.
+        const fp = boraFormaPagamento(p.formaPagamento);
         pag[fp] = (pag[fp] || 0) + Number(p.valorTotal || 0);
         const ck = boraCanal(p.origem); const nm = ck.ic + ' ' + ck.key;
         can[nm] = (can[nm] || 0) + Number(p.valorTotal || 0);

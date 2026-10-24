@@ -115,6 +115,37 @@
     return true; // ATIVOS / TODOS
   }
 
+  // SOBRE A LINHA DE PAGAMENTO DO CARTÃO (a <span class="pay">, mais abaixo)
+  //
+  // Dois defeitos moravam ali, achados pelo QA em 24/10/2026:
+  //
+  // 1) Mostrava o texto CRU da forma de pagamento. O marketplace grava "CREDIT", e era isso que
+  //    aparecia na cara do operador. Agora passa pelo boraFormaPagamento (app.js), a mesma
+  //    normalização do Fechar Caixa — as duas telas falando do mesmo dinheiro com as mesmas
+  //    palavras.
+  //
+  // 2) O "||" ESCONDIA O CANAL: com a forma preenchida, a origem nunca era mostrada. Um pedido do
+  //    iFood pago em crédito dizia só "Crédito", e o operador não tinha como saber de onde veio. E
+  //    isso muda o que ele faz — pedido de marketplace não se liga para o cliente, e o
+  //    cancelamento é por lá. Agora os dois aparecem.
+  //
+  // Este comentário vive FORA do template literal de propósito. Eu o escrevi dentro, como
+  // comentário de HTML, e as crases de `boraFormaPagamento` fecharam a template: o arquivo parou de
+  // compilar com "Unexpected identifier 'CREDIT'". É a terceira vez que eu faço isso no mesmo dia
+  // (acerto-entregadores.js e importar-insumos.js foram as outras duas).
+
+  /**
+   * A forma de pagamento, com guarda — mesmo padrão do `boraSla` logo abaixo, e pela mesma razão.
+   *
+   * `boraFormaPagamento` mora no `app.js`, que é outro arquivo com outro cache. Se o navegador do
+   * lojista estiver com uma versão velha do app.js, chamar a função direto derrubaria o QUADRO
+   * INTEIRO — a tela onde a cozinha trabalha — por causa de um rótulo de pagamento. Com a guarda,
+   * o pior caso é o texto cru voltar a aparecer naquele cartão.
+   */
+  const forma = (p) => (typeof boraFormaPagamento === 'function'
+    ? boraFormaPagamento(p.formaPagamento)
+    : (p.formaPagamento || 'Pagamento —'));
+
   function card(p, col) {
     const mins = minutosDesde(p.atualizadoEm || p.criadoEm);
     const sla = (typeof boraSla === 'function') ? boraSla(p.origem) : 30;
@@ -148,7 +179,8 @@
       ${atrasado ? `<div class="late-tag">⚠ Atrasado — SLA ${sla}min (${tempoTxt(mins)})</div>` : ''}
       <div class="kcard-foot">
         <span class="val">${money(p.valorTotal)}</span>
-        <span class="pay">${esc(p.formaPagamento) || (p.origem ? esc(p.origem) : 'Pagamento —')}</span>
+        <span class="pay">${esc(forma(p))}${p.origem
+          ? ' · ' + boraCanal(p.origem).ic + ' ' + esc(boraCanal(p.origem).key) : ''}</span>
       </div>
       <div class="kacts">
         ${novo

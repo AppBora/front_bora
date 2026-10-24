@@ -1,4 +1,17 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cardápio Digital</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20261023"><meta name="theme-color" content="#7c3aed"><style>#comp:not([hidden]),#checkout:not([hidden]),#ckOpPix:not([hidden]){display:flex}</style>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cardápio Digital</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20261023"><meta name="theme-color" content="#7c3aed"><style>#comp:not([hidden]),#checkout:not([hidden]),#ckOpPix:not([hidden]){display:flex}
+/* O ZOOM DO IPHONE NO CHECKOUT (achado pelo QA em 24/10/2026).
+   O Safari do iOS dá zoom na página sozinho quando o campo que recebeu o toque tem font-size menor
+   que 16px -- e NÃO volta ao sair do campo. O cliente tocava em "Seu nome" e o checkout inteiro
+   ficava ampliado e cortado lateralmente, no meio do pedido. Os campos aqui não declaravam
+   font-size, e controle de formulário não herda o do body: ficavam nos ~13px do padrão do
+   navegador.
+   Por que NÃO foi resolvido no viewport: dava para travar com `maximum-scale=1`, e isso impediria
+   o cliente de ampliar a página -- quebra a leitura de quem precisa de letra maior, e por um
+   problema que é nosso. 16px no campo resolve sem tirar nada de ninguém.
+   O seletor pula radio e checkbox (não ganham teclado, e já têm tamanho próprio) e qualquer campo
+   com font-size no style inline ganha desta regra -- é o caso do #pxPayload, que fica em 11px de
+   propósito porque é um código longo com botão de copiar ao lado. */
+input:not([type=radio]):not([type=checkbox]),select,textarea{font-size:16px}</style>
 <script>
 // PWA por loja: o cliente instala o "app" com o nome da loja (manifesto dinâmico do backend)
 (function(){

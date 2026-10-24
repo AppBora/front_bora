@@ -18,7 +18,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { subir } from './harness.mjs';
+import { subir, helpersDoApp } from './harness.mjs';
 
 const RAIZ = process.env.BORA_FRONT
   || 'C:/Users/user/OneDrive/Desktop/Bora/bora-fase-2-frontend';
@@ -56,6 +56,13 @@ async function abrirQuadro() {
       // Globais do app.js, que o harness nao carrega. Sem elas o carregar() estoura e o quadro
       // fica VAZIO -- e o teste mediria a minha falta de duble, nao a tela.
       boraCanal: (o) => ({ key: o || 'Balcão', ic: '🏪', cor: '#8b5cf6' }),
+      // A forma de pagamento vem do arquivo DE VERDADE, nao de um duble.
+      //
+      // Dublar aqui faria o teste medir a regra do duble enquanto a tela roda com a do app.js --
+      // e foi exatamente assim que eu me enganei hoje com o mapa de papeis: o teste passava
+      // porque media o FALLBACK, nao a regra. Os outros globais acima seguem dublados porque o que
+      // eles fazem nao e objeto de nenhum teste deste arquivo.
+      boraFormaPagamento: helpersDoApp(RAIZ.split(path.sep).join('/') + '/').boraFormaPagamento,
       boraPrintComanda: () => {},
       boraToast: () => {},
     },

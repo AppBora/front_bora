@@ -56,6 +56,9 @@ export function helpersDoApp(raiz = 'C:/Users/user/OneDrive/Desktop/Bora/bora-fa
     boraEsperandoPix: vm.runInContext('boraEsperandoPix', ctx),
     boraCanal: vm.runInContext('boraCanal', ctx),
     boraSla: vm.runInContext('boraSla', ctx),
+    // Mesma razao dos de cima: a forma de pagamento normalizada mora no app.js para o Fechar Caixa
+    // e o cartao do KDS falarem do mesmo dinheiro com as mesmas palavras.
+    boraFormaPagamento: vm.runInContext('boraFormaPagamento', ctx),
   };
 }
 
