@@ -154,6 +154,33 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
     <details class="bloco raiz" id="cardPlataforma" hidden open style="border:2px solid var(--primary)">
       <summary>🔧 Plataforma BoraHapp <span class="pista">· só o administrador da plataforma vê isto</span></summary>
       <div class="conteudo">
+      <!--
+        CREDENCIAL DO APP DA PLATAFORMA NOS MARKETPLACES — a tela que faltava (25/10/2026).
+
+        Os três endpoints existiam desde antes (GET/PUT/DELETE /admin-bora/credenciais), com
+        auditoria, só para administrador, e o segredo nunca voltando. NENHUMA tela os chamava: a
+        única forma de corrigir uma credencial errada era escrever no banco.
+
+        O que isso custou, medido: o 99Food da loja 1 passou dias em 401 porque o `client_secret` da
+        plataforma tem 13 caracteres, quando o do único app de 99Food que funciona aqui tem 32. E
+        não havia caminho no painel para trocar.
+
+        É a terceira vez num dia que eu acho endpoint pronto sem tela que o chame — a cifragem em
+        repouso e o "vazio = não controla" do estoque foram as outras duas. Capacidade que ninguém
+        alcança é capacidade que não existe.
+      -->
+      <details class="bloco" id="secCredenciais">
+        <summary>🔑 Credencial do app BoraHapp nos marketplaces <span class="pista">· vale para todas as lojas</span></summary>
+        <div class="conteudo">
+          <p style="color:var(--muted);font-size:13px;margin:0 0 10px">
+            É a credencial do <b>nosso</b> aplicativo em cada marketplace, copiada do portal de
+            desenvolvedores deles. Toda loja que <b>não</b> tem aplicativo próprio usa esta —
+            se ela estiver errada, nenhum pedido daquele canal entra em nenhuma dessas lojas.
+          </p>
+          <div id="credLista" style="font-size:14px">Carregando…</div>
+          <p id="credMsg" style="font-size:13px;margin:8px 0 0"></p>
+        </div>
+      </details>
       <details class="bloco" id="secFiscal">
         <summary>🧾 Emissão de Nota Fiscal (NFC-e) <span class="pista">· chave da plataforma inteira</span></summary>
         <div class="conteudo">
@@ -348,7 +375,7 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
     </details>
   </main>
 </div>
-<script src="assets/js/api.js?v=20261024b"></script><script src="assets/js/app.js?v=20261024"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261024"></script><script src="assets/js/configuracoes.js?v=20261023b&_=20260623"></script>
+<script src="assets/js/api.js?v=20261024b"></script><script src="assets/js/app.js?v=20261024"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261024"></script><script src="assets/js/configuracoes.js?v=20261023b&_=20260623"></script><script src="assets/js/credenciais-plataforma.js?v=20261025"></script>
 <script>
 /**
  * Lembra quais secoes desta tela ficaram abertas.
