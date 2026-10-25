@@ -226,7 +226,24 @@
         ['Última busca', quando(d.ultimoPollingEm)],
         ['Última sincronização', quando(d.ultimaSync)],
         ['Pedidos recebidos', String(d.pedidosRecebidos || 0)],
-        ['Token expira em', quando(d.tokenExpiraEm)],
+        // A linha dizia só a data, e o leitor tinha de fazer a conta de cabeça. Medido em 25/10: a
+        // Pizzaria estava com "Token expira em 07/10/2026" — dezoito dias no passado — e nada na
+        // tela usava a palavra VENCIDO. Este é o diagnóstico que o suporte abre quando o lojista
+        // liga dizendo "não chega pedido": a resposta estava aqui e não era legível.
+        ['Autorização (token)', (() => {
+          if (!d.tokenExpiraEm) return '—';
+          const v = new Date(d.tokenExpiraEm);
+          const dia = esc(v.toLocaleDateString('pt-BR'));
+          if (v.getTime() < Date.now()) {
+            return '<span style="color:#b91c1c">⛔ VENCIDA em ' + dia
+              + ' — nenhum pedido novo entra</span>';
+          }
+          // Avisar ANTES de vencer é o que evita a ligação. 3 dias dá tempo de refazer o vínculo.
+          const faltam = Math.ceil((v.getTime() - Date.now()) / 86400000);
+          return faltam <= 3
+            ? '<span style="color:#b45309">⚠ vence em ' + faltam + ' dia(s), ' + dia + '</span>'
+            : 'válida até ' + dia;
+        })()],
       ];
       if (d.integracaoOficial) linhas.push(['App do BoraHapp configurado', sim(d.appDaPlataformaConfigurado)]);
 
@@ -330,6 +347,32 @@
     }
     if (i.status === 'CONECTADO') {
       const quando = i.ultimoPollingEm ? new Date(i.ultimoPollingEm).toLocaleTimeString('pt-BR') : '—';
+
+      // TOKEN VENCIDO: a tela precisa DIZER, e não mostrar uma data para o lojista comparar.
+      //
+      // Achado em 25/10/2026, atacando o item 24: a Pizzaria (loja 17) está com o iFood em
+      // `CONECTADO` e o token venceu em 07/10 — dezoito dias antes. O cartão dizia que estava tudo
+      // certo, e o único lugar que falava do token era uma linha do diagnóstico escrita
+      // "Token expira em 07/10/2026" — sem a palavra "vencido", e só para quem abrisse o
+      // diagnóstico e fizesse a conta de cabeça.
+      //
+      // Quando a integração é da PLATAFORMA, o token se renova sozinho e um vencimento no passado
+      // costuma ser falha de renovação; quando a credencial é da LOJA e ela não está mais salva,
+      // não há como renovar e o vínculo tem de ser refeito. A mensagem muda nos dois casos porque a
+      // ação do lojista é diferente.
+      const venc = i.tokenExpiraEm ? new Date(i.tokenExpiraEm) : null;
+      const tokenVencido = venc && venc.getTime() < Date.now();
+      const avisoToken = !tokenVencido ? '' : `
+        <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px;margin-top:8px;color:#7f1d1d">
+          <b>⛔ A autorização do ${esc(i.label)} venceu</b> em
+          ${esc(venc.toLocaleDateString('pt-BR'))}.
+          <p style="margin:6px 0 0">Enquanto não for renovada, <b>nenhum pedido novo entra</b> por
+          este canal — mesmo com o cartão dizendo conectado.
+          ${i.oficial && i.appConfigurado
+            ? 'A renovação é automática; se a data já passou, ela está falhando. Clique em Conectar para refazer.'
+            : 'Refaça a conexão: clique em <b>Conectar</b> e autorize no portal outra vez.'}</p>
+          <button class="btn" style="margin-top:8px" onclick="__vincular('${i.canal}')">🔗 Reconectar ao ${esc(i.label)}</button>
+        </div>`;
       // Conectado NAO e o mesmo que recebendo. Sem o ID da loja no marketplace, a busca de pedidos
       // sai na primeira linha e nunca traz nada -- sem erro e sem log. O card ficava verde dizendo
       // "os pedidos chegam sozinhos" com a Ultima sync em branco para sempre, e o lojista ficaria
@@ -340,12 +383,17 @@
           <p>A conexão com o ${esc(i.label)} foi autorizada, só falta dizer <b>qual é a sua loja lá</b>.
           Informe o <b>${esc(i.label === 'iFood' ? 'Merchant ID' : 'ID da loja')}</b> no campo abaixo e salve —
           sem ele os pedidos não chegam.</p>
+          ${avisoToken}
           ${recados(i)}
         </div>`;
       }
-      return `<div class="oficial-box ok">
-        <b>🟢 Conectado — os pedidos chegam sozinhos</b>
-        <p>Última consulta ao ${esc(i.label)}: ${quando}. A loja fica online no aplicativo enquanto esta consulta acontecer.</p>
+      // Com o token vencido a caixa NAO pode ser a verde que diz "os pedidos chegam sozinhos":
+      // essa frase e a promessa exata que deixou de ser verdade.
+      return `<div class="oficial-box ${tokenVencido ? '' : 'ok'}" ${tokenVencido ? 'style="background:#fffbeb;border-color:#fde68a"' : ''}>
+        <b>${tokenVencido ? '🟡 Conectado, mas a autorização venceu' : '🟢 Conectado — os pedidos chegam sozinhos'}</b>
+        <p>Última consulta ao ${esc(i.label)}: ${quando}.${tokenVencido ? ''
+          : ' A loja fica online no aplicativo enquanto esta consulta acontecer.'}</p>
+        ${avisoToken}
         ${recados(i)}
       </div>`;
     }
