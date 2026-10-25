@@ -127,6 +127,19 @@ test('mostra o TAMANHO do segredo, que foi o que resolveu o 401 do 99Food', asyn
   assert.match(html, /36<\/b> caracteres/, 'não mostrou o tamanho do segredo do iFood');
 });
 
+test('API velha no cache: NÃO escreve "0 caracteres" — some o tamanho, não a verdade', async () => {
+  // A API e esta tela têm ciclos de cache separados. Com uma API anterior, `tamanhoSecret` chega
+  // indefinido, e `Number(undefined || 0)` daria "0 caracteres" — dizendo ao dono que o segredo
+  // salvo é vazio. Mentira na tela do segredo é pior que informação faltando.
+  const t = await abrir({ resposta: [{ canal: 'IFOOD', label: 'iFood', clientId: 'x',
+    temSecret: true, origem: 'TELA' }] });                 // sem tamanhoSecret, sem data
+  const html = t.get('credLista').innerHTML;
+
+  assert.match(html, /salvo ✓/, 'perdeu a informação de que o segredo existe');
+  assert.ok(!/0<\/b> caracteres/.test(html), 'disse que o segredo salvo tem 0 caracteres');
+  assert.ok(!/NaN/.test(html), 'escreveu NaN na tela do dono');
+});
+
 test('mostra QUANDO o segredo foi gravado', async () => {
   // "Isso aqui é de quando?" — credencial da época da homologação e credencial de hoje têm o mesmo
   // jeito na tela, e a data é a única coisa que as separa.

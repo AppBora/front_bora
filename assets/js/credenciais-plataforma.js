@@ -60,9 +60,16 @@
     // O TAMANHO do segredo é mostrado de propósito, e o valor nunca. Foi esse número que
     // transformou "não chega pedido" em "o segredo está errado": sem ele a tela diz "salvo ✓" e não
     // há como desconfiar do que está guardado.
+    //
+    // O tamanho só é mostrado quando VEIO. A API e esta tela têm ciclos de cache separados: com uma
+    // API mais velha o campo chega indefinido, e `Number(undefined || 0)` daria "0 caracteres" —
+    // dizendo ao dono que o segredo salvo é vazio. Mentira na tela do segredo é pior que informação
+    // faltando, e é o tipo de coisa que eu passei o dia consertando em outras telas.
+    const tam = Number(c.tamanhoSecret);
+    const sobreTamanho = Number.isFinite(tam) && tam > 0 ? ' · <b>' + tam + '</b> caracteres' : '';
     const sobreSecret = c.temSecret
-      ? '<b style="color:#166534">salvo ✓</b> · <b>' + Number(c.tamanhoSecret || 0)
-        + '</b> caracteres' + (quando ? ' · gravado em ' + esc(quando) : '')
+      ? '<b style="color:#166534">salvo ✓</b>' + sobreTamanho
+        + (quando ? ' · gravado em ' + esc(quando) : '')
       : '<b style="color:#b91c1c">não salvo</b>';
 
     return `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:10px">
