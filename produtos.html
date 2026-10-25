@@ -49,6 +49,33 @@
           <span id="impMsg" style="font-size:13px"></span>
         </div>
         <div id="impPreview" style="display:none;margin-top:10px;font-size:13px;max-height:220px;overflow:auto;background:#f8fafc;border-radius:8px;padding:10px"></div>
+
+        <!--
+          MIGRAÇÃO POR FOTO — mudou de lugar em 25/10/2026.
+
+          Ela existia e funcionava, escondida dentro do acordeão "Módulo IA" em CONFIGURAÇÕES, como
+          terceiro item, depois do WhatsApp do dono e do recuperador de clientes — e o acordeão nasce
+          FECHADO. Quem vai importar um cardápio está aqui, em Produtos, com a caixa de colar na
+          frente; ninguém procura "cadastrar meus produtos" em Configurações.
+
+          Medido em 24/10/2026: a Zirá (loja 18) é a única loja com o módulo ligado, e a chave da IA
+          está configurada no servidor. Ou seja, isto funcionava e estava disponível para ela o tempo
+          todo, enquanto o cardápio dela era digitado à mão.
+
+          O bloco nasce escondido e só aparece quando `/api/ia/status` diz que a loja contratou o
+          módulo — sem isso, uma loja sem o add-on veria um botão que sempre devolve 403.
+        -->
+        <div id="impFotoBloco" hidden style="margin-top:14px;padding-top:14px;border-top:1px dashed #e2e8f0">
+          <b>📸 Ou mande uma foto do cardápio</b>
+          <p style="color:var(--muted);font-size:13px;margin:4px 0 8px">
+            Foto ou print do cardápio impresso — a IA lê e cadastra os produtos. Depois
+            <b>confira os preços</b>: o que a IA leu de uma foto pode sair torto, e aqui é preço que
+            o cliente paga.
+          </p>
+          <input type="file" id="impFoto" accept="image/*">
+          <button class="btn" id="impFotoEnviar" style="margin-top:6px">Ler a foto e cadastrar</button>
+          <span id="impFotoMsg" style="margin-left:8px;font-size:13px"></span>
+        </div>
       </div>
       <!--
         A categoria nao e um cadastro: e um campo de texto dentro de CADA produto. Sem esta caixa,

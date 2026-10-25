@@ -108,3 +108,48 @@ export function subir(arquivo, { Bora, globais = {}, search = '', comSeletores =
     },
   };
 }
+
+/**
+ * O fonte SEM as LINHAS de comentario — para teste que procura codigo e nao conversa.
+ *
+ * POR QUE ISTO EXISTE (25/10/2026): em dois dias eu escrevi TRES testes que procuravam um padrao no
+ * arquivo inteiro e acusavam o MEU PROPRIO COMENTARIO. Os tres falhavam com o codigo certo:
+ *
+ *   - um procurava a linha antiga do "Ultimo erro" e achava o helper que a contem de proposito;
+ *   - um procurava "maximum-scale" e achava o comentario de CSS que explica por que eu NAO travei o
+ *     zoom;
+ *   - um procurava `$('iaImportar')` e achava o comentario que explica por que a fiacao saiu.
+ *
+ * Teste que aponta para o lugar errado e pior que teste nenhum, porque o proximo a ler acredita
+ * nele. Ajustar o escopo caso a caso nao resolveu: na terceira vez virou classe de defeito.
+ *
+ * POR QUE POR LINHA, E NAO CARACTERE A CARACTERE
+ *
+ * A primeira versao caminhava o fonte acompanhando aspas, apostrofo e crase, para nao confundir
+ * `//` dentro de texto. Parecia mais correta e era PIOR: ela entrou em "modo texto" numa REGEX com
+ * aspas dentro (`/[&<>"]/g`, que existe no esc do configuracoes.html) e dali em diante ignorou
+ * todos os `//` do arquivo. Resultado: o comentario sobreviveu e o teste continuou falhando, agora
+ * com uma explicacao errada do motivo.
+ *
+ * Ferramenta de teste que falha de maneira imprevisivel e pior que ferramenta nenhuma, porque
+ * outros testes passam a confiar nela. Esta versao nao acompanha estado de texto NENHUM, entao nao
+ * tem como ser enganada: tira os comentarios de HTML (que tem comeco e fim proprios) e descarta
+ * as LINHAS que sao so comentario.
+ *
+ * O LIMITE, explicito: comentario no FIM de uma linha de codigo (`const a = 1; // nota`) continua
+ * no resultado. Os tres acidentes eram linhas inteiras de comentario, que e como se escreve
+ * explicacao de verdade. Se um dia precisar do outro caso, o jeito honesto e um parser, nao mais
+ * um palpite.
+ */
+export function semComentarios(fonte) {
+  return String(fonte)
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .split('\n')
+    .map(linha => {
+      const t = linha.trim();
+      // `*` pega o meio de bloco e de javadoc; `*/` pega o fechamento.
+      if (t.startsWith('//') || t.startsWith('/*') || t.startsWith('*')) return '';
+      return linha;
+    })
+    .join('\n');
+}

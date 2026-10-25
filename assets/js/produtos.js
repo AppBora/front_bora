@@ -353,4 +353,77 @@
     };
   })();
 
+  /**
+   * MIGRAÇÃO POR FOTO — veio de Configurações para cá em 25/10/2026.
+   *
+   * A funcionalidade existia e funcionava: `POST /api/ia/importar-cardapio`. Só estava no lugar
+   * errado — dentro do acordeão "Módulo IA" em Configurações, como terceiro item, depois do
+   * WhatsApp do dono e do recuperador de clientes, e o acordeão nasce FECHADO. Quem vai cadastrar
+   * um cardápio está nesta tela, com a caixa de colar na frente.
+   *
+   * Medido em 24/10/2026: a Zirá (loja 18) é a única com o módulo ligado e a chave da IA está no
+   * servidor. Estava disponível para ela o tempo todo, enquanto o cardápio era digitado à mão.
+   *
+   * O bloco só aparece se a loja contratou o add-on. Sem essa conferência, loja sem o módulo veria
+   * um botão que sempre devolve 403 — pior que não ter botão, porque parece defeito nosso.
+   */
+  (function migracaoPorFoto() {
+    const bloco = document.getElementById('impFotoBloco');
+    if (!bloco) return;                      // tela antiga em cache: nada a fazer, sem estourar
+    const campo = document.getElementById('impFoto');
+    const botao = document.getElementById('impFotoEnviar');
+    const msg = document.getElementById('impFotoMsg');
+
+    // Só mostra para quem tem o módulo. Falha na consulta deixa escondido: oferecer e dar erro é
+    // pior que não oferecer.
+    Bora.api('/api/ia/status')
+      .then(st => { if (st && st.contratado) bloco.hidden = false; })
+      .catch(() => {});
+
+    botao.onclick = () => {
+      const f = campo.files && campo.files[0];
+      if (!f) { msg.style.color = '#b45309'; msg.textContent = 'Escolha a foto primeiro.'; return; }
+      // Teto de tamanho ANTES de ler o arquivo. A imagem vai em base64 no corpo, o que a infla ~33%,
+      // e foto de celular passa de 5 MB fácil: sem isto o lojista esperava a leitura inteira para
+      // levar um erro do servidor no fim.
+      const MAX_MB = 5;
+      if (f.size > MAX_MB * 1024 * 1024) {
+        msg.style.color = '#b45309';
+        msg.textContent = 'Foto de ' + (f.size / 1048576).toFixed(1) + ' MB — o limite é ' + MAX_MB
+          + ' MB. Tire a foto em qualidade menor ou mande um print.';
+        return;
+      }
+      const rd = new FileReader();
+      rd.onerror = () => { msg.style.color = '#dc2626'; msg.textContent = 'Não consegui ler esse arquivo.'; };
+      rd.onload = async () => {
+        botao.disabled = true;
+        msg.style.color = 'var(--muted)';
+        msg.textContent = 'Lendo o cardápio com IA… isso pode levar um minuto.';
+        try {
+          const r = await Bora.api('/api/ia/importar-cardapio', {
+            method: 'POST',
+            body: JSON.stringify({
+              imagemBase64: String(rd.result).split(',')[1],
+              mediaType: f.type || 'image/jpeg',
+            }),
+          });
+          msg.style.color = '#166534';
+          // "Confira os preços" não é formalidade: é leitura de foto, e aqui é preço que o cliente
+          // paga. A versão de Configurações dizia só "Veja em Produtos", que nem era onde o lojista
+          // estava.
+          msg.textContent = '✅ ' + (r.produtosCriados || 0) + ' produto(s) cadastrado(s). '
+            + 'Confira os preços na lista abaixo antes de divulgar.';
+          campo.value = '';
+          await lista();                      // a lista desta tela, para ele ver o que entrou
+        } catch (e) {
+          msg.style.color = '#dc2626';
+          msg.textContent = '❌ ' + e.message;
+        } finally {
+          botao.disabled = false;
+        }
+      };
+      rd.readAsDataURL(f);
+    };
+  })();
+
 })();

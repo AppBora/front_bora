@@ -325,11 +325,23 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
           <button class="btn" id="iaRecuperar" style="margin-top:6px;background:#64748b">Disparar agora (teste)</button>
           <span id="iaRoi" style="margin-left:10px;color:var(--muted);font-size:13px"></span>
         </div>
+        <!--
+          A migração por foto MUDOU DE LUGAR em 25/10/2026: está em Produtos → Importar cardápio.
+
+          Ela morava aqui, como terceiro item deste acordeão — que nasce FECHADO —, atrás do
+          WhatsApp do dono e do recuperador de clientes. Quem vai cadastrar um cardápio está em
+          Produtos, com a caixa de colar na frente; ninguém procura "cadastrar meus produtos" em
+          Configurações. Medido em 24/10: a Zirá tinha o módulo ligado e a chave da IA estava no
+          servidor — a função esteve disponível para ela o tempo todo, enquanto o cardápio era
+          digitado à mão.
+
+          Fica o ponteiro, e NÃO uma segunda cópia do controle: este cartão existe para listar o que
+          o módulo faz, e dois lugares para a mesma ação deixam o lojista sem saber qual usar.
+        -->
         <div>
-          <b>📸 Migração por foto</b> — envie a foto/print do seu cardápio e a IA cadastra os produtos.<br>
-          <input type="file" id="iaFoto" accept="image/*" style="margin-top:6px">
-          <button class="btn" id="iaImportar">Importar produtos</button>
-          <span id="iaImpMsg" style="margin-left:8px;font-size:13px"></span>
+          <b>📸 Migração por foto</b> — mandar a foto/print do cardápio e deixar a IA cadastrar os
+          produtos agora fica em <a href="produtos.html">Produtos → Importar cardápio</a>, junto da
+          caixa de colar a lista.
         </div>
       </div>
       </div>
@@ -1132,20 +1144,10 @@ Sanfona.ligar(document);
       catch (e) {}
     }
     roi();
-    $('iaImportar').onclick = () => {
-      const f = $('iaFoto').files[0];
-      if (!f) { alert('Escolha a foto do cardápio primeiro'); return; }
-      const rd = new FileReader();
-      rd.onload = async () => {
-        $('iaImpMsg').textContent = 'Lendo o cardápio com IA…';
-        try {
-          const r = await Bora.api('/api/ia/importar-cardapio', { method: 'POST', body: JSON.stringify({
-            imagemBase64: String(rd.result).split(',')[1], mediaType: f.type || 'image/jpeg' }) });
-          $('iaImpMsg').textContent = '✅ ' + r.produtosCriados + ' produtos criados! Veja em Produtos.';
-        } catch (e) { $('iaImpMsg').textContent = '❌ ' + e.message; }
-      };
-      rd.readAsDataURL(f);
-    };
+    // A fiação da migração por foto saiu daqui junto com o controle: ela vive em
+    // `assets/js/produtos.js` (migracaoPorFoto), na tela onde o lojista cadastra produtos. Deixar o
+    // ouvinte órfão aqui estouraria em `$('iaImportar').onclick` com o elemento inexistente — e
+    // isso derrubaria TODO o resto deste bloco, incluindo o WhatsApp do dono e o recuperador.
   }).catch(() => {});
 })();
 </script>
