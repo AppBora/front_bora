@@ -186,6 +186,23 @@
       set('opAguard', board.filter(p => p.status === 'PRONTO').length);
       set('opSaiu', resumo.saiuParaEntrega);
       set('opHora', resumo.entreguesUltimaHora);
+      // PEDIDO ESQUECIDO (26/10/2026): "Na cozinha" e "Saiu p/ entrega" contam por status, sem
+      // janela de dia -- entao pedido que o lojista esqueceu de avancar soma aqui para sempre, e o
+      // bloco que deveria dizer "o que esta acontecendo agora" diz "o que ninguem fechou".
+      //
+      // Medido na producao em 27/10/2026: os QUATRO pedidos abertos do sistema sao de dias
+      // anteriores, e a loja 1 tem um em "Saiu p/ entrega" desde 19/09 -- 38 dias.
+      //
+      // O numero NAO e escondido, de proposito: o pedido esta aberto de verdade e precisa de acao.
+      // O que entra e o aviso de que parte dele nao e de hoje, com o caminho do que fazer.
+      const esquecidos = Number(resumo.abertosDeOutrosDias || 0);
+      const avisoEsquecido = document.getElementById('opEsquecidos');
+      if (avisoEsquecido) {
+        avisoEsquecido.innerHTML = esquecidos > 0
+          ? '⚠️ ' + esquecidos + ' pedido(s) aberto(s) de dias anteriores contam nestes números. '
+            + '<a href="pedidos.html">Abra o quadro</a> e finalize ou cancele.'
+          : '';
+      }
 
       renderBarras(hoje);
       renderCanais(hoje);
