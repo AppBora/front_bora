@@ -25,14 +25,55 @@
     sel.addEventListener('change', () => { lojaEscolhida = Number(sel.value); carregar(); });
   }
 
+  // Quantas barras cabem antes de o grafico virar risco. Acima disto, agrupa por semana.
+  const MAX_BARRAS = 31;
+
+  /**
+   * Agrupa a serie diaria em blocos de 7, do mais ANTIGO para o mais novo.
+   *
+   * Por que existe (26/10/2026): o servico mandava 30 dias mesmo quando o cabecalho dizia 90, e a
+   * soma das barras nao fechava com o faturamento. Agora ele manda todos os dias da janela e quem
+   * agrupa para caber na tela e aqui -- com os dados todos na mao, em vez de um pedaco do periodo
+   * jogado fora no servidor.
+   *
+   * Os blocos sao contados DO FIM: a ultima barra tem de ser sempre a semana que acabou de passar,
+   * e nao um resto de 2 dias no comeco empurrando tudo.
+   */
+  function agruparPorSemana(ent) {
+    const fora = [];
+    for (let fim = ent.length; fim > 0; fim -= 7) {
+      const bloco = ent.slice(Math.max(0, fim - 7), fim);
+      const soma = bloco.reduce((t, e) => t + Number(e[1]), 0);
+      fora.unshift({ de: bloco[0][0], ate: bloco[bloco.length - 1][0], valor: soma, dias: bloco.length });
+    }
+    return fora;
+  }
+
+  const diaMes = d => d.slice(8) + '/' + d.slice(5, 7);
+
   function barras(porDia) {
     const ent = Object.entries(porDia);
-    const max = Math.max(1, ...ent.map(e => Number(e[1])));
-    $('bars').innerHTML = ent.map(([d, v]) => {
-      const val = Number(v), pct = Math.round(val / max * 100), peak = val === max && val > 0;
-      const dia = d.slice(8) + '/' + d.slice(5, 7);
-      return `<div class="b ${peak ? 'peak' : ''}" title="${dia} — ${money(val)}"><div class="fill" style="height:${val > 0 ? Math.max(pct, 4) : 0}%"></div><div class="cap">${d.slice(8)}</div></div>`;
+    const semanal = ent.length > MAX_BARRAS;
+    // A soma das barras tem de continuar sendo o faturamento, agrupadas ou nao.
+    const blocos = semanal ? agruparPorSemana(ent)
+      : ent.map(([d, v]) => ({ de: d, ate: d, valor: Number(v), dias: 1 }));
+    const max = Math.max(1, ...blocos.map(b => b.valor));
+    $('bars').innerHTML = blocos.map(b => {
+      const pct = Math.round(b.valor / max * 100), peak = b.valor === max && b.valor > 0;
+      const titulo = b.dias > 1
+        ? diaMes(b.de) + ' a ' + diaMes(b.ate) + ' — ' + money(b.valor)
+        : diaMes(b.de) + ' — ' + money(b.valor);
+      // Na visao semanal a legenda e o dia de INICIO do bloco, com o mes: so o numero do dia
+      // apareceria repetido tres vezes num grafico de 90 dias.
+      const legenda = b.dias > 1 ? b.de.slice(8) + '/' + b.de.slice(5, 7) : b.de.slice(8);
+      return `<div class="b ${peak ? 'peak' : ''}" title="${titulo}"><div class="fill" style="height:${b.valor > 0 ? Math.max(pct, 4) : 0}%"></div><div class="cap">${legenda}</div></div>`;
     }).join('');
+    const nota = $('barsNota');
+    if (nota) {
+      nota.textContent = semanal
+        ? 'Cada barra = uma semana. A soma das barras é o faturamento do período.'
+        : '';
+    }
   }
 
   function canalBarras(porCanal) {
@@ -69,7 +110,12 @@
     try {
       rel = await Bora.relatorios(dias, lojaEscolhida);
       const sub = $('relSub');
-      if (sub && rel.loja) sub.textContent = rel.loja + ' · últimos ' + rel.dias + ' dias';
+      // As datas exatas, e nao so "ultimos N dias": N dias contados de quando era justamente a
+      // duvida de quem comparava o grafico com o numero grande.
+      const periodo = rel.de && rel.ate
+        ? ' · ' + rel.dias + ' dias (' + diaMes(rel.de) + ' a ' + diaMes(rel.ate) + ')'
+        : ' · últimos ' + rel.dias + ' dias';
+      if (sub && rel.loja) sub.textContent = rel.loja + periodo;
       $('kFat').textContent = money(rel.faturamento);
       // Item 5.8 da varredura: o faturamento e o BRUTO que o cliente pagou, taxa de entrega
       // incluida. Quando quem entrega e o marketplace, essa taxa e dele -- e estava somando aqui sem
@@ -86,6 +132,19 @@
       $('kTicket').textContent = money(rel.ticketMedio);
       $('kMargem').textContent = money(rel.margem) + (Number(rel.faturamento) ? ` · ${rel.margemPct}%` : '');
       $('kCmv').textContent = money(rel.cmv);
+      // ITEM SEM CUSTO CADASTRADO (26/10/2026): ele entra no CMV como zero, porque nao ha nada
+      // melhor a fazer com ele. O resultado e um CMV MENOR do que o real e uma margem MAIOR -- e a
+      // tela nao dizia nada. Medido na producao em 26/10/2026: 26 dos 48 itens de pedido estao sem
+      // custo. O numero continua aparecendo; o que muda e ele parar de parecer exato.
+      const slotIncompleto = $('kMargemAviso');
+      if (slotIncompleto) {
+        const semCusto = Number(rel.itensSemCusto || 0);
+        slotIncompleto.textContent = semCusto > 0
+          ? ' · ' + semCusto + ' de ' + rel.itensVendidos + ' itens sem custo cadastrado: a margem '
+            + 'real é menor'
+          : '';
+        slotIncompleto.style.color = semCusto > 0 ? '#b45309' : '';
+      }
       $('kCanc').textContent = rel.cancelados;
       // Pedido com PIX gerado e nao pago entrava na conta de CANCELADO (era `todos - vendas`, e
       // `vendas` tira os dois). O lojista lia como venda perdida o pedido que ainda podia entrar.
