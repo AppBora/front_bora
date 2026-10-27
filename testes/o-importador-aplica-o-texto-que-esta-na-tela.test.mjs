@@ -171,3 +171,110 @@ test('o importador de INSUMOS também invalida a prévia quando o texto muda', a
     'o importador de insumos não invalida a prévia');
   assert.match(codigo, /lote = \[\];/, 'o ouvinte não limpa o lote');
 });
+
+// ============================================================================================
+// Os outros dois achados do importador de produtos, do mesmo pente-fino de 26/10/2026.
+// ============================================================================================
+
+test('`Bebidas ; ; 8,00` é ERRO de nome, e não um produto chamado "Bebidas"', async () => {
+  // A linha quer dizer categoria "Bebidas", nome EM BRANCO. O `.filter(x => x !== '')` descartava o
+  // campo vazio do meio, a linha virava dois campos, e o nome escorregava para a posição da
+  // categoria: nascia no catálogo um produto "Bebidas" a R$ 8,00. O `if (!nome)` nunca disparava,
+  // porque o nome vazio havia desaparecido da lista.
+  const { app, gravados } = await telaDeProdutos();
+  app.get('impTexto').value = 'Bebidas ; ; 8,00';
+
+  await app.get('impCriar').onclick();
+  await esperar();
+
+  assert.deepEqual(gravados, [], 'gravou: ' + JSON.stringify(gravados));
+  assert.match(app.get('impPreview').innerHTML, /faltou o nome/,
+    'prévia: ' + app.get('impPreview').innerHTML);
+});
+
+test('a categoria continua indo para o lugar certo em 3 campos', async () => {
+  // Ler por posição não pode ter trocado categoria e nome de lugar.
+  const { app, gravados } = await telaDeProdutos();
+  app.get('impTexto').value = 'Bebidas;Coca 350ml;8,00';
+
+  await app.get('impCriar').onclick();
+  await esperar();
+
+  assert.equal(gravados.length, 1);
+  assert.equal(gravados[0].corpo.nome, 'Coca 350ml');
+  assert.equal(gravados[0].corpo.categoria, 'Bebidas');
+});
+
+test('separador sobrando no FIM continua sendo aceito', async () => {
+  // `Acai;10,00;` é erro de digitação e não muda o sentido da linha. Só o campo vazio do MEIO
+  // carrega informação.
+  const { app, gravados } = await telaDeProdutos();
+  app.get('impTexto').value = 'Acai 500ml;10,00;';
+
+  await app.get('impCriar').onclick();
+  await esperar();
+
+  assert.equal(gravados.length, 1, 'prévia: ' + app.get('impPreview').innerHTML);
+  assert.equal(gravados[0].corpo.nome, 'Acai 500ml');
+  assert.equal(gravados[0].corpo.preco, 10);
+});
+
+test('categoria em branco cai em "Geral", e não é erro', async () => {
+  const { app, gravados } = await telaDeProdutos();
+  app.get('impTexto').value = ';Acai 500ml;10,00';
+
+  await app.get('impCriar').onclick();
+  await esperar();
+
+  assert.equal(gravados.length, 1, 'prévia: ' + app.get('impPreview').innerHTML);
+  assert.equal(gravados[0].corpo.categoria, 'Geral');
+  assert.equal(gravados[0].corpo.nome, 'Acai 500ml');
+});
+
+test('linha REPETIDA na mesma lista não cria produto duplicado', async () => {
+  // O `existente` compara com o CATÁLOGO, não com a própria lista: duas linhas iguais caíam as duas
+  // em "novos" e nasciam dois produtos com o mesmo nome. O cliente passa a ver o mesmo item duas
+  // vezes no cardápio, com preços que podem divergir.
+  const { app, gravados } = await telaDeProdutos();
+  app.get('impTexto').value = 'Acai;Acai 500ml;25,00\nAcai;Acai 500ml;31,00';
+
+  await app.get('impCriar').onclick();
+  await esperar();
+
+  assert.equal(gravados.length, 1, 'gravou ' + gravados.length + ' produtos com o mesmo nome');
+  assert.equal(gravados[0].corpo.preco, 25, 'vale o PRIMEIRO, igual ao importador de insumos');
+});
+
+test('a prévia DIZ qual linha foi ignorada por repetição', async () => {
+  // Ignorar calado é o que fazia o lojista achar que mandou 30 produtos e receber 28, sem saber
+  // quais.
+  const { app } = await telaDeProdutos();
+  app.get('impTexto').value = 'Acai;Acai 500ml;25,00\nAcai;Acai 500ml;31,00';
+
+  app.get('impConferir').onclick();
+
+  const prev = app.get('impPreview').innerHTML;
+  assert.match(prev, /1 repetido na lista/, 'prévia: ' + prev);
+  assert.match(prev, /só o primeiro entra/, 'prévia: ' + prev);
+  assert.match(prev, /Acai 500ml/, 'a prévia tem de dizer QUAL: ' + prev);
+});
+
+test('repetição ignora maiúscula e espaço, como o catálogo faz', async () => {
+  const { app, gravados } = await telaDeProdutos();
+  app.get('impTexto').value = 'Acai;Acai 500ml;25,00\nAcai;  ACAI 500ML  ;31,00';
+
+  await app.get('impCriar').onclick();
+  await esperar();
+
+  assert.equal(gravados.length, 1, 'gravou ' + gravados.length);
+});
+
+test('nomes DIFERENTES continuam criando os dois', async () => {
+  const { app, gravados } = await telaDeProdutos();
+  app.get('impTexto').value = 'Acai;Acai 300ml;19,00\nAcai;Acai 500ml;25,00';
+
+  await app.get('impCriar').onclick();
+  await esperar();
+
+  assert.equal(gravados.length, 2);
+});

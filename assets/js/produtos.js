@@ -210,14 +210,28 @@
       const linhas = texto.split('\n').map(l => l.trim()).filter(Boolean);
       const itens = [], erros = [];
       linhas.forEach((linha, n) => {
-        const p = linha.split(/[;|	]/).map(x => x.trim()).filter(x => x !== '');
+        // POSICAO IMPORTA: nao filtra campo vazio do meio (achado pelo QA em 26/10/2026).
+        //
+        // Era `.filter(x => x !== '')`. Com isso, `Bebidas ; ; 8,00` -- que quer dizer categoria
+        // "Bebidas", nome EM BRANCO -- virava `['Bebidas','8,00']`, dois campos, e o nome escorregava
+        // para a posicao da categoria: nascia no catalogo um produto chamado "Bebidas" a R$ 8,00. O
+        // `if (!nome)` logo abaixo nunca disparava, porque o nome vazio havia desaparecido da lista.
+        //
+        // O importador de INSUMOS sempre leu por posicao (`map(trim)` e nada mais). Era o de
+        // produtos que divergia -- e e o que grava PRECO.
+        const p = linha.split(/[;|	]/).map(x => x.trim());
+        // Separador sobrando no FIM e erro de digitacao e nao muda o sentido da linha: `Acai;10,00;`
+        // continua sendo nome e preco. Só o do meio carrega informacao.
+        while (p.length > 0 && p[p.length - 1] === '') p.pop();
         if (p.length < 2) { erros.push('linha ' + (n + 1) + ': faltou o preço — ' + linha); return; }
         const precoBruto = p[p.length - 1];
         const preco = precoDoImport(precoBruto);
         if (!isFinite(preco) || preco <= 0) { erros.push('linha ' + (n + 1) + ': preço inválido "' + precoBruto + '"'); return; }
         const nome = p.length >= 3 ? p[1] : p[0];
-        const categoria = p.length >= 3 ? p[0] : 'Geral';
-        if (!nome) { erros.push('linha ' + (n + 1) + ': faltou o nome'); return; }
+        // Categoria em branco cai em "Geral", como a linha de dois campos: `;Acai;10,00` nao e erro,
+        // e so uma categoria que o lojista nao escreveu.
+        const categoria = (p.length >= 3 ? p[0] : '') || 'Geral';
+        if (!nome) { erros.push('linha ' + (n + 1) + ': faltou o nome — ' + linha); return; }
         itens.push({ nome, categoria, preco, ativo: true });
       });
       return { itens, erros };
@@ -270,8 +284,21 @@
      */
     /** Separa o que vai ser criado, o que muda e o que já está certo. */
     function separar(itens) {
-      const novos = [], mudam = [], iguais = [];
+      const novos = [], mudam = [], iguais = [], repetidosNaLista = [];
+      // LINHA REPETIDA NA MESMA LISTA (achado pelo QA em 26/10/2026).
+      //
+      // O `existente` compara com o CATALOGO, nao com a propria lista: duas linhas iguais caiam as
+      // duas em `novos` e nasciam dois produtos com o mesmo nome. O cliente passa a ver o mesmo item
+      // duas vezes no cardapio, com precos que podem divergir, e a ficha tecnica aponta para um deles.
+      //
+      // Vale o PRIMEIRO, e a tela diz que foi assim -- mesma regra e mesmas palavras do importador de
+      // insumos, que ja fazia isso. Escolher o ultimo seria defensavel; divergir entre os dois
+      // importadores nao e.
+      const vistos = new Set();
       for (const i of itens) {
+        const chave = String(i.nome).trim().toLowerCase();
+        if (vistos.has(chave)) { repetidosNaLista.push(i); continue; }
+        vistos.add(chave);
         const p = existente(i.nome);
         if (!p) { novos.push(i); continue; }
         const mesmoPreco = Math.abs(Number(p.preco) - i.preco) < 0.005;
@@ -279,7 +306,7 @@
         if (mesmoPreco && mesmaCat) iguais.push({ item: i, p });
         else mudam.push({ item: i, p });
       }
-      return { novos, mudam, iguais };
+      return { novos, mudam, iguais, repetidosNaLista };
     }
 
     // Mexer no texto invalida a previa: previa de um texto que nao esta mais na caixa e pior que
@@ -298,9 +325,16 @@
       const linha = (cor, html) => '<div style="color:' + cor + '">' + html + '</div>';
       prev.innerHTML =
         '<b>' + s.novos.length + ' a criar · ' + s.mudam.length + ' a atualizar · '
-        + s.iguais.length + ' já está igual</b>'
+        + s.iguais.length + ' já está igual'
+        + (s.repetidosNaLista.length ? ' · ' + s.repetidosNaLista.length + ' repetido na lista' : '')
+        + '</b>'
         + (r.erros.length ? '<br><span style="color:#dc2626">' + r.erros.length
             + ' linha(s) com problema:<br>' + r.erros.join('<br>') + '</span>' : '')
+        // Linha ignorada TEM de aparecer: ignorar calado e o que fazia o lojista achar que mandou 30
+        // produtos e receber 28, sem saber quais.
+        + (s.repetidosNaLista.length ? '<div style="color:#b45309;margin-top:6px">Repetidos na sua '
+            + 'lista (só o primeiro entra): '
+            + s.repetidosNaLista.map(i => esc(i.nome)).join(', ') + '</div>' : '')
         + '<hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0">'
         + s.novos.map(i => linha('#166534', '➕ <b>' + esc(i.nome) + '</b> · '
             + esc(i.categoria) + ' · ' + money(i.preco))).join('')
