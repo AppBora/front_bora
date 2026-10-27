@@ -71,6 +71,9 @@
       } catch (ex) { $('msg').textContent = ex.message; }
     });
     carregar().catch(e => $('lista').innerHTML = `<p style="color:var(--danger)">${e.message}</p>`);
-    Bora.repetir(() => carregar().catch(() => {}), 12000);
+    // O `catch` VAZIO que estava aqui engolia toda falha da API: a lista de entregadores ficava
+    // na tela e nada avisava. Quem avisa e o `Bora.repetir`, e para isso a falha tem de chegar
+    // nele (achado pelo QA em 26/10/2026).
+    Bora.repetir(carregar, 12000);
   });
 })();

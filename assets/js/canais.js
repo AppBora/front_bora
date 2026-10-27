@@ -55,8 +55,20 @@
   const desdeISO = d => new Date(Date.now() - d * 86400000 - new Date().getTimezoneOffset() * 60000)
     .toISOString().slice(0, 10);
 
-  async function carregar() { try { board = await Bora.board(null, desdeISO(30)); render(); } catch (e) {
-    document.getElementById('rank').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${e.message}</td></tr>`; } }
+  async function carregar() {
+    try {
+      board = await Bora.board(null, desdeISO(30));
+      render();
+    } catch (e) {
+      document.getElementById('rank').innerHTML =
+        `<tr><td colspan="5" style="color:var(--danger)">${e.message}</td></tr>`;
+      // O erro SOBE de proposito, e isto era o defeito (achado pelo QA em 26/10/2026):
+      // engolir aqui faz o `Bora.repetir` chamar `_conexao(true)` como se a carga tivesse
+      // dado certo -- a faixa de "sem conexao" nunca aparece e, se estava na tela, e
+      // REMOVIDA. O proprio comentario do `Bora._conexao` afirma cobrir esta tela.
+      throw e;
+    }
+  }
 
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('periodo').addEventListener('click', e => {
@@ -64,6 +76,11 @@
       document.querySelectorAll('#periodo .chip').forEach(x => x.classList.remove('active'));
       b.classList.add('active'); periodo = b.dataset.d; render();
     });
-    carregar(); Bora.repetir(carregar, 12000);
+    // A PRIMEIRA carga tambem avisa. Desde que o `carregar` passou a relancar (26/10/2026),
+    // deixar esta chamada sem `catch` virava rejeicao nao tratada -- e, pior, a falha da
+    // primeira carga ficava sem faixa nenhuma ate o primeiro tique do repetir. E o que o
+    // `pedidos.js` ja fazia.
+    carregar().catch(e => Bora._conexao(false, e));
+    Bora.repetir(carregar, 12000);
   });
 })();

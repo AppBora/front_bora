@@ -205,6 +205,16 @@ const Bora = {
    * Fica aqui, no `Bora.repetir`, porque é o caminho único das 9 telas que fazem polling — remendar
    * cada uma deixaria a próxima de fora. Só avisa depois de DUAS falhas seguidas: um soluço de rede de
    * um ciclo não precisa assustar ninguém no meio do movimento.
+   *
+   * **ISSO SÓ FUNCIONA SE A TAREFA RELANÇAR A FALHA.** Morar no caminho único não basta, e em
+   * 26/10/2026 isto foi medido: Caixa, Entregas, Canais e Entregadores tratavam o erro por dentro e
+   * não relançavam, então quatro das telas que este comentário diz cobrir não eram cobertas. Pior do
+   * que não aparecer: sem exceção, o `repetir` chama `_conexao(true)`, que **REMOVE** a faixa e zera o
+   * contador — uma tela que engole apaga o aviso que outra pôs.
+   *
+   * O padrão certo está no `kds.js`: pinta o aviso local na primeira carga, se a tela estiver vazia, e
+   * dá `throw e`. E a primeira chamada, fora do `repetir`, leva `.catch(e => Bora._conexao(false, e))`
+   * — senão a falha da primeira carga fica sem faixa até o primeiro tique.
    */
   _falhas: 0,
   _conexao(ok, erro) {

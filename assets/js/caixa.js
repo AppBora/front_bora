@@ -85,11 +85,27 @@
       $('kCanc').textContent = canc;
       barras('pagamentos', pag, '#22c55e');
       barras('canais', can);
-    } catch (e) { $('sub').textContent = 'Erro: ' + e.message; }
+    } catch (e) {
+      // Esta e a tela de FECHAR O CAIXA. Deixar os totais antigos na tela com um "Erro:"
+      // pequeno no subtitulo e o pior resultado possivel: o lojista fecha o caixa contra
+      // numeros que nao sao mais os de agora.
+      $('sub').textContent = 'Erro ao atualizar: ' + e.message + ' — os números abaixo podem '
+        + 'estar velhos.';
+      // O erro SOBE de proposito, e isto era o defeito (achado pelo QA em 26/10/2026):
+      // engolir aqui faz o `Bora.repetir` chamar `_conexao(true)` como se a carga tivesse
+      // dado certo -- a faixa de "sem conexao" nunca aparece e, se estava na tela, e
+      // REMOVIDA. O proprio comentario do `Bora._conexao` afirma cobrir esta tela.
+      throw e;
+    }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     $('imprimir').addEventListener('click', () => window.__imprimirFechamento());
-    carregar(); Bora.repetir(carregar, 15000);
+    // A PRIMEIRA carga tambem avisa. Desde que o `carregar` passou a relancar (26/10/2026),
+    // deixar esta chamada sem `catch` virava rejeicao nao tratada -- e, pior, a falha da
+    // primeira carga ficava sem faixa nenhuma ate o primeiro tique do repetir. E o que o
+    // `pedidos.js` ja fazia.
+    carregar().catch(e => Bora._conexao(false, e));
+    Bora.repetir(carregar, 15000);
   });
 })();

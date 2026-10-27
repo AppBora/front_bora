@@ -26,7 +26,9 @@
       try { await Bora.mudarStatus(id, 'SAIU_PARA_ENTREGA'); }
       catch (e) { falhas.push('#' + id + ': ' + e.message); }
     }
-    carregar();
+    // Aqui a falha ja e contada no `falhas` logo abaixo; o catch evita a rejeicao nao tratada
+    // sem esconder nada de quem esta olhando.
+    carregar().catch(e => Bora._conexao(false, e));
     if (falhas.length) {
       alert('Despachei ' + (ids.length - falhas.length) + ' de ' + ids.length + '.\n\n'
         + 'NÃO saiu:\n' + falhas.join('\n'));
@@ -108,8 +110,23 @@
 
       document.getElementById('rotas').innerHTML = blocoRetirada +
         (blocos || (paraRetirar.length ? '' : '<div class="panel" style="margin-bottom:14px"><p style="color:#94a3b8">Nenhum pedido pronto aguardando rota.</p></div>')) + rotaTabela;
-    } catch (e) { document.getElementById('rotas').innerHTML = `<div class="panel"><p style="color:var(--danger)">${e.message}</p></div>`; }
+    } catch (e) {
+      document.getElementById('rotas').innerHTML =
+        `<div class="panel"><p style="color:var(--danger)">${e.message}</p></div>`;
+      // O erro SOBE de proposito, e isto era o defeito (achado pelo QA em 26/10/2026):
+      // engolir aqui faz o `Bora.repetir` chamar `_conexao(true)` como se a carga tivesse
+      // dado certo -- a faixa de "sem conexao" nunca aparece e, se estava na tela, e
+      // REMOVIDA. O proprio comentario do `Bora._conexao` afirma cobrir esta tela.
+      throw e;
+    }
   }
 
-  document.addEventListener('DOMContentLoaded', () => { carregar(); Bora.repetir(carregar, 10000); });
+  document.addEventListener('DOMContentLoaded', () => {
+    // A PRIMEIRA carga tambem avisa. Desde que o `carregar` passou a relancar (26/10/2026),
+    // deixar esta chamada sem `catch` virava rejeicao nao tratada -- e, pior, a falha da
+    // primeira carga ficava sem faixa nenhuma ate o primeiro tique do repetir. E o que o
+    // `pedidos.js` ja fazia.
+    carregar().catch(e => Bora._conexao(false, e));
+    Bora.repetir(carregar, 10000);
+  });
 })();
