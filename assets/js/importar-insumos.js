@@ -138,7 +138,12 @@
     // O BOTAO NAO PODE MORRER CALADO. Ele nascia `disabled` e so ligava depois do Conferir:
     // quem colava a lista e clicava direto em Cadastrar via a tela nao fazer NADA, sem uma
     // palavra. Agora ele confere sozinho, e quando nao ha o que fazer, ele diz por que.
-    if (!lote.length) conferir();
+    //
+    // E CONFERE SEMPRE, nao so quando a lista esta vazia (achado pelo QA em 26/10/2026). Era
+    // `if (!lote.length) conferir()`: quem colava a lista A, conferia, apagava, colava a lista B e
+    // ia direto em Cadastrar, cadastrava a LISTA A -- e a previa na tela tambem era a de A, entao
+    // nada denunciava. O mesmo defeito estava no importador de produtos, onde grava preco.
+    conferir();
     const s = separar(lote);
     if (!s.novos.length) {
       $('insImpMsg').style.color = '#b45309';
@@ -184,6 +189,13 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     $('insImpConferir').addEventListener('click', conferir);
+    // Mexer no texto invalida a previa: previa de um texto que nao esta mais na caixa e pior que
+    // previa nenhuma, porque e olhando para ela que ele confirma.
+    $('insImpTexto').addEventListener('input', () => {
+      lote = [];
+      $('insImpPreview').style.display = 'none';
+      $('insImpPreview').innerHTML = '';
+    });
     $('insImpCriar').addEventListener('click', importar);
     await recarregar();
   });

@@ -282,6 +282,14 @@
       return { novos, mudam, iguais };
     }
 
+    // Mexer no texto invalida a previa: previa de um texto que nao esta mais na caixa e pior que
+    // previa nenhuma, porque ele confirma olhando para ela.
+    txt.addEventListener('input', () => {
+      lote = [];
+      prev.style.display = 'none';
+      prev.innerHTML = '';
+    });
+
     document.getElementById('impConferir').onclick = () => {
       const r = parse(txt.value);
       lote = r.itens;
@@ -307,9 +315,17 @@
     };
 
     btnCriar.onclick = async () => {
-      // Mesmo defeito do import de insumo: o botao nascia `disabled` e so ligava depois do
-      // Conferir. Quem colava e clicava direto em Importar via a tela nao fazer NADA, calada.
-      if (!lote.length) document.getElementById('impConferir').onclick();
+      // O botao nascia `disabled` e so ligava depois do Conferir: quem colava e clicava direto
+      // em Importar via a tela nao fazer NADA, calada.
+      // SEMPRE REINTERPRETA O TEXTO QUE ESTA NA CAIXA AGORA (achado pelo QA em 26/10/2026).
+      //
+      // Era `if (!lote.length) conferir()`: so reinterpretava quando a lista estava vazia. Quem
+      // colava a lista A, clicava em Conferir, percebia um erro, apagava e colava a lista B e ia
+      // direto em Importar, aplicava a LISTA A -- e a previa na tela tambem era a de A, entao nada
+      // denunciava. Numa lista de precos isso grava preco errado no catalogo.
+      //
+      // Reinterpretar sempre tambem faz a previa que ele confirma ser a mesma que ele esta vendo.
+      document.getElementById('impConferir').onclick();
       const s = separar(lote);
       const total = s.novos.length + s.mudam.length;
       if (!total) {
