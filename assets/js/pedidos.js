@@ -74,8 +74,22 @@
 
   // detecção de pedido novo → som + toast
   let conhecidos = null;
-  function detectarNovos(board) {
+  // De QUAL dia é o conjunto acima. Sem isto, trocar de dia fazia o quadro inteiro parecer novo:
+  // cada pedido RECEBIDO do dia que entrou apitava e, com a impressão automática ligada, saía na
+  // impressora — uma pilha de comandas repetidas de uma vez (achado pelo QA em 26/10/2026).
+  //
+  // Acontecia em dois momentos: ao clicar "Hoje" depois de olhar um dia fechado, e na virada da
+  // meia-noite, que é quando a açaiteria ainda está aberta e a impressora fica ao lado do cliente.
+  let diaDosConhecidos = null;
+  function detectarNovos(board, dia) {
     const idsRecebidos = board.filter(p => p.status === 'RECEBIDO').map(p => p.id);
+    if (dia !== diaDosConhecidos) {
+      // Primeira carga DESTE dia: vale a mesma regra da primeira carga da tela. O que já estava
+      // aberto não é novidade, é o que ele vai encontrar quando chegar.
+      diaDosConhecidos = dia;
+      conhecidos = new Set(idsRecebidos);
+      return;
+    }
     if (conhecidos === null) { conhecidos = new Set(idsRecebidos); return; } // 1ª carga: não alerta
     board.forEach(p => {
       if (p.status === 'RECEBIDO' && !conhecidos.has(p.id)) {
@@ -217,11 +231,23 @@
   async function carregar() {
     const board = document.getElementById('kboard'); if (!board) return;
     try {
-      cache = await Bora.board(diaEscolhido());
-      detectarNovos(cache);
+      const dia = diaEscolhido();
+      cache = await Bora.board(dia);
+      detectarNovos(cache, dia);
       render();
+      // O ROTULO DIZ A VERDADE SOBRE O DIA, e nao so a hora (achado medindo a virada, 26/10/2026).
+      //
+      // Antes era sempre "Atualizado hh:mm". O `aoTrocarDia` escrevia "Dia fechado" e chamava o
+      // recarregamento na linha seguinte, que sobrescrevia o aviso: em dia fechado a tela dizia
+      // "Atualizado 09:00", como se estivesse ao vivo, e o lojista perdia o unico sinal de que o
+      // quadro NAO esta mais se atualizando. Olhar um dia fechado e achar que e hoje e ver pedido
+      // que ja foi entregue como se estivesse esperando.
       const lt = document.getElementById('liveTxt');
-      if (lt) lt.textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      if (lt) {
+        lt.textContent = dia === hojeISO()
+          ? 'Atualizado ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          : 'Dia fechado';
+      }
     } catch (e) {
       // Com o quadro ja carregado, o erro ficava invisivel: os cards antigos continuavam na tela e o
       // "Atualizado hh:mm" congelava sem ninguem notar. O erro SOBE para o Bora.repetir, que mostra a
@@ -229,6 +255,28 @@
       if (!cache.length) board.innerHTML = `<p style="color:var(--danger)">${e.message}</p>`;
       throw e;
     }
+  }
+
+  // O quadro esta SEGUINDO o dia corrente, ou parado num dia escolhido?
+  //
+  // Isto existe por causa da meia-noite (achado pelo QA em 26/10/2026). O campo `#dia` e preenchido
+  // com a data NO CARREGAMENTO da pagina, e o recarregamento automatico so roda enquanto o valor do
+  // campo e igual a hoje. Numa loja que fica aberta depois da meia-noite -- acaiteria, pizzaria --,
+  // o quadro deixado aberto PARAVA DE ATUALIZAR na virada: pedido novo nunca aparecia, nao apitava,
+  // nao imprimia, e o "Atualizado 23:59" ficava congelado dizendo que estava tudo bem. A cozinha nao
+  // via o pedido e o cliente esperava.
+  //
+  // A regra: se o dia mostrado era HOJE na hora em que foi escolhido, o quadro acompanha o relogio.
+  // Se o lojista foi olhar um dia fechado, fica parado nele -- que e o que ele pediu.
+  let seguindoHoje = true;
+
+  /** Virou o dia com a tela aberta? Então o quadro anda junto. Devolve true se mexeu. */
+  function acompanharViradaDoDia() {
+    const el = document.getElementById('dia');
+    if (!el || !seguindoHoje || el.value === hojeISO()) return false;
+    el.value = hojeISO();
+    if (window.__aoTrocarDia) window.__aoTrocarDia();
+    return true;
   }
 
   /** Troca o dia do quadro; "Hoje" volta ao ao vivo. */
@@ -244,11 +292,15 @@
     };
     const aoTrocarDia = () => {
       const ehHoje = el.value === hojeISO();
+      // Quem decide se o quadro acompanha a virada e o proprio valor escolhido: dia que E hoje
+      // segue o relogio; dia fechado fica onde esta.
+      seguindoHoje = ehHoje;
       const tag = document.getElementById('liveTxt');
       if (tag) tag.textContent = ehHoje ? 'Ao vivo' : 'Dia fechado';
       document.getElementById('diaSeguinte').disabled = ehHoje;
       if (window.__refresh) window.__refresh();
     };
+    window.__aoTrocarDia = aoTrocarDia;
     el.addEventListener('change', aoTrocarDia);
     document.getElementById('diaAnterior').addEventListener('click', () => mover(-1));
     document.getElementById('diaSeguinte').addEventListener('click', () => mover(1));
@@ -269,6 +321,11 @@
     carregar().catch(e => Bora._conexao(false, e));
     // dia fechado não muda mais: só o dia corrente fica se atualizando sozinho
     // `return` e obrigatorio: sem ele o repetir nao recebe a promessa e nunca ve a falha de rede.
-    Bora.repetir(() => (diaEscolhido() === hojeISO() ? carregar() : null), 8000);
+    Bora.repetir(() => {
+      // A virada vem ANTES do teste: era aqui que o quadro parava para sempre a meia-noite.
+      // `acompanharViradaDoDia` ja recarrega quando mexe, por isso o `null`.
+      if (acompanharViradaDoDia()) return null;
+      return diaEscolhido() === hojeISO() ? carregar() : null;
+    }, 8000);
   });
 })();
