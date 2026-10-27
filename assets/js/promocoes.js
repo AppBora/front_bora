@@ -1,7 +1,14 @@
 // Tela de promoções: termômetro + criar/listar promoções.
 (function () {
   if (!Bora.requireAuth()) return;
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // A APOSTROFE ENTRA NA LISTA. Sem ela, o `esc` nao servia no unico lugar em que ele e usado
+  // dentro de uma string JS: o `onclick="__encerrar(id, '...')"` logo abaixo. Um codigo de promocao
+  // como `X'+alert(1)+'` -- 13 caracteres numa coluna de 40 -- escapava da string e rodava na
+  // sessao de quem abre Promocoes. O codigo e texto livre e um GERENTE consegue grava-lo; as
+  // vitimas naturais sao o ADMINISTRADOR_LOJA e o suporte operando dentro da loja. Achado pelo QA
+  // em 26/10/2026. O servidor tambem passou a recusar o valor, porque uma ponta so nao resolve.
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   const FAIXA = {
     SAUDAVEL: { cor: '#22c55e', txt: '#166534', label: 'Vendas saudáveis' },

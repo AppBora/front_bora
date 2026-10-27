@@ -575,6 +575,26 @@ Sanfona.ligar(document);
   const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+  /**
+   * O valor que o prompt do pagamento manual sugere: o preço DESTE cliente.
+   *
+   * O DEFEITO (achado pelo QA em 26/10/2026): o prompt vinha com `'199.00'` fixo. Um Enter
+   * registrava R$ 199 independentemente do preço negociado da loja — e o servidor **baixa a cobrança
+   * aberta no Asaas com o valor digitado** e põe o registro no faturamento, que é a base da nota
+   * fiscal. A tela de Nova loja tem campo "Preço mensal negociado": o 199 fixo ignorava exatamente
+   * esse campo.
+   *
+   * É a mesma classe do campo pré-preenchido que já custou um clique errado na liberação de acesso
+   * da Zirá — lá a data vinha com hoje+30 e foi aceita como estava.
+   *
+   * Sem preço conhecido, devolve vazio: melhor o dono digitar do que o sistema sugerir um número
+   * que ele não conferiu.
+   */
+  function precoSugerido(cliente) {
+    const v = cliente && cliente.precoMensal;
+    return v == null || Number(v) <= 0 ? '' : Number(v).toFixed(2);
+  }
+
   function selo(texto, fundo, cor) {
     return `<span style="background:${fundo};color:${cor};padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700">${texto}</span>`;
   }
@@ -603,7 +623,12 @@ Sanfona.ligar(document);
   // Linha de contexto: o que o dono olha para cobrar e para dar suporte.
   function ficha(c) {
     const partes = [];
-    if (c.documento) partes.push(c.documento);
+    // ESCAPADO. O `esc` existe 30 linhas acima e e usado no nome da loja; estes dois ficaram de
+    // fora, e o `ficha()` vai cru para innerHTML (linha do `<div class="ficha">`). Quem controla o
+    // campo `documento` -- gravado cru pelo signup publico -- rodava script DENTRO da sessao do
+    // ADMINISTRADOR_BORA, a unica conta que suspende, arquiva, entra em qualquer loja e troca a
+    // credencial da plataforma. Achado pelo QA em 26/10/2026.
+    if (c.documento) partes.push(esc(c.documento));
     partes.push(dinheiro(c.precoMensal) + (c.precoNegociado ? ' (negociado)' : ''));
     partes.push(c.assinatura ? (ASSINATURA[c.assinatura] || c.assinatura) : 'sem assinatura');
     // Ate quando a loja pode usar o sistema. Era o numero que DECIDE se ela sai do ar e nao aparecia
@@ -618,7 +643,7 @@ Sanfona.ligar(document);
     partes.push(c.usuariosAtivos + '/' + c.maxUsuarios + ' usuários');
     partes.push('cliente desde ' + data(c.criadoEm));
     partes.push(c.ultimoPedidoEm ? 'último pedido ' + data(c.ultimoPedidoEm) : 'nenhum pedido ainda');
-    if (c.motivo) partes.push('motivo: ' + c.motivo);
+    if (c.motivo) partes.push('motivo: ' + esc(c.motivo));
     return partes.join(' · ');
   }
   function botao(acao, id, texto, cor) {
@@ -802,7 +827,17 @@ Sanfona.ligar(document);
 
   async function executarAcao(btn) {
     const id = btn.dataset.loja, acao = btn.dataset.acao;
-    const nome = '#' + id;
+    // O NOME DA LOJA, e nao "#18" (26/10/2026).
+    //
+    // Todos os confirm() daqui diziam so o numero. Suspender tira a loja do ar e cancela a
+    // assinatura no Asaas; arquivar a esconde. A tela lista as lojas lado a lado, e a diferenca
+    // entre clicar na "Zira Centro" e na "Zira Zona Norte" e uma linha de distancia no mouse.
+    //
+    // O proprio servidor ja trata isso como risco: o `limpar-dados-de-teste` EXIGE o nome digitado,
+    // com essa justificativa escrita. E o confirm da EMPRESA, 130 linhas abaixo, ja lista nome por
+    // nome. Faltava aqui.
+    const cliente = ultimaLista.find(c => String(c.id) === String(id));
+    const nome = cliente && cliente.nome ? cliente.nome + ' (#' + id + ')' : '#' + id;
     let url, body = null, aviso;
     if (acao === 'renomear') {
       // O nome da loja e o que o cliente final le no cardapio e no app; o white-label so muda o painel.
@@ -821,14 +856,19 @@ Sanfona.ligar(document);
       const valor = prompt('Quanto você recebeu da loja ' + nome + '?\n\n'
         + 'Use isto quando o lojista pagar FORA do Asaas (PIX direto na sua conta, dinheiro).\n'
         + 'A cobrança aberta no Asaas é baixada junto — sem isso o aviso de atraso dele marca a '
-        + 'loja como inadimplente de novo em alguns dias.', '199.00');
+        + 'loja como inadimplente de novo em alguns dias.', precoSugerido(cliente));
       if (valor === null || !String(valor).trim()) return;
       const hoje = new Date();
       const padrao = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0')
         + '-' + String(hoje.getDate()).padStart(2, '0');
       const quando = prompt('Em que dia o dinheiro entrou? (AAAA-MM-DD)', padrao);
       if (quando === null) return;
+      // Esc/Cancelar na TERCEIRA pergunta tambem desiste (26/10/2026). As duas primeiras ja
+      // checavam `null`; esta nao, e o dono que apertasse Esc aqui achando que estava cancelando
+      // REGISTRAVA O DINHEIRO -- com baixa da cobranca no Asaas e linha no faturamento. Trancar a
+      // saida em duas das tres perguntas e pior que nao ter saida, porque ensina que Esc funciona.
       const obs = prompt('Alguma observação? (opcional)\n\nEx.: PIX direto na conta', 'PIX direto na conta');
+      if (obs === null) return;
       btn.disabled = true;
       // Dois registros do mesmo valor no mesmo dia podem ser um clique duplo OU dois pagamentos de
       // verdade (foi o caso da Zira: R$ 199 + R$ 199 em 15/10). O servidor nao tem como saber, e

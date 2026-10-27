@@ -192,7 +192,44 @@ function boraPrintComanda(p){
   // O endereco DESTE pedido ganha do cadastro -- e o mesmo que pedidos.js:118 e entregas.js:42
   // ja fazem. A comanda tinha ficado para tras: o quadro e a tela de Entregas mostravam o
   // endereco novo e o PAPEL saia com o antigo. O motoboy leva o papel na mao.
-  const end=e([p.enderecoEntrega||p.clienteEndereco, p.bairroEntrega||p.clienteBairro].filter(Boolean).join(' - '));
+  //
+  // RETIRADA NAO TEM ENDERECO, e a comanda nao pode imprimir um (26/10/2026).
+  //
+  // O cartao do quadro ja pergunta pelo tipoEntrega (pedidos.js) e o KDS ja estampa
+  // "RETIRADA NO BALCAO" (kds.js). O PAPEL ficou fora das duas correcoes: pedido de retirada
+  // entrava RECEBIDO, a auto-impressao soltava a comanda, e o motoboy recebia nome, telefone e o
+  // ENDERECO DE CASA de alguem que estava no balcao esperando. E dado pessoal do cliente da loja
+  // saindo impresso para quem nao precisa dele, mais uma entrega que ninguem pediu.
+  //
+  // Pedido antigo pode nao ter tipoEntrega; nesse caso cai na observacao, igual ao pedidos.js.
+  const retirada = p.tipoEntrega ? p.tipoEntrega === 'RETIRADA'
+                                 : /RETIRADA NO BALC/i.test(p.observacao||'');
+
+  // A FORMA DE PAGAMENTO NORMALIZADA, e nao o texto cru (26/10/2026).
+  //
+  // O marketplace grava "CREDIT", e era isso que saia impresso para quem entrega decidir se cobra.
+  // Pior: tambem saia a frase inteira "Pago online: Credito Visa R$ 17,00 + Pago online: Credito
+  // Master R$ 10,00" num papel de 280px.
+  //
+  // O `boraFormaPagamento` esta NESTE MESMO ARQUIVO, 130 linhas acima, e o comentario dele diz que
+  // existe porque "o mesmo texto cru vai para o cartao do KDS". Eu consertei o cartao em 25/10 e
+  // esqueci o papel -- as duas telas falando do mesmo dinheiro, uma com as palavras certas e a
+  // outra nao.
+  const formaDoPapel = typeof boraFormaPagamento === 'function'
+    ? boraFormaPagamento(p.formaPagamento)
+    : (p.formaPagamento || '');
+
+  // O codigo ja vem com # (pedidos nascem como "#1001"); somar outro dava "##1001".
+  //
+  // Este comentario saiu do template de propósito. Ele era um comentario de HTML DENTRO do que vai
+  // para a impressora, ou seja: explicacao de desenvolvedor viajando no papel do cliente. E, de
+  // passagem, era uma armadilha — o texto "##1001" no comentario fazia qualquer busca por "##" no
+  // papel achar o proprio aviso em vez do defeito. Caiu exatamente nisso o teste que eu escrevi
+  // para isso, em 26/10/2026.
+  const codigoDoPapel = String(p.codigo || p.id).startsWith('#')
+    ? p.codigo
+    : '#' + (p.codigo || p.id);
+  const end=retirada?'':e([p.enderecoEntrega||p.clienteEndereco, p.bairroEntrega||p.clienteBairro].filter(Boolean).join(' - '));
   const w=window.open('','_print','width=320,height=600');
   if(!w){ boraToast('O navegador bloqueou a janela de impressão. Libere pop-ups para este site e clique em imprimir de novo.','erro'); return; }
   w.document.write(`<html><head><title>Comanda ${e(p.codigo||p.id)}</title><style>
@@ -202,16 +239,16 @@ function boraPrintComanda(p){
     .big{font-size:18px;font-weight:bold}</style></head><body>
     <h2>${loja}</h2>
     <div class="c">COMANDA ${p.canalExterno?('• '+e(p.origem)):''}</div>
-    <!-- o codigo ja vem com # (pedidos nascem como "#1001"); somar outro dava "##1001" -->
-    <hr><div class="big">${e(String(p.codigo||p.id).startsWith('#')?p.codigo:'#'+(p.codigo||p.id))}</div>
+    <hr><div class="big">${e(codigoDoPapel)}</div>
     ${p.idExterno?`<div class="c" style="font-size:11px">${e(p.origem||'Marketplace')}: ${e(p.idExterno)}</div>`:''}
     <div>${new Date(p.criadoEm||Date.now()).toLocaleString('pt-BR')}</div>
+    ${retirada?'<hr><div class="c big">RETIRADA NO BALCAO</div><div class="c">nao e entrega</div>':''}
     <hr><div class="b">${e(p.clienteNome)||'Cliente avulso'}</div>
     ${p.clienteTelefone?`<div>${e(p.clienteTelefone)}</div>`:''}${end?`<div>${end}</div>`:''}
     <hr><table>${itens}</table><hr>
     ${p.observacao?`<div>OBS: ${e(p.observacao)}</div><hr>`:''}
     <table><tr><td class="b">TOTAL</td><td class="r big">${money(p.valorTotal)}</td></tr>
-    <tr><td>Pagamento</td><td class="r">${e(p.formaPagamento)||'-'}</td></tr></table>
+    <tr><td>Pagamento</td><td class="r">${e(formaDoPapel)||'-'}</td></tr></table>
     <hr><div class="c">BoraHapp • ${e(p.origem)}</div>
     </body></html>`);
   w.document.close();w.focus();setTimeout(()=>{w.print();},250);

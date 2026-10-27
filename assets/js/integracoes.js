@@ -107,6 +107,25 @@
     const v = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
     const clientId = v('app-id-' + canal), clientSecret = v('app-sec-' + canal);
     if (!clientId) { alert('Cole o ' + (ROTULOS_APP[canal] || ['Client ID'])[0] + '.'); return; }
+
+    // PERGUNTA ANTES, e diz a consequência — a segunda porta que eu deixei aberta.
+    //
+    // Em 25/10 eu construí a tela de credencial da plataforma em Configurações com confirmação e
+    // com o aviso dos tokens esquecidos. Não verifiquei se o controle já existia em outro lugar.
+    // Existia: aqui, chamando o MESMO `PUT /admin-bora/credenciais/{canal}`, sem perguntar nada —
+    // grava e só depois avisa. O `__removerApp`, logo abaixo, pergunta.
+    //
+    // O efeito é o que a outra tela diz em voz alta: no 99Food o token é pedido com o App ID/Secret
+    // a cada vez, então salvar FAZ O SERVIDOR ESQUECER os tokens de TODAS as lojas daquele canal.
+    // Elas se reconectam no próximo ciclo se a credencial nova estiver certa, e ficam fora se
+    // estiver errada. Um clique derrubava o recebimento de todas as lojas sem app próprio.
+    const recado = canal === 'NOVE_NOVE'
+      ? '\n\nIsto vale para TODAS as lojas que usam o app da plataforma neste canal, e o servidor '
+        + 'vai esquecer os tokens atuais delas. Se a credencial nova estiver certa, elas se '
+        + 'reconectam sozinhas; se estiver errada, param de receber pedido.'
+      : '\n\nIsto vale para TODAS as lojas que usam o app da plataforma neste canal.';
+    if (!confirm('Salvar a credencial do app da plataforma no ' + canal + '?' + recado)) return;
+
     try {
       await Bora.api('/admin-bora/credenciais/' + canal, { method: 'PUT', body: JSON.stringify({ clientId, clientSecret }) });
       await carregarCredApp();

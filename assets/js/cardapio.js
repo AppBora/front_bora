@@ -363,12 +363,26 @@
     return b ? (Number(b.taxa) || 0) : 0;
   }
   /** Mostra bairro e endereco so quando fazem sentido, e refaz a conta na tela. */
-  /** Quanto o cupom aplicado abate do carrinho AGORA. Zero se nao ha cupom. */
+  /**
+   * Quanto o cupom aplicado abate do carrinho AGORA. Zero se nao ha cupom.
+   *
+   * O TETO É `total − 0,01`, e não `total` (conserto de 26/10/2026). O servidor recusa com 400
+   * "O cupom não pode zerar o pedido" (`PublicController.java:583-585`), e a tela aceitava: cupom de
+   * R$ 10 num carrinho de R$ 10 mostrava **Total R$ 0,00** e MANDAVA o pedido. O cliente levava um
+   * erro no fim e não tinha como usar o cupom naquele carrinho.
+   *
+   * O cashback, logo abaixo, já respeitava esse centavo. O cupom não — e são a mesma regra do mesmo
+   * servidor.
+   */
   function descontoDoCupom() {
     if (!cupomAplicado) return 0;
+    const total = totalCarrinho();
+    if (total <= 0) return 0;
     const v = Number(cupomAplicado.valor) || 0;
-    const bruto = cupomAplicado.tipo === 'VALOR' ? v : totalCarrinho() * (v / 100);
-    return Math.min(bruto, totalCarrinho());
+    const bruto = cupomAplicado.tipo === 'VALOR' ? v : total * (v / 100);
+    const teto = total - 0.01;
+    if (teto <= 0) return 0;
+    return Math.round(Math.min(bruto, teto) * 100) / 100;
   }
 
   /**
@@ -483,7 +497,21 @@
         tipoEntrega: ehRetirada() ? 'RETIRADA' : 'ENTREGA',
         bairro: ehRetirada() ? '' : $('ckBairro').value,
         observacao: $('ckObs').value.trim(),
-        cupom: cupomOk ? $('ckCupom').value.trim() : '',
+        // O CUPOM QUE FOI APLICADO, e não o texto que está no campo agora.
+        //
+        // O DEFEITO (achado pelo QA em 26/10/2026): era `$('ckCupom').value.trim()`. O `cupomOk` só
+        // é refeito no clique em "Aplicar", então o cliente podia aplicar o cupom, depois APAGAR ou
+        // EDITAR o campo sem clicar de novo — e a tela continuava prometendo o total com desconto
+        // enquanto o corpo saía com outro cupom, ou com nenhum.
+        //
+        // Medido: cupom de R$ 4 num carrinho de R$ 10 → a tela mostra R$ 6,00; o cliente apaga o
+        // campo; o corpo sai com `cupom: ""`; o servidor cria o pedido por **R$ 10,00** e o cliente
+        // só descobre depois, com o pedido gravado e o estoque baixado. A variante inversa (editar
+        // para um código inválido) derruba o pedido com 400 enquanto a tela diz "✅ Cupom aplicado".
+        //
+        // É preço na tela diferente do preço cobrado — o pior defeito possível nesta tela. O
+        // `cupomAplicado.codigo` já era guardado e nunca usado no envio.
+        cupom: cupomAplicado ? cupomAplicado.codigo : '',
         usarCashback: !!($('ckUsarCashback') && $('ckUsarCashback').checked && saldoCashback > 0),
         formaPagamento: forma === 'PIX' ? 'PIX' : formaNaEntrega(),
         cpf: $('ckCpf').value.trim()
@@ -567,7 +595,50 @@
       const el = document.getElementById('carrinhoLista');
       if (el.hidden) abrirCarrinho(); else fecharCarrinho();
     });
-    $('ckFechar').addEventListener('click', () => { clearInterval(pollTimer); $('checkout').hidden = true; });
+    /**
+     * Fecha o checkout — de QUALQUER uma das três telas dele.
+     *
+     * O DEFEITO (achado pelo QA em 26/10/2026): o único controle que fazia isso era o "Voltar", e
+     * ele mora dentro do `#ckForm`, que o `confirmarPedido` esconde. O `#checkout` é
+     * `position:fixed;inset:0`, então continuava cobrindo a tela toda: quem abria o PIX e desistia
+     * só saía recarregando a página.
+     *
+     * E o `pollTimer` — o `setInterval` de 5 s que pergunta ao servidor se o PIX foi pago — era
+     * limpo só por aquele botão. Preso na tela, ele ficava batendo no servidor **para sempre**, no
+     * celular do cliente, enquanto o pedido seguia `aguardandoPagamento` no painel.
+     */
+    const fecharCheckout = () => { clearInterval(pollTimer); $('checkout').hidden = true; };
+
+    $('ckFechar').addEventListener('click', fecharCheckout);
+
+    // Fechar a tela do PIX NÃO cancela o pedido: ele existe e está esperando o pagamento. O cliente
+    // precisa saber disso antes de sair, senão some da tela achando que desfez o pedido.
+    if ($('pxFechar')) {
+      $('pxFechar').addEventListener('click', () => {
+        if (!confirm('Fechar esta tela?\n\nSeu pedido JÁ FOI FEITO e está esperando o pagamento do '
+          + 'PIX. Fechar aqui não cancela — você pode pagar pelo app do banco com o código que '
+          + 'copiou. Se não pagar, o pedido é cancelado sozinho em 30 minutos.')) return;
+        fecharCheckout();
+      });
+    }
+
+    // Na tela de sucesso não há o que confirmar: o pedido está feito e o cliente pode querer pedir
+    // mais. Antes a única porta era o link "Acompanhar meu pedido", que leva embora do cardápio.
+    if ($('okVoltar')) $('okVoltar').addEventListener('click', fecharCheckout);
+
+    // Duas saídas que todo mundo tenta antes de procurar botão: a tecla Esc e o clique no fundo
+    // escuro. Na tela do PIX nenhuma das duas vale, de propósito — sair sem ler o aviso acima faria
+    // o cliente achar que cancelou o pedido.
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || $('checkout').hidden) return;
+      if (!$('ckPix').hidden) return;
+      fecharCheckout();
+    });
+    $('checkout').addEventListener('click', (e) => {
+      if (e.target !== $('checkout')) return;      // clique DENTRO da caixa branca não fecha
+      if (!$('ckPix').hidden) return;
+      fecharCheckout();
+    });
     $('ckEnviar').addEventListener('click', confirmarPedido);
     $('ckAplicarCupom').addEventListener('click', async () => {
       const cod = $('ckCupom').value.trim(), msg = $('ckCupomMsg');
@@ -584,8 +655,26 @@
         const d = c.desconto != null ? money(Number(c.desconto)) : (c.tipo === 'VALOR' ? money(c.valor) : Number(c.valor) + '%');
         msg.textContent = '✅ Cupom aplicado: ' + d + ' de desconto'; msg.style.color = '#15803d';
         atualizarEntrega();
-      } catch (e) { cupomAplicado = null; atualizarEntrega();
+      } catch (e) { cupomAplicado = null; cupomOk = false; atualizarEntrega();
         msg.textContent = '❌ ' + (e.message || 'Cupom inválido'); msg.style.color = '#dc2626'; }
+    });
+
+    // MEXER NO CAMPO DESFAZ O CUPOM APLICADO, na hora.
+    //
+    // Sem isto, a tela continuava mostrando "✅ Cupom aplicado" e o total com desconto depois de o
+    // cliente apagar ou editar o código — e o desconto só existia na tela. Agora o estado da tela e
+    // o que vai ao servidor voltam a ser a mesma coisa: mexeu, precisa aplicar de novo.
+    $('ckCupom').addEventListener('input', () => {
+      const digitado = $('ckCupom').value.trim().toUpperCase();
+      if (cupomAplicado && digitado === String(cupomAplicado.codigo || '').toUpperCase()) return;
+      if (!cupomAplicado && !cupomOk) return;        // nada aplicado: não há o que desfazer
+      cupomAplicado = null;
+      cupomOk = false;
+      $('ckCupomMsg').textContent = digitado
+        ? 'Clique em Aplicar para valer este cupom.'
+        : '';
+      $('ckCupomMsg').style.color = '#b45309';
+      atualizarEntrega();                            // o total volta a ser o de verdade
     });
     document.querySelectorAll('input[name="ckForma"]').forEach(r => r.addEventListener('change', atualizarCpf));
     document.querySelectorAll('input[name="ckTipo"]').forEach(r => r.addEventListener('change', atualizarEntrega));
