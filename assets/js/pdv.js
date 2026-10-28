@@ -5,6 +5,8 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   let produtos = [], clientes = [], cart = [], cat = 'TODAS', termo = '', pagamento = 'Dinheiro';
+  // A ordem das secoes escolhida pela loja (nome -> posicao). Vazio = ordem alfabetica, como antes.
+  let posicaoDaSecao = {};
   const complementosPorProduto = {}; // cache por produto, para o toque no tile abrir na hora
 
   const $ = id => document.getElementById(id);
@@ -37,16 +39,30 @@
     return Math.round(Math.min(saldo, teto) * 100) / 100;
   }
 
+  /** O mesmo rotulo que o servidor usa: categoria vazia e "Outros" -- ver CategoriaOrdemService. */
+  function rotuloDaSecao(c) { return String(c == null ? '' : c).trim() || 'Outros'; }
+
   function cats() {
-    const set = new Set(produtos.map(p => (p.categoria || 'Outros')));
-    const lista = ['TODAS', ...[...set].sort()];
+    const set = new Set(produtos.map(p => rotuloDaSecao(p.categoria)));
+    // A MESMA ordem do cardapio do cliente: quem tem posicao gravada vem primeiro, na posicao
+    // escolhida; quem nao tem sai no fim, em A-Z. O `localeCompare('pt-BR')` existe porque
+    // `.sort()` seco compara por codigo de caractere e joga "Agua" (com acento) depois do Z --
+    // o balconista procuraria a secao onde ela nao esta.
+    const ordenadas = [...set].sort((a, b) => {
+      const pa = posicaoDaSecao[a], pb = posicaoDaSecao[b];
+      if (pa != null && pb != null) return pa - pb;
+      if (pa != null) return -1;
+      if (pb != null) return 1;
+      return a.localeCompare(b, 'pt-BR');
+    });
+    const lista = ['TODAS', ...ordenadas];
     $('cats').innerHTML = lista.map(c =>
       `<button class="chip ${c === cat ? 'active' : ''}" data-c="${esc(c)}">${c === 'TODAS' ? 'Todos' : esc(c)}</button>`).join('');
   }
 
   function grid() {
     const vis = produtos.filter(p => p.ativo !== false)
-      .filter(p => cat === 'TODAS' || (p.categoria || 'Outros') === cat)
+      .filter(p => cat === 'TODAS' || rotuloDaSecao(p.categoria) === cat)
       .filter(p => !termo || (p.nome || '').toLowerCase().includes(termo));
     // No balcão se vende pelo olho: a foto acha o produto mais rápido que ler o nome.
     // Quem não tem foto mostra a inicial, para os cartões não ficarem de alturas diferentes.
@@ -226,9 +242,20 @@
     $('usarCashback').addEventListener('change', renderCart);
     try {
       // allSettled: forma de pagamento com problema não pode fechar o caixa da loja
-      const [rp, rc, rf] = await Promise.allSettled([Bora.produtos(), Bora.clientes(), Bora.formasPagamento()]);
+      // `Bora.categorias &&` nao e paranoia: as telas carregam o api.js com `?v=`, e um navegador
+      // com o api.js VELHO em cache e o pdv.js novo nao teria essa funcao. Chamar o que nao existe
+      // estoura ANTES do allSettled, cai no catch de baixo e a Frente de Caixa inteira some --
+      // trocar a ordem dos chips por "nao da para vender" seria um negocio pessimo.
+      const [rp, rc, rf, ro] = await Promise.allSettled([
+        Bora.produtos(), Bora.clientes(), Bora.formasPagamento(),
+        Bora.categorias ? Bora.categorias() : Promise.resolve([])]);
       if (rp.status === 'rejected') throw new Error(rp.reason.message);
       produtos = rp.value || [];
+      // allSettled tambem aqui: a ordem das secoes e conforto, nao pode impedir de vender. Se a
+      // chamada falhar, os chips voltam para o alfabeto e o balcao continua funcionando.
+      if (ro.status === 'fulfilled') {
+        (ro.value || []).forEach(c => { if (c && c.gravada) posicaoDaSecao[c.nome] = c.posicao; });
+      }
       clientes = rc.status === 'fulfilled' ? (rc.value || []) : [];
       const ativas = (rf.status === 'fulfilled' ? (rf.value || []) : []).filter(f => f.ativo !== false);
       if (ativas.length) {

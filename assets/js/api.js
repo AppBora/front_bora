@@ -80,6 +80,15 @@ const Bora = {
   atualizarEntregador(id, b) { return this.api('/api/entregadores/' + id, { method: 'PUT', body: JSON.stringify(b) }); },
   excluirEntregador(id) { return this.api('/api/entregadores/' + id, { method: 'DELETE' }); },
   produtos() { return this.api('/api/produtos'); },
+
+  // A ordem em que as secoes do cardapio aparecem. O GET e aberto a quem opera a Frente de Caixa
+  // (o balconista): sem ele, os chips do balcao voltariam para o alfabeto e ficariam diferentes do
+  // cardapio que o cliente ve. O PUT manda a lista INTEIRA, porque mover uma secao muda a posicao
+  // de todas as outras -- ver CategoriaOrdemService.salvar.
+  categorias() { return this.api('/api/categorias'); },
+  salvarOrdemDasCategorias(nomes) {
+    return this.api('/api/categorias/ordem', { method: 'PUT', body: JSON.stringify(nomes) });
+  },
   // atualizarProduto FOI REMOVIDO de proposito. Ele mandava o cadastro inteiro num PUT, e quem
   // chamava sem ter todos os campos apagava o que nao conhecia -- foi assim que as telas de
   // Estoque e Contagem passariam a apagar o codigo do marketplace. Quem edita cadastro e so o
