@@ -1,23 +1,238 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 56" width="200" height="56" role="img" aria-label="Bora">
-  <title>Bora</title>
-
-  <!-- Simbolo: seta de entrega em movimento -->
-  <!-- Fundo arredondado roxo -->
-  <rect x="0" y="4" width="48" height="48" rx="12" ry="12" fill="#7c3aed"/>
-
-  <!-- Sacola de entrega estilizada em branco -->
-  <!-- Corpo da sacola -->
-  <rect x="11" y="22" width="26" height="20" rx="3" ry="3" fill="none" stroke="#ffffff" stroke-width="2.2"/>
-  <!-- Alça da sacola -->
-  <path d="M16 22 Q16 15 24 15 Q32 15 32 22" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
-  <!-- Seta de movimento saindo para direita (velocidade) -->
-  <path d="M38 28 L46 28" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M43 24 L48 28 L43 32" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Wordmark "Bora" -->
-  <!-- Letra B -->
-  <text x="62" y="38" font-family="'Segoe UI', 'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="800" letter-spacing="-0.5" fill="#7c3aed">Bora</text>
-
-  <!-- Ponto verde de status ao lado — indica "em tempo real" -->
-  <circle cx="192" cy="14" r="5" fill="#22c55e"/>
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="263.4048pt" height="111.9744pt" viewBox="0 0 263.4048 111.9744" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-28T15:10:07.254272</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 111.9744 
+L 263.4048 111.9744 
+L 263.4048 0 
+L 0 0 
+L 0 111.9744 
+z
+" style="fill: none; opacity: 0"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 25.92 90.5472 
+L 62.5536 90.5472 
+C 71.524719 90.5472 78.7968 83.275119 78.7968 74.304 
+L 78.7968 37.6704 
+C 78.7968 28.699281 71.524719 21.4272 62.5536 21.4272 
+L 25.92 21.4272 
+C 16.948881 21.4272 9.6768 28.699281 9.6768 37.6704 
+L 9.6768 74.304 
+C 9.6768 83.275119 16.948881 90.5472 25.92 90.5472 
+z
+" clip-path="url(#pa930fc1e51)" style="fill: #d9502b"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 35.021124 49.563437 
+C 35.613775 41.088133 44.232728 41.690829 43.640077 50.166133 
+" clip-path="url(#pa930fc1e51)" style="fill: none; stroke: #fbf7f3; stroke-width: 2.736; stroke-linecap: round"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 46.225764 50.346942 
+C 46.818415 41.871638 55.437368 42.474334 54.844717 50.949638 
+" clip-path="url(#pa930fc1e51)" style="fill: none; stroke: #fbf7f3; stroke-width: 2.736; stroke-linecap: round"/>
+   </g>
+   <g id="text_1">
+    <!-- Bora -->
+    <g style="fill: #1b1512" transform="translate(96.768 64.26845) scale(0.32 -0.32)">
+     <defs>
+      <path id="SegoeUIBlack-25" d="M 4269 1375 
+Q 4269 716 3806 358 
+Q 3344 0 2484 0 
+L 441 0 
+L 441 4481 
+L 2344 4481 
+Q 4128 4481 4128 3397 
+Q 4128 3163 4015 2967 
+Q 3903 2772 3673 2625 
+Q 3444 2478 3169 2425 
+L 3169 2413 
+Q 3488 2375 3741 2223 
+Q 3994 2072 4131 1845 
+Q 4269 1619 4269 1375 
+z
+M 2694 3163 
+Q 2694 3578 2041 3578 
+L 1791 3578 
+L 1791 2731 
+L 2181 2731 
+Q 2406 2731 2550 2851 
+Q 2694 2972 2694 3163 
+z
+M 2834 1381 
+Q 2834 1575 2693 1700 
+Q 2553 1825 2322 1825 
+L 1791 1825 
+L 1791 909 
+L 2241 909 
+Q 2516 909 2675 1036 
+Q 2834 1163 2834 1381 
+z
+" transform="scale(0.015625)"/>
+      <path id="SegoeUIBlack-52" d="M 3878 1656 
+Q 3878 847 3389 384 
+Q 2900 -78 2022 -78 
+Q 1150 -78 664 373 
+Q 178 825 178 1619 
+Q 178 2128 406 2503 
+Q 634 2878 1056 3078 
+Q 1478 3278 2028 3278 
+Q 2597 3278 3014 3068 
+Q 3431 2859 3654 2487 
+Q 3878 2116 3878 1656 
+z
+M 2528 1650 
+Q 2528 2303 2028 2303 
+Q 1528 2303 1528 1619 
+Q 1528 897 2034 897 
+Q 2528 897 2528 1650 
+z
+" transform="scale(0.015625)"/>
+      <path id="SegoeUIBlack-55" d="M 2725 2059 
+Q 2650 2094 2522 2122 
+Q 2394 2150 2309 2150 
+Q 1650 2150 1650 1388 
+L 1650 0 
+L 319 0 
+L 319 3200 
+L 1650 3200 
+L 1650 2638 
+L 1663 2638 
+Q 1784 2941 2009 3098 
+Q 2234 3256 2534 3256 
+Q 2644 3256 2725 3219 
+L 2725 2059 
+z
+" transform="scale(0.015625)"/>
+      <path id="SegoeUIBlack-44" d="M 2094 0 
+L 2094 488 
+L 2081 488 
+Q 1763 -78 1106 -78 
+Q 653 -78 397 190 
+Q 141 459 141 909 
+Q 141 1853 1300 2003 
+L 2094 2106 
+Q 2094 2263 1953 2363 
+Q 1813 2463 1575 2463 
+Q 1038 2463 441 2156 
+L 441 3022 
+Q 700 3134 1090 3206 
+Q 1481 3278 1759 3278 
+Q 2575 3278 2942 2929 
+Q 3309 2581 3309 1766 
+L 3309 0 
+L 2094 0 
+z
+M 1306 1088 
+Q 1306 956 1389 872 
+Q 1472 788 1625 788 
+Q 1834 788 1964 944 
+Q 2094 1100 2094 1344 
+L 2094 1466 
+L 1644 1403 
+Q 1306 1347 1306 1088 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#SegoeUIBlack-25"/>
+     <use xlink:href="#SegoeUIBlack-52" transform="translate(69.09375 0)"/>
+     <use xlink:href="#SegoeUIBlack-55" transform="translate(132.46875 0)"/>
+     <use xlink:href="#SegoeUIBlack-44" transform="translate(176.078125 0)"/>
+    </g>
+   </g>
+   <g id="text_2">
+    <!-- Happ -->
+    <g style="fill: #d9502b" transform="translate(170.208 63.955638) scale(0.32 -0.32)">
+     <defs>
+      <path id="SegoeUIBlack-2b" d="M 3341 0 
+L 3341 1672 
+L 1791 1672 
+L 1791 0 
+L 441 0 
+L 441 4481 
+L 1791 4481 
+L 1791 2822 
+L 3341 2822 
+L 3341 4481 
+L 4691 4481 
+L 4691 0 
+L 3341 0 
+z
+" transform="scale(0.015625)"/>
+      <path id="SegoeUIBlack-53" d="M 3928 1697 
+Q 3928 1172 3750 769 
+Q 3572 366 3247 144 
+Q 2922 -78 2516 -78 
+Q 1953 -78 1663 331 
+L 1650 331 
+L 1650 -1472 
+L 319 -1472 
+L 319 3200 
+L 1650 3200 
+L 1650 2766 
+L 1663 2766 
+Q 1822 3006 2075 3142 
+Q 2328 3278 2650 3278 
+Q 3269 3278 3598 2865 
+Q 3928 2453 3928 1697 
+z
+M 2578 1656 
+Q 2578 1959 2461 2131 
+Q 2344 2303 2100 2303 
+Q 1888 2303 1756 2122 
+Q 1625 1941 1625 1625 
+L 1625 1563 
+Q 1625 1259 1737 1078 
+Q 1850 897 2075 897 
+Q 2316 897 2447 1095 
+Q 2578 1294 2578 1656 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#SegoeUIBlack-2b"/>
+     <use xlink:href="#SegoeUIBlack-44" transform="translate(80.21875 0)"/>
+     <use xlink:href="#SegoeUIBlack-53" transform="translate(136.328125 0)"/>
+     <use xlink:href="#SegoeUIBlack-53" transform="translate(200.53125 0)"/>
+    </g>
+   </g>
+   <g id="patch_5">
+    <path d="M 30.702432 70.223152 
+Q 30.921673 73.094795 33.794658 73.295694 
+L 52.469057 74.601535 
+Q 55.342041 74.802434 55.958804 71.98925 
+L 60.024148 53.446373 
+Q 60.64091 50.633189 57.767926 50.432291 
+L 31.911066 48.624203 
+Q 29.038081 48.423304 29.257322 51.294947 
+z
+" clip-path="url(#pa930fc1e51)" style="fill: #fbf7f3"/>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pa930fc1e51">
+   <rect x="0" y="0" width="263.4048" height="111.9744"/>
+  </clipPath>
+ </defs>
 </svg>
