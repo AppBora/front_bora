@@ -53,14 +53,20 @@
     ol.innerHTML = lista.map((c, i) => {
       const primeiro = i === 0, ultimo = i === lista.length - 1;
       const n = Number(c.produtos) || 0;
+      // O `.btn` desta folha de estilo NAO escurece botao desabilitado: medido no ar, a seta de
+      // cima da primeira linha saia com o mesmo roxo e o mesmo `cursor: pointer` da seta ativa.
+      // Botao que parece clicavel e nao faz nada ensina o lojista que a tela esta quebrada.
+      const apagado = 'opacity:.35;cursor:not-allowed';
       return `<li style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--linha,#e2e8f0);border-radius:10px;margin-bottom:6px">
         <span style="min-width:22px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums">${i + 1}</span>
         <span style="flex:1"><b>${esc(c.nome)}</b>
           <small style="color:#94a3b8"> · ${n} produto${n === 1 ? '' : 's'}</small></span>
         <button class="btn" type="button" data-sobe="${i}" ${primeiro ? 'disabled' : ''}
-          aria-label="Subir ${esc(c.nome)}" title="Subir">↑</button>
+          style="${primeiro ? apagado : ''}"
+          aria-label="Subir ${esc(c.nome)}" title="${primeiro ? 'Já é a primeira' : 'Subir'}">↑</button>
         <button class="btn" type="button" data-desce="${i}" ${ultimo ? 'disabled' : ''}
-          aria-label="Descer ${esc(c.nome)}" title="Descer">↓</button>
+          style="${ultimo ? apagado : ''}"
+          aria-label="Descer ${esc(c.nome)}" title="${ultimo ? 'Já é a última' : 'Descer'}">↓</button>
       </li>`;
     }).join('');
   }

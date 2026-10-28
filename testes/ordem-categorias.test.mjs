@@ -135,6 +135,22 @@ test('subir troca com a de cima', async () => {
     ['Especiais para Compartilhar', 'Bebidas', 'Açaí Puro', 'Mundo dos Sorvetes']);
 });
 
+test('a seta que nao faz nada PARECE que nao faz nada', async () => {
+  const t = await abrir();
+  const linhas = t.get('catOrdem').innerHTML.split('</li>');
+
+  // Medido no ar em 28/10: o `.btn` desta folha de estilo nao escurece botao desabilitado -- a
+  // seta de cima da primeira linha saia com o mesmo roxo e o mesmo cursor da seta ativa.
+  assert.match(linhas[0], /data-sobe="0"[^>]*disabled[^>]*style="opacity:\.35;cursor:not-allowed"/,
+    'a seta de subir da PRIMEIRA linha esta desabilitada e parece clicavel');
+  assert.match(linhas[0], /data-sobe="0"[^>]*title="Já é a primeira"/);
+  assert.doesNotMatch(linhas[0], /data-desce="0"[^>]*opacity/,
+    'apagou a seta de descer da primeira linha, que funciona');
+
+  const ultima = linhas[linhas.length - 2];
+  assert.match(ultima, /data-desce="3"[^>]*disabled[^>]*style="opacity:\.35;cursor:not-allowed"/);
+});
+
 test('o primeiro nao sobe e o ultimo nao desce', async () => {
   const t = await abrir();
   await subirLinha(t, 0);
