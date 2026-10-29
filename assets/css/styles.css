@@ -22,6 +22,25 @@
 .btn{transition:filter .12s, transform .08s}
 .btn:hover{filter:brightness(1.07)}
 .btn:active{transform:scale(.98)}
+
+/* ESTADO DESABILITADO. A folha INTEIRA nao tinha nenhum: a unica regra `:disabled` era a do
+   `.btn-finish`, logo abaixo. Botao marcado como `disabled` pelo JavaScript continuava com a cor
+   cheia, com a mao de clicar no cursor e com o `.btn:hover{filter:brightness(1.07)}` ainda
+   casando -- nada na tela mudava. O lojista clicava, nao acontecia nada, clicava de novo, e
+   concluia que a tela travou.
+
+   POR QUE `opacity` E NAO `background`: o botao mais perigoso disso e o "Apagar a movimentacao"
+   de Relatorios, que nasce `disabled` E tem `style="background:#dc2626"` INLINE. Estilo inline
+   ganha de regra de folha, entao mexer em `background` aqui nao teria efeito nenhum justamente
+   no caso que mais importa. `opacity`, `cursor` e `filter` o inline nao define.
+
+   ESPECIFICIDADE, de proposito: `button:disabled` vale (0,1,1) e perde para `.btn-finish:disabled`
+   (0,2,0), que ja existe e tem opacidade propria -- aquela regra continua mandando no botao dela.
+   Ja `button:disabled:hover` vale (0,2,1) e ganha de `.btn:hover` (0,2,0), que e o que desliga o
+   brilho. */
+button:disabled{opacity:.45;cursor:not-allowed}
+button:disabled:hover{filter:none}
+button:disabled:active{transform:none}
 .table tbody tr{transition:background .1s}
 .table tbody tr:hover{background:#f8fafc}
 .table th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
