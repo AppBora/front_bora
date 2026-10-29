@@ -48,7 +48,7 @@
           <div class="share-track"><div class="share-fill" style="width:${share}%;background:${o.cor}"></div></div>
           <b style="width:42px;text-align:right">${share}%</b></div></td>
       </tr>`;
-    }).join('') : '<tr><td colspan="5" style="color:#94a3b8">Sem vendas no período.</td></tr>';
+    }).join('') : '<tr><td colspan="5" style="color:#6b7280">Sem vendas no período.</td></tr>';
   }
 
   // O quadro passou a ser do dia; esta tela soma período, então pede o intervalo explicitamente.

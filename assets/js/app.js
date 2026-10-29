@@ -119,36 +119,36 @@ const BORA_NAV = [
   // --- o dia a dia: a API nao bloqueia nada disto ---
   { href:'dashboard.html',     label:'Dashboard',       ic:'📊' },
   { href:'pedidos.html',       label:'Pedidos',         ic:'🧾' },   // so EXCLUIR pedido e GERENTE+ (RN06)
-  { href:'pdv.html',           label:'Frente de Caixa', ic:'💳' },   // ProdutoService.listar() e aberto
-  { href:'caixa.html',         label:'Fechar Caixa',    ic:'💰' },
-  { href:'kds.html',           label:'KDS Cozinha',     ic:'🍳' },
+  { href:'pdv.html',           label:'Frente de Caixa', curto:'Caixa PDV', ic:'💳' },   // ProdutoService.listar() e aberto
+  { href:'caixa.html',         label:'Fechar Caixa',    curto:'Fechamento',    ic:'💰' },
+  { href:'kds.html',           label:'KDS Cozinha',     curto:'Cozinha',     ic:'🍳' },
   { href:'canais.html',        label:'Canais',          ic:'📡' },
   { href:'entregas.html',      label:'Entregas',        ic:'🛵' },   // EntregadorService.listar() e aberto
-  { href:'cardapio-qr.html',   label:'Cardápio QR',     ic:'📱' },
+  { href:'cardapio-qr.html',   label:'Cardápio QR',     curto:'QR',     ic:'📱' },
   { href:'ajuda.html',         label:'Ajuda',           ic:'🆘' },
 
   // --- cadastro e numero da loja: GERENTE para cima ---
-  { href:'respostas-whatsapp.html', label:'Respostas WhatsApp', ic:'💬', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
-  { href:'entregadores.html',  label:'Entregadores',    ic:'🏍️', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
-  { href:'acerto-entregadores.html', label:'Acerto Motoboy', ic:'💵', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'respostas-whatsapp.html', label:'Respostas WhatsApp', curto:'Respostas', ic:'💬', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'entregadores.html',  label:'Entregadores',    curto:'Motoboys',    ic:'🏍️', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'acerto-entregadores.html', label:'Acerto Motoboy', curto:'Acerto', ic:'💵', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'crm.html',           label:'CRM',             ic:'⭐', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'clientes.html',      label:'Clientes',        ic:'👥', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'produtos.html',      label:'Produtos',        ic:'📦', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'estoque.html',       label:'Estoque',         ic:'🗃️', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   { href:'insumos.html',       label:'Insumos',         ic:'🧂', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
-  { href:'promocoes.html',     label:'Promoções',       ic:'⚡', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
-  { href:'ajustes.html',       label:'Ajustes Operação',ic:'🛠️', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'promocoes.html',     label:'Promoções',       curto:'Promoção',       ic:'⚡', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'ajustes.html',       label:'Ajustes Operação',curto:'Ajustes',ic:'🛠️', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
   // Faturamento, CMV, margem e lucro sao numeros de dono, nao de balcao.
   { href:'relatorios.html',    label:'Relatórios',      ic:'📈', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
-  { href:'desempenho.html',    label:'Desempenho',      ic:'💹', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
-  { href:'rede.html',          label:'Rede & Análise IA', ic:'🏪', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
-  { href:'integracoes.html',   label:'Integrações',     ic:'🔌', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'desempenho.html',    label:'Desempenho',      curto:'Lucro',      ic:'💹', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'rede.html',          label:'Rede & Análise IA', curto:'Rede', ic:'🏪', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
+  { href:'integracoes.html',   label:'Integrações',     curto:'Canais +',     ic:'🔌', roles:['ADMINISTRADOR_LOJA','GERENTE'] },
 
   // --- so o dono da loja: quem manda no acesso e no dinheiro ---
   // Configuracoes mexe no nome, nas cores, no cashback e no custo fixo da loja:
   // ConfiguracaoLojaService.atualizar exige ADMINISTRADOR_LOJA. Quem nao e administrador troca a
   // PROPRIA senha na tela de login, em "Trocar minha senha" -- nao precisa deste menu para isso.
-  { href:'configuracoes.html', label:'Configurações',   ic:'⚙️', roles:['ADMINISTRADOR_LOJA'] },
+  { href:'configuracoes.html', label:'Configurações',   curto:'Config.',   ic:'⚙️', roles:['ADMINISTRADOR_LOJA'] },
   { href:'usuarios.html',      label:'Usuários',        ic:'🔑', roles:['ADMINISTRADOR_LOJA'] },
   { href:'planos.html',        label:'Planos',          ic:'🏷️', roles:['ADMINISTRADOR_LOJA'] }
 ];
@@ -158,8 +158,13 @@ function renderNav(){
   const atual = (location.pathname.split('/').pop() || 'dashboard.html').toLowerCase();
   const papel = (typeof Bora!=='undefined' && Bora.user() && Bora.user().papel) || '';
   const pode = i => !i.roles || papel==='ADMINISTRADOR_BORA' || i.roles.includes(papel);
+  // `title` e `aria-label` com o nome INTEIRO: no celular o que aparece e o `curto`, e sem isto o
+  // leitor de tela anunciava so o emoji. O rotulo curto vai no HTML sempre; quem decide qual dos
+  // dois aparece e a folha de estilo, pela largura da tela.
   nav.innerHTML = BORA_NAV.filter(pode).map(i =>
-    `<a href="${i.href}" class="${i.href===atual?'active':''}"><span class="navic">${i.ic}</span><span class="navtx">${i.label}</span></a>`
+    `<a href="${i.href}" class="${i.href===atual?'active':''}" title="${i.label}" aria-label="${i.label}">`
+    + `<span class="navic">${i.ic}</span><span class="navtx">${i.label}</span>`
+    + `<span class="navtx-curto">${i.curto || i.label}</span></a>`
   ).join('');
 }
 

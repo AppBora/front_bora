@@ -13,7 +13,7 @@
     return `<b style="color:${cor}">${m.toFixed(0)}%</b>`;
   }
   function estoqueCel(p) {
-    if (p.estoque == null) return '<span style="color:#94a3b8">livre</span>';
+    if (p.estoque == null) return '<span style="color:#6b7280">livre</span>';
     const baixo = p.estoqueMinimo != null && p.estoque <= p.estoqueMinimo;
     const zero = p.estoque <= 0;
     const cor = zero ? '#dc2626' : baixo ? '#f59e0b' : '#0f172a';
@@ -26,14 +26,36 @@
     try {
       produtos = await Bora.produtos();
       tb.innerHTML = produtos.map(p =>
-        `<tr><td>${p.imagemUrl ? `<img src="${p.imagemUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">` : ''}<b>${esc(p.nome) || '—'}</b>${p.ativo === false ? ' <span style="background:#f1f5f9;color:#64748b;border-radius:4px;padding:1px 5px;font-size:11px;font-weight:700">fora do cardápio</span>' : ''}<br><small style="color:#94a3b8">${esc(p.categoria || '')}</small></td>` +
+        `<tr><td>${p.imagemUrl ? `<img src="${p.imagemUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">` : ''}<b>${esc(p.nome) || '—'}</b>${p.ativo === false ? ' <span style="background:#f1f5f9;color:#64748b;border-radius:4px;padding:1px 5px;font-size:11px;font-weight:700">fora do cardápio</span>' : ''}<br><small style="color:#6b7280">${esc(p.categoria || '')}</small></td>` +
         `<td>${money(p.preco)}</td><td>${margem(p)}</td><td>${estoqueCel(p)}</td>` +
         `<td style="text-align:right"><button onclick="__comp(${p.id})" title="Complementos (tamanho, borda, extras)" style="border:0;background:#ecfdf5;color:#059669;border-radius:8px;padding:5px 9px;cursor:pointer">🧩</button> ` +
         `<button onclick="__ficha(${p.id})" title="Ficha técnica" style="border:0;background:#faf5ff;color:#9333ea;border-radius:8px;padding:5px 9px;cursor:pointer">🧪</button> ` +
         `<button onclick="__edit(${p.id})" style="border:0;background:#f1f5f9;border-radius:8px;padding:5px 9px;cursor:pointer">✏</button> ` +
         `<button onclick="__del(${p.id})" style="border:0;background:#fef2f2;color:#dc2626;border-radius:8px;padding:5px 9px;cursor:pointer">✕</button></td></tr>`
-      ).join('') || '<tr><td colspan="5" style="color:#94a3b8">Nenhum produto ainda.</td></tr>';
+      ).join('') || '<tr><td colspan="5" style="color:#6b7280">Nenhum produto ainda.</td></tr>';
+      sugerirCategorias();
     } catch (e) { tb.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${e.message}</td></tr>`; }
+  }
+
+  /**
+   * A lista de categorias que a loja JA usa, no campo do formulario.
+   *
+   * <p>O campo era texto livre sem nenhuma sugestao, e categoria aqui <b>nao e cadastro</b>: e texto
+   * dentro de cada produto. "Acai" num produto e "Açai" noutro viram DUAS secoes no cardapio do
+   * cliente, e quem esta cadastrando nao tem como ver isso desta tela (pente fino de 29/10/2026).</p>
+   *
+   * <p>E um {@code <datalist>}, nao um {@code <select>}: digitar categoria NOVA tem de continuar
+   * funcionando -- e e o caso de todo primeiro produto de uma loja. A lista sugere, nao obriga.</p>
+   *
+   * <p>A fonte e a mesma do seletor de renomear ({@code renomear-categoria.js}): os produtos que esta
+   * tela acabou de carregar. Sem consulta nova.</p>
+   */
+  function sugerirCategorias() {
+    const dl = $('categoriasUsadas');
+    if (!dl) return;
+    const nomes = [...new Set(produtos.map(p => String(p.categoria == null ? '' : p.categoria).trim())
+      .filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    dl.innerHTML = nomes.map(c => `<option value="${esc(c)}"></option>`).join('');
   }
 
   const num = v => v === '' || v == null ? null : Number(v);
@@ -114,7 +136,26 @@
     // aberta ficam de pe.
     estoqueNaTela = p.estoque ?? null;
     $('btnSalvar').textContent = 'Atualizar produto'; $('cancelar').style.display = 'inline-block'; window.scrollTo(0, 0); };
-  window.__del = async id => { if (!confirm('Excluir produto?')) return; try { await Bora.api('/api/produtos/' + id, { method: 'DELETE' }); lista(); } catch (e) { alert(e.message); } };
+  // A CONFIRMACAO DIZ O NOME E O QUE VAI JUNTO (pente fino de 29/10/2026).
+  //
+  // Era so "Excluir produto?". A exclusao no servidor apaga, na MESMA transacao, os grupos de
+  // complemento, as opcoes de cada grupo e a ficha tecnica inteira do produto -- e nada disso
+  // estava escrito. Quem clica na lixeira da linha errada nao tem como saber o que perdeu, e nao
+  // ha desfazer.
+  window.__del = async id => {
+    const p = produtos.find(x => x.id === id);
+    const nome = p && p.nome ? p.nome : 'este produto';
+    if (!confirm('Excluir "' + nome + '"?\n\n'
+      + 'Vão junto, e sem desfazer:\n'
+      + '• a ficha técnica (os insumos que ele consome)\n'
+      + '• os grupos de complemento e as opções de cada um\n\n'
+      + 'Os pedidos antigos não mudam.')) return;
+    try {
+      await Bora.api('/api/produtos/' + id, { method: 'DELETE' });
+      lista();
+    } catch (e) { alert(e.message); }
+  };
+
 
   // ---- Ficha técnica (composição por insumos) ----
   window.__ficha = async (produtoId) => {
@@ -129,11 +170,11 @@
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:9999;display:grid;place-items:center';
     ov.innerHTML = `<div style="background:#fff;border-radius:16px;padding:22px;max-width:520px;width:92%;max-height:86vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.3)">
       <h3 style="margin:0 0 4px">🧪 Ficha técnica — ${esc(prod ? prod.nome : '')}</h3>
-      <p style="color:#94a3b8;font-size:13px;margin:0 0 14px">Quanto de cada insumo este produto consome por unidade vendida.</p>
+      <p style="color:#6b7280;font-size:13px;margin:0 0 14px">Quanto de cada insumo este produto consome por unidade vendida.</p>
       <table class="table"><thead><tr><th>Insumo</th><th>Qtd por unidade</th><th>Custo</th></tr></thead><tbody>
-        ${insumos.map(i => `<tr><td>${esc(i.nome)} <small style="color:#94a3b8">(${esc(i.unidade)})</small></td>
+        ${insumos.map(i => `<tr><td>${esc(i.nome)} <small style="color:#6b7280">(${esc(i.unidade)})</small></td>
           <td><input id="fi${i.id}" type="number" step="0.0001" min="0" value="${qtdDe(i.id) || ''}" placeholder="0" data-custo="${i.custo}" oninput="__fichaCalc()" style="width:90px;padding:7px;border:1px solid #e5e7eb;border-radius:8px"></td>
-          <td style="color:#94a3b8;font-size:12px">${money(i.custo)}/${esc(i.unidade)}</td></tr>`).join('')}
+          <td style="color:#6b7280;font-size:12px">${money(i.custo)}/${esc(i.unidade)}</td></tr>`).join('')}
       </tbody></table>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
         <span style="font-weight:800">CMV do produto: <span id="fichaCmv" style="color:#059669">R$ 0,00</span></span>
@@ -344,7 +385,7 @@
             + (String(o.p.categoria || '').trim() !== String(o.item.categoria || '').trim()
                ? ' · ' + esc(o.p.categoria || '(sem categoria)') + ' → <b>'
                  + esc(o.item.categoria) + '</b>' : ''))).join('')
-        + s.iguais.map(o => linha('#94a3b8', '= ' + esc(o.p.nome) + ' (sem mudança)')).join('');
+        + s.iguais.map(o => linha('#6b7280', '= ' + esc(o.p.nome) + ' (sem mudança)')).join('');
       msg.textContent = '';
     };
 

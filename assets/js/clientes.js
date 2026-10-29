@@ -54,8 +54,8 @@
         `<button class="btn ghost" style="background:#eef2ff;color:#3730a3;padding:4px 8px;margin-right:4px" onclick="__editar(${c.id})">✎</button>` +
         `<button class="btn ghost" style="background:#e5e7eb;color:#111;padding:4px 8px" onclick="__del(${c.id})">✕</button></td></tr>`
       ).join('') || (carregados.length
-        ? '<tr><td colspan="4" style="color:#94a3b8">Nenhum cliente com esse nome, telefone ou bairro.</td></tr>'
-        : '<tr><td colspan="4" style="color:#94a3b8">Nenhum cliente ainda.</td></tr>');
+        ? '<tr><td colspan="4" style="color:#6b7280">Nenhum cliente com esse nome, telefone ou bairro.</td></tr>'
+        : '<tr><td colspan="4" style="color:#6b7280">Nenhum cliente ainda.</td></tr>');
   }
 
   // Filtra ao digitar, sem ir ao servidor: e so redesenhar o que ja esta em memoria.

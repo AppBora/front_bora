@@ -140,7 +140,7 @@ window.__comp = async (produtoId) => {
         <span style="font-size:12px;color:#64748b;white-space:nowrap">baixa do estoque:</span>
         <select class="cg-iinsumo" style="flex:1;min-width:0;padding:6px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px">${opcoesDeInsumo(i?.insumoId)}</select>
         <input placeholder="qtd" type="number" step="0.0001" min="0" value="${i?.quantidade ?? ''}" class="cg-iqtd" style="width:84px;padding:6px;border:1px solid #e2e8f0;border-radius:6px">
-        <span class="cg-iun" style="font-size:12px;color:#94a3b8;width:34px">${esc(un || '')}</span>
+        <span class="cg-iun" style="font-size:12px;color:#6b7280;width:34px">${esc(un || '')}</span>
       </div></div>`;
   }
 

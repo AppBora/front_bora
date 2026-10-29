@@ -4,14 +4,23 @@
 
   // Colunas no estilo das grandes plataformas (Cozinha → Aguardando → Saiu → Entregue)
   const COLUNAS = [
-    { key: 'COZINHA', titulo: 'Cozinha', icon: '🍳', cor: '#f59e0b', inclui: ['RECEBIDO', 'CONFIRMADO', 'EM_PREPARO'] },
-    { key: 'AGUARDANDO', titulo: 'Aguardando entrega', icon: '📦', cor: '#3b82f6', inclui: ['PRONTO'] },
-    { key: 'SAIU', titulo: 'Saiu para entrega', icon: '🛵', cor: '#a855f7', inclui: ['SAIU_PARA_ENTREGA'] },
-    { key: 'ENTREGUE', titulo: 'Entregue', icon: '✓', cor: '#22c55e', inclui: ['ENTREGUE'] },
+    // DUAS cores por coluna, e isso nao e enfeite (pente fino de 29/10/2026).
+    //
+    // `cor` e a cor clara da coluna: ela pinta a BORDA esquerda do card, que e decoracao e nao tem
+    // texto em cima. `corEscura` e a que recebe texto branco -- o botao de avancar o pedido e o
+    // contador da coluna. Medido com o branco em cima das cores claras: Cozinha 2,15:1, Aguardando
+    // 3,68:1, Saiu 3,96:1, Entregue 2,28:1, Cancelados 2,56:1. Nenhuma chegava aos 4,5:1, e o botao
+    // de avancar o pedido e o mais clicado da tela mais usada do sistema.
+    //
+    // As escuras foram escolhidas medindo, nao a olho: 5,02 / 6,70 / 6,98 / 5,02 / 7,58 com branco.
+    { key: 'COZINHA', titulo: 'Cozinha', icon: '🍳', cor: '#f59e0b', corEscura: '#b45309', inclui: ['RECEBIDO', 'CONFIRMADO', 'EM_PREPARO'] },
+    { key: 'AGUARDANDO', titulo: 'Aguardando entrega', icon: '📦', cor: '#3b82f6', corEscura: '#1d4ed8', inclui: ['PRONTO'] },
+    { key: 'SAIU', titulo: 'Saiu para entrega', icon: '🛵', cor: '#a855f7', corEscura: '#7e22ce', inclui: ['SAIU_PARA_ENTREGA'] },
+    { key: 'ENTREGUE', titulo: 'Entregue', icon: '✓', cor: '#22c55e', corEscura: '#15803d', inclui: ['ENTREGUE'] },
     // Sem esta coluna a aba "Cancelados" existia e NUNCA mostrava nada: o filtro deixava o
     // cancelado passar, e o render so emite card para quem cabe numa coluna. Quem cancelou por
     // engano nao tinha onde conferir. Ela so aparece na aba propria -- ver `passaFiltro`.
-    { key: 'CANCELADO', titulo: 'Cancelados', icon: '✕', cor: '#94a3b8', inclui: ['CANCELADO'] }
+    { key: 'CANCELADO', titulo: 'Cancelados', icon: '✕', cor: '#94a3b8', corEscura: '#475569', inclui: ['CANCELADO'] }
   ];
   const PROXIMO = { RECEBIDO: 'EM_PREPARO', CONFIRMADO: 'EM_PREPARO', EM_PREPARO: 'PRONTO',
     PRONTO: 'SAIU_PARA_ENTREGA', SAIU_PARA_ENTREGA: 'ENTREGUE' };
@@ -30,7 +39,10 @@
   // O quadro é do dia. Sem isso a coluna "Entregue" empilhava dia após dia e o balcão abria a manhã
   // com a tela do dia anterior. Pedido em andamento de outro dia o servidor manda junto de qualquer
   // forma — quem entrou 23h50 e está em preparo à meia-noite não pode sumir da cozinha.
-  const hojeISO = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  // A data no fuso da LOJA. `toISOString()` converte para UTC, e das 21h a meia-noite de Brasilia
+  // isso ja e o dia seguinte -- o quadro abriria no dia errado justo no horario de jantar.
+  const emISO = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const hojeISO = () => emISO(new Date());
   const diaEscolhido = () => { const el = document.getElementById('dia'); return el && el.value ? el.value : hojeISO(); };
   let termo = '';
 
@@ -167,8 +179,8 @@
     const avanca = PROXIMO[p.status];
     const itensTxt = (p.itens && p.itens.length)
       ? p.itens.slice(0, 4).map(i => `<b>${i.quantidade || 1}×</b> ${esc(i.descricao)}`).join('<br>') +
-        (p.itens.length > 4 ? `<br><span style="color:#94a3b8">+${p.itens.length - 4} item(ns)</span>` : '')
-      : '<span style="color:#94a3b8">Sem itens detalhados</span>';
+        (p.itens.length > 4 ? `<br><span style="color:#6b7280">+${p.itens.length - 4} item(ns)</span>` : '')
+      : '<span style="color:#6b7280">Sem itens detalhados</span>';
     // O endereco DESTE pedido vem primeiro. `clienteEndereco` e o do CADASTRO: no cliente recorrente
     // que se mudou, era o endereco antigo — e era isso que o card mostrava para quem entrega.
     const retirada = p.tipoEntrega ? p.tipoEntrega === 'RETIRADA'
@@ -177,7 +189,7 @@
                                       p.bairroEntrega || p.clienteBairro].filter(Boolean).join(' · ');
     const canal = boraCanal(p.origem);
     const novo = p.status === 'RECEBIDO';
-    return `<div class="kcard ${atrasado ? 'late' : ''}" style="--col:${col.cor}">
+    return `<div class="kcard ${atrasado ? 'late' : ''}" style="--col:${col.cor};--col-escura:${col.corEscura || col.cor}">
       ${p.canalExterno ? `<span class="canaltag">${canal.ic} ${esc(canal.key)}</span>` : ''}
       <div class="kcard-top">
         <div class="num">${esc(p.codigo) || '#' + p.id} <small>#${p.id}</small></div>
@@ -219,7 +231,7 @@
         ? lista.map(p => card(p, col)).join('')
         : '<div class="kcol-empty">Nenhum pedido aqui</div>';
       return `<div class="kcol">
-        <div class="kcol-head" style="--col:${col.cor}">
+        <div class="kcol-head" style="--col:${col.cor};--col-escura:${col.corEscura || col.cor}">
           <span class="ttl"><span class="ic">${col.icon}</span>${col.titulo}</span>
           <span class="pill">${lista.length}</span>
         </div>
@@ -285,9 +297,13 @@
     if (!el) return;
     el.value = hojeISO();
     const mover = (passo) => {
+      // T12:00:00 para nascer no MEIO do dia local; mesmo assim a volta usa o `emISO`, e nao o
+      // `toISOString()` cru. Com o meio-dia, o UTC cai no mesmo dia em qualquer fuso NEGATIVO
+      // (o Brasil inteiro), mas num fuso positivo o meio-dia local e a noite do dia ANTERIOR em
+      // UTC. Depender do sinal do fuso e depender de uma coisa que ninguem lembra de conferir.
       const d = new Date(el.value + 'T12:00:00');
       d.setDate(d.getDate() + passo);
-      el.value = d.toISOString().slice(0, 10);
+      el.value = emISO(d);
       aoTrocarDia();
     };
     const aoTrocarDia = () => {

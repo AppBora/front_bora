@@ -55,7 +55,7 @@
         const rep = waRepetir(c.telefone, c.nome, links[c.id]);
         return `<tr>
           <td><b>${i + 1}</b></td>
-          <td>${esc(c.nome)}${sumido ? ' <span style="color:#ef4444;font-size:11px">⚠ sumido</span>' : ''}<br><small style="color:#94a3b8">${esc(c.telefone || '')}</small></td>
+          <td>${esc(c.nome)}${sumido ? ' <span style="color:#ef4444;font-size:11px">⚠ sumido</span>' : ''}<br><small style="color:#6b7280">${esc(c.telefone || '')}</small></td>
           <td>${c.qtdPedidos || 0}</td>
           <td><b>${money(c.totalGasto)}</b></td>
           <td><span class="cashtag">${money(c.cashback)}</span></td>
@@ -65,7 +65,7 @@
             ${wa ? `<a class="btn" style="display:inline-block;padding:12px;min-height:44px;background:#128c4a" href="${wa}" target="_blank" rel="noopener">📲 Chamar</a>` : ''}
           </td>
         </tr>`;
-      }).join('') : '<tr><td colspan="7" style="color:#94a3b8">Nenhum cliente cadastrado ainda.</td></tr>';
+      }).join('') : '<tr><td colspan="7" style="color:#6b7280">Nenhum cliente cadastrado ainda.</td></tr>';
 
       // Sem isto, o lojista nao sabe se o botao sumiu porque o cliente nunca pediu ou porque a
       // chamada falhou.

@@ -42,7 +42,7 @@
       : `<button class="btn" style="padding:7px 12px" onclick="__despachar(${p.id})">🛵 Despachar</button>`;
     return `<tr>
       <td><b>${esc(p.codigo) || '#' + p.id}</b></td>
-      <td>${esc(p.clienteNome) || '—'}<br><small style="color:#94a3b8">${esc(p.enderecoEntrega || p.clienteEndereco || '')}</small></td>
+      <td>${esc(p.clienteNome) || '—'}<br><small style="color:#6b7280">${esc(p.enderecoEntrega || p.clienteEndereco || '')}</small></td>
       <td>${money(p.valorTotal)}</td>
       <td><select style="width:140px;padding:7px;border:1px solid #e5e7eb;border-radius:8px"
             onchange="__setEntregador(${p.id}, this.value)">${optsEntregador(p.entregador)}</select></td>
@@ -55,7 +55,7 @@
     const ids = prontos.map(p => p.id).join(',');
     return `<div class="panel" style="margin-bottom:14px">
       <h2 style="display:flex;justify-content:space-between;align-items:center">
-        <span>📍 ${esc(bairro)} <span style="color:#94a3b8;font-weight:600;font-size:13px">· ${prontos.length} pedido(s)</span></span>
+        <span>📍 ${esc(bairro)} <span style="color:#6b7280;font-weight:600;font-size:13px">· ${prontos.length} pedido(s)</span></span>
         <button class="btn" style="padding:8px 14px" onclick="__despacharBairro([${ids}])">🛵 Despachar rota</button>
       </h2>
       <table class="table"><thead><tr><th>Cód.</th><th>Cliente / Endereço</th><th>Valor</th><th>Entregador</th><th>Espera</th><th></th></tr></thead>
@@ -97,7 +97,7 @@
       const rotaTabela = `<div class="panel">
         <h2>🛵 Em rota (${emRota.length})</h2>
         <table class="table"><thead><tr><th>Cód.</th><th>Cliente / Endereço</th><th>Valor</th><th>Entregador</th><th>Saiu há</th><th></th></tr></thead>
-          <tbody>${emRota.map(p => linha(p, true)).join('') || '<tr><td colspan="6" style="color:#94a3b8">Ninguém em rota.</td></tr>'}</tbody></table>
+          <tbody>${emRota.map(p => linha(p, true)).join('') || '<tr><td colspan="6" style="color:#6b7280">Ninguém em rota.</td></tr>'}</tbody></table>
       </div>`;
 
       // Os de retirada aparecem em bloco proprio, SEM botao de despachar: eles nao saem da loja.
@@ -109,7 +109,7 @@
       </div>` : '';
 
       document.getElementById('rotas').innerHTML = blocoRetirada +
-        (blocos || (paraRetirar.length ? '' : '<div class="panel" style="margin-bottom:14px"><p style="color:#94a3b8">Nenhum pedido pronto aguardando rota.</p></div>')) + rotaTabela;
+        (blocos || (paraRetirar.length ? '' : '<div class="panel" style="margin-bottom:14px"><p style="color:#6b7280">Nenhum pedido pronto aguardando rota.</p></div>')) + rotaTabela;
     } catch (e) {
       document.getElementById('rotas').innerHTML =
         `<div class="panel"><p style="color:var(--danger)">${e.message}</p></div>`;

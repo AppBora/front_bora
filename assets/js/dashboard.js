@@ -222,7 +222,7 @@
         }).join('')
           // Item 7.11: sem isto, dia sem pedido deixava a tabela em branco e o lojista achava que a
           // tela tinha quebrado.
-          || '<tr><td colspan="5" style="color:#94a3b8">Nenhum pedido ainda hoje.</td></tr>';
+          || '<tr><td colspan="5" style="color:#6b7280">Nenhum pedido ainda hoje.</td></tr>';
       }
     } catch (e) {
       // Item 7.3: era so um console.warn. Os numeros ficavam CONGELADOS na tela, sem nada dizendo

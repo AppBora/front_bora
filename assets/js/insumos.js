@@ -11,9 +11,12 @@
   let estoqueNaTela = null;
 
   function estoqueCel(i) {
-    if (i.estoque == null) return '<span style="color:#94a3b8">livre</span>';
+    if (i.estoque == null) return '<span style="color:#6b7280">livre</span>';
     const baixo = i.estoqueMinimo != null && Number(i.estoque) <= Number(i.estoqueMinimo);
-    return `<b style="color:${Number(i.estoque) <= 0 ? '#dc2626' : baixo ? '#f59e0b' : '#0f172a'}">${Number(i.estoque)} ${esc(i.unidade)}${baixo ? ' ⚠' : ''}</b>`;
+    // O ambar #f59e0b dava 2,15:1 sobre branco -- o aviso que precisa ser visto era o menos
+    // legivel da tabela. #b45309 da 5,02:1 e continua sendo ambar. O zero fica no vermelho
+    // #dc2626 (4,83:1), que ja passava.
+    return `<b style="color:${Number(i.estoque) <= 0 ? '#dc2626' : baixo ? '#b45309' : '#0f172a'}">${Number(i.estoque)} ${esc(i.unidade)}${baixo ? ' ⚠' : ''}</b>`;
   }
 
   // A importacao em lote vive noutro arquivo e precisa redesenhar esta tabela depois de cadastrar.
@@ -24,7 +27,7 @@
       `<tr><td><b>${esc(i.nome)}</b></td><td>${money(i.custo)}/${esc(i.unidade)}</td><td>${estoqueCel(i)}</td>
         <td style="text-align:right"><button onclick="__edit(${i.id})" style="border:0;background:#f1f5f9;border-radius:8px;padding:5px 9px;cursor:pointer">✏</button>
         <button onclick="__del(${i.id})" style="border:0;background:#fef2f2;color:#dc2626;border-radius:8px;padding:5px 9px;cursor:pointer">✕</button></td></tr>`).join('')
-      : '<tr><td colspan="4" style="color:#94a3b8">Nenhum insumo. Cadastre os ingredientes (polpa, granola, copo…).</td></tr>';
+      : '<tr><td colspan="4" style="color:#6b7280">Nenhum insumo. Cadastre os ingredientes (polpa, granola, copo…).</td></tr>';
   }
   const num = v => v === '' || v == null ? null : Number(v);
   function payload() { return { nome: $('nome').value.trim(), unidade: $('unidade').value, custo: Number($('custo').value || 0),

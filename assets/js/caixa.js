@@ -14,7 +14,7 @@
     $(elId).innerHTML = linhas.length ? linhas.map(([nm, v]) => `<div class="row2">
       <div class="nm">${esc(nm)}</div>
       <div class="track"><div class="barfill" style="width:${Math.round((v / max) * 100)}%${cor ? ';background:' + cor : ''}"></div></div>
-      <div class="vl">${money(v)}</div></div>`).join('') : '<p style="color:#94a3b8;font-size:13px">Sem vendas hoje.</p>';
+      <div class="vl">${money(v)}</div></div>`).join('') : '<p style="color:#6b7280;font-size:13px">Sem vendas hoje.</p>';
   }
 
   window.__imprimirFechamento = () => {

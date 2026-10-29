@@ -13,7 +13,7 @@
          <td>${c.tipo === 'VALOR' ? money(c.valor) : Number(c.valor) + '%'}</td>
          <td>${esc(c.validade) || 'Sem validade'}</td>
          <td style="text-align:right"><button onclick="__delCupom(${c.id})" style="border:0;background:#fef2f2;color:#dc2626;border-radius:8px;padding:5px 9px;cursor:pointer">✕</button></td></tr>`
-      ).join('') || '<tr><td colspan="4" style="color:#94a3b8">Nenhum cupom ainda.</td></tr>';
+      ).join('') || '<tr><td colspan="4" style="color:#6b7280">Nenhum cupom ainda.</td></tr>';
     } catch (e) { tb.innerHTML = `<tr><td colspan="4" style="color:var(--danger)">${esc(e.message)}</td></tr>`; }
   }
 

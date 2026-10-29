@@ -15,14 +15,14 @@
   .ob-pct{font-size:13px;color:#6b21a8;font-weight:700}
   .ob-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:14px}
   .ob-step{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #eef2f7;border-radius:12px;padding:10px 12px;text-decoration:none;color:inherit;transition:box-shadow .12s,transform .08s}
-  .ob-step:hover{box-shadow:0 6px 16px rgba(124,58,237,.14);transform:translateY(-1px)}
+  .ob-step:hover{box-shadow:0 6px 16px rgba(147,51,234,.14);transform:translateY(-1px)}
   .ob-step.done{opacity:.62}
   .ob-mark{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;flex:0 0 26px;font-size:14px}
   .ob-mark.ok{background:#dcfce7;color:#166534}
   .ob-mark.no{background:#f3e8ff;color:#7e22ce}
   .ob-step .t{font-weight:700;font-size:14px}
   .ob-step .d{font-size:12px;color:#64748b}
-  .ob-opt{font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.03em}
+  .ob-opt{font-size:10px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.03em}
   `;
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
 

@@ -74,7 +74,7 @@
         <div class="pc">${esc(p.categoria || 'Outros')}</div>
         <div class="pn">${esc(p.nome)}</div>
         <div class="pp">${money(p.preco)}</div>
-      </button>`).join('') : '<p style="color:#94a3b8">Nenhum produto. Cadastre em Produtos.</p>';
+      </button>`).join('') : '<p style="color:#6b7280">Nenhum produto. Cadastre em Produtos.</p>';
   }
 
   function renderCart() {
@@ -221,7 +221,27 @@
       $('cliente').value = '';
       $('usarCashback').checked = false;
       renderCart();
-      try { clientes = await Bora.clientes(); atualizarCashback(); } catch (e) {} // saldo de cashback atualizado
+      // A RECARGA DO SALDO NAO PODE SER ENGOLIDA (pente fino de 29/10/2026).
+      //
+      // Era `catch (e) {}` seco. Falhando a recarga, o array `clientes` fica com o saldo de ANTES
+      // da venda -- e e dele que o `descontoDoCashback` le. Na venda seguinte, com o mesmo cliente
+      // escolhido e o visto marcado, a tela oferece um desconto que o saldo ja nao cobre: o
+      // servidor recusa, e o balconista leva um erro no meio do atendimento sem entender por que.
+      //
+      // Nao estoura: a venda ACIMA ja foi gravada, e derrubar a tela agora faria o balconista achar
+      // que ela nao foi. O que muda e que o saldo velho e DESCARTADO e o visto fica desligado, para
+      // a tela nunca oferecer um numero que ela nao tem como confirmar.
+      try {
+        clientes = await Bora.clientes();
+        atualizarCashback();
+      } catch (e) {
+        clientes = [];
+        if ($('usarCashback')) $('usarCashback').checked = false;
+        atualizarCashback();
+        // `alert`, como o resto desta tela faz: o balconista esta de pe no caixa e precisa ser
+        // interrompido, nao avisado num canto que ele nao olha.
+        alert('A venda FOI registrada.' + '\n\n' + 'Nao consegui atualizar o saldo de cashback dos clientes agora. Recarregue a tela antes da proxima venda com desconto -- o visto de usar saldo foi desligado.');
+      }
       $('finish').textContent = '✓ Venda registrada!';
       setTimeout(() => { $('finish').textContent = 'Finalizar venda'; }, 1500);
       if (aviso) alert(aviso);

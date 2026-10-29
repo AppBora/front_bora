@@ -13,11 +13,13 @@
   .passo.ok .bola{background:#dcfce7}
   .passo.atual .bola{background:var(--marca,#9333ea);color:#fff;animation:pulsa 1.6s infinite}
   .passo.ok::before{background:#86efac}
-  .t{font-weight:700;font-size:15px}.s{color:#94a3b8;font-size:13px}
+  .t{font-weight:700;font-size:15px}.s{color:#6b7280;font-size:13px}
   .passo.atual .t{color:var(--marca,#9333ea)}
-  @keyframes pulsa{0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,.35)}50%{box-shadow:0 0 0 10px rgba(124,58,237,0)}}
+  @keyframes pulsa{0%,100%{box-shadow:0 0 0 0 rgba(147,51,234,.35)}50%{box-shadow:0 0 0 10px rgba(147,51,234,0)}}
   .cancel{background:#fef2f2;color:#991b1b;border-radius:12px;padding:14px;font-weight:700;margin-top:6px}
-  .rodape{margin-top:22px;color:#cbd5e1;font-size:12px}
+  /* 1,48:1 sobre o cartao branco: praticamente invisivel, e e onde fica a UNICA assinatura do
+     BoraHapp na tela que o consumidor final mais olha. O #6b7280 da 4,83:1. */
+  .rodape{margin-top:22px;color:#6b7280;font-size:12px}
 </style></head><body>
 <div class="card">
   <h1 id="loja">Carregando…</h1>
@@ -55,10 +57,24 @@
     { st:['CONFIRMADO'],          ic:'✅', t:'Confirmado',         s:'A loja aceitou seu pedido' },
     { st:['EM_PREPARO'],          ic:'👨‍🍳', t:'Em preparo',         s:'Capricho em andamento' },
     { st:['PRONTO'],              ic:'📦', t:'Pronto',             s:'Embalado e esperando' },
-    { st:['SAIU_PARA_ENTREGA'],   ic:'🛵', t:'Saiu para entrega',  s:'A caminho de você' },
+    { st:['SAIU_PARA_ENTREGA'],   ic:'🛵', t:'Saiu para entrega',  s:'A caminho de você', soEntrega:true },
     { st:['ENTREGUE'],            ic:'🎉', t:'Entregue',           s:'Bom apetite!' }
   ];
   const ORDEM = ['RECEBIDO','CONFIRMADO','EM_PREPARO','PRONTO','SAIU_PARA_ENTREGA','ENTREGUE'];
+  // A LINHA DO TEMPO DEPENDE DO TIPO DE ENTREGA.
+  //
+  // Ela era uma constante de seis fases, e a quinta e "Saiu para entrega -- a caminho de voce".
+  // Quem escolheu RETIRADA lia isso e ficava esperando em casa um motoboy que nao existe; na
+  // retirada o pedido vai de PRONTO direto para ENTREGUE, entao aquele passo nunca acende -- ele
+  // so ficava la, cinza, contando uma historia errada.
+  //
+  // Quem diz se e retirada e o servidor (`retirada` no status). Enquanto a resposta nao trouxer o
+  // campo -- link antigo, servidor de versao anterior --, `!d.retirada` e falso e a tela continua
+  // como estava: mostrar um passo a mais e melhor que esconder um que vai acontecer.
+  const fasesPara = (retirada) => FASES.filter(f => !f.soEntrega || !retirada);
+  const rotuloFinal = (retirada) => (retirada
+    ? { t:'Retirado', s:'Bom apetite!' }
+    : { t:'Entregue', s:'Bom apetite!' });
   async function tick(){
     try{
       // O `t` e a assinatura do pedido, que vem no link. Sem ele o status responde 404: os ids de
@@ -75,11 +91,17 @@
           '<div class="cancel">😔 Pedido cancelado' + (d.motivoCancelamento ? '<br><small style="font-weight:400">' + String(d.motivoCancelamento).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}) + '</small>' : '') + '</div>';
         return;
       }
-      const atual = ORDEM.indexOf(d.status);
-      document.getElementById('timeline').innerHTML = FASES.map((f,i)=>{
-        const cls = i < atual ? 'ok' : (i === atual ? (d.status==='ENTREGUE'?'ok':'atual') : '');
-        return '<div class="passo '+cls+'"><div class="bola">'+(i<atual||d.status==='ENTREGUE'&&i===atual?'✓':f.ic)+'</div>'+
-               '<div><div class="t">'+f.t+'</div><div class="s">'+f.s+'</div></div></div>';
+      const fases = fasesPara(d.retirada);
+      // A posicao atual sai da lista QUE ESTA NA TELA, nao da ORDEM fixa: na retirada a quinta fase
+      // nao existe, e usar o indice da ORDEM pintaria a fase errada de concluida.
+      const atual = fases.findIndex(f => f.st.indexOf(d.status) >= 0);
+      document.getElementById('timeline').innerHTML = fases.map((f,i)=>{
+        const ultima = i === fases.length - 1;
+        const fim = d.status === 'ENTREGUE';
+        const cls = (atual >= 0 && i < atual) ? 'ok' : (i === atual ? (fim ? 'ok' : 'atual') : '');
+        const rot = ultima ? rotuloFinal(d.retirada) : f;
+        return '<div class="passo '+cls+'"><div class="bola">'+((atual >= 0 && i < atual) || (fim && i === atual) ? '✓' : f.ic)+'</div>'+
+               '<div><div class="t">'+rot.t+'</div><div class="s">'+rot.s+'</div></div></div>';
       }).join('');
       if(d.status === 'ENTREGUE') clearInterval(timer);
     }catch(e){

@@ -16,7 +16,7 @@
     $('taxasBody').innerHTML = t.length ? t.map(x =>
       `<tr><td><b>${esc(x.bairro)}</b></td><td>${money(x.taxa)}</td><td>${x.tempoMin ?? '—'}</td>
         <td>${chk(x.ativo)}</td><td style="text-align:right">${del('__delTaxa', x.id)}</td></tr>`).join('')
-      : '<tr><td colspan="5" style="color:#94a3b8">Nenhuma taxa. Adicione os bairros que você atende.</td></tr>';
+      : '<tr><td colspan="5" style="color:#6b7280">Nenhuma taxa. Adicione os bairros que você atende.</td></tr>';
   }
   window.__delTaxa = seguro(async id => { if (confirm('Remover taxa?')) { await Bora.excluirTaxa(id); await loadTaxas(); } });
   $('addTaxa').addEventListener('click', seguro(async () => {
@@ -32,7 +32,7 @@
     $('formasBody').innerHTML = f.map(x =>
       `<tr><td><b>${esc(x.descricao)}</b></td><td>${chk(x.comTroco)}</td><td>${chk(x.online)}</td>
         <td><label class="switch ${x.ativo ? 'on' : ''}" style="display:inline-block" onclick="__toggleForma(${x.id},${!x.ativo})"></label></td>
-        <td style="text-align:right">${del('__delForma', x.id)}</td></tr>`).join('') || '<tr><td colspan="5" style="color:#94a3b8">Nenhuma forma de pagamento cadastrada.</td></tr>';
+        <td style="text-align:right">${del('__delForma', x.id)}</td></tr>`).join('') || '<tr><td colspan="5" style="color:#6b7280">Nenhuma forma de pagamento cadastrada.</td></tr>';
   }
   window.__toggleForma = seguro(async (id, ativo) => { const f = (await Bora.formasPagamento()).find(x => x.id === id); if (!f) return;
     await Bora.salvarForma({ id, descricao: f.descricao, comTroco: f.comTroco, online: f.online, ativo, ordem: f.ordem }); await loadFormas(); });
@@ -54,7 +54,7 @@
         <input type="time" value="${h.abre || '18:00'}" onchange="__setH(${h.dia},'abre',this.value)" style="padding:7px;border:1px solid #e5e7eb;border-radius:8px">
         <span>até</span>
         <input type="time" value="${h.fecha || '23:00'}" onchange="__setH(${h.dia},'fecha',this.value)" style="padding:7px;border:1px solid #e5e7eb;border-radius:8px">
-      </div>`).join('') || '<p style="color:#94a3b8">Nenhum horário cadastrado — a loja fica sempre fechada no cardápio.</p>';
+      </div>`).join('') || '<p style="color:#6b7280">Nenhum horário cadastrado — a loja fica sempre fechada no cardápio.</p>';
   }
   window.__togDia = dia => { const h = horarios.find(x => x.dia === dia); h.aberto = !h.aberto; loadRenderHorarioToggle(dia, h.aberto); };
   function loadRenderHorarioToggle(dia, on) { const rows = $('horarioBody').children; const r = [...rows].find(x => x.querySelector('span').textContent === DIAS[dia]); if (r) r.querySelector('.switch').classList.toggle('on', on); }
@@ -65,7 +65,7 @@
   async function loadMotivos() {
     const m = await Bora.motivos();
     $('motivosBody').innerHTML = m.map(x =>
-      `<tr><td><b>${esc(x.descricao)}</b></td><td>${chk(x.ativo)}</td><td style="text-align:right">${del('__delMotivo', x.id)}</td></tr>`).join('') || '<tr><td colspan="3" style="color:#94a3b8">Nenhum motivo de cancelamento cadastrado.</td></tr>';
+      `<tr><td><b>${esc(x.descricao)}</b></td><td>${chk(x.ativo)}</td><td style="text-align:right">${del('__delMotivo', x.id)}</td></tr>`).join('') || '<tr><td colspan="3" style="color:#6b7280">Nenhum motivo de cancelamento cadastrado.</td></tr>';
   }
   window.__delMotivo = seguro(async id => { if (confirm('Remover motivo?')) { await Bora.excluirMotivo(id); await loadMotivos(); } });
   $('addMotivo').addEventListener('click', seguro(async () => { const d = $('mDesc').value.trim(); if (!d) { alert('Informe o motivo.'); return; }

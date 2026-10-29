@@ -60,7 +60,7 @@
       return `<li style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--linha,#e2e8f0);border-radius:10px;margin-bottom:6px">
         <span style="min-width:22px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums">${i + 1}</span>
         <span style="flex:1"><b>${esc(c.nome)}</b>
-          <small style="color:#94a3b8"> · ${n} produto${n === 1 ? '' : 's'}</small></span>
+          <small style="color:#6b7280"> · ${n} produto${n === 1 ? '' : 's'}</small></span>
         <button class="btn" type="button" data-sobe="${i}" ${primeiro ? 'disabled' : ''}
           aria-label="Subir ${esc(c.nome)}" title="${primeiro ? 'Já é a primeira' : 'Subir'}">↑</button>
         <button class="btn" type="button" data-desce="${i}" ${ultimo ? 'disabled' : ''}

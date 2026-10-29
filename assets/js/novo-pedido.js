@@ -206,7 +206,7 @@
         <td style="width:40px;text-align:right">
           <button type="button" class="btn ghost" onclick="__rem(${idx})"
                   style="background:#e5e7eb;color:#111;padding:4px 8px" title="Remover">✕</button></td>
-      </tr>`).join('') || '<tr><td colspan="4" style="color:#94a3b8">Nenhum item ainda — monte o produto acima e clique em <b>Adicionar ao pedido</b>.</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="4" style="color:#6b7280">Nenhum item ainda — monte o produto acima e clique em <b>Adicionar ao pedido</b>.</td></tr>';
     renderTotais();
   }
   window.__rem = idx => { itens.splice(idx, 1); render(); };
@@ -341,7 +341,12 @@
     btn.textContent = 'Salvando…';
     try {
       let clienteId = $('cliente').value ? Number($('cliente').value) : null;
-      if ($('novoClienteBox').style.display !== 'none') clienteId = await criarClienteInline();
+      // `criandoCliente`, e nao o `style.display` da caixa. O proprio arquivo proibe isso no
+      // comentario do `alternarNovoCliente`: "o estado fica aqui, nao no style; decidir regra de
+      // negocio perguntando ao layout quebra calado assim que alguem trocar display por uma
+      // classe". Esta linha era a unica que desobedecia -- e o que ela decide e se um CLIENTE
+      // NOVO e cadastrado (pente fino de 29/10/2026).
+      if (criandoCliente) clienteId = await criarClienteInline();
 
       await Bora.api('/api/pedidos', {
         method: 'POST',

@@ -12,7 +12,7 @@
       const inp = $('c' + p.id); if (!inp) return;
       const cont = inp.value === '' ? null : Number(inp.value);
       const cel = $('d' + p.id);
-      if (cont == null) { cel.textContent = '—'; cel.style.color = '#94a3b8'; return; }
+      if (cont == null) { cel.textContent = '—'; cel.style.color = '#6b7280'; return; }
       const dif = cont - p.estoque;
       cel.textContent = dif > 0 ? '+' + dif : dif;
       cel.style.color = dif === 0 ? '#059669' : '#dc2626';
@@ -49,11 +49,11 @@
     produtos = (await Bora.produtos()).filter(p => p.estoque != null);
     $('kItens').textContent = produtos.length;
     $('lista').innerHTML = produtos.length ? produtos.map(p =>
-      `<tr><td><b>${esc(p.nome)}</b><br><small style="color:#94a3b8">${esc(p.categoria || '')}</small></td>
+      `<tr><td><b>${esc(p.nome)}</b><br><small style="color:#6b7280">${esc(p.categoria || '')}</small></td>
         <td><b>${p.estoque}</b></td>
         <td><input id="c${p.id}" type="number" step="1" placeholder="${p.estoque}" oninput="__recalc()" style="width:80px;padding:7px;border:1px solid #e5e7eb;border-radius:8px"></td>
-        <td id="d${p.id}" style="font-weight:800;color:#94a3b8">—</td></tr>`).join('')
-      : '<tr><td colspan="4" style="color:#94a3b8">Nenhum produto com estoque controlado. Defina o estoque em Produtos.</td></tr>';
+        <td id="d${p.id}" style="font-weight:800;color:#6b7280">—</td></tr>`).join('')
+      : '<tr><td colspan="4" style="color:#6b7280">Nenhum produto com estoque controlado. Defina o estoque em Produtos.</td></tr>';
     $('kDiv').textContent = '0'; $('kImpacto').textContent = money(0);
   }
 

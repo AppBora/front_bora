@@ -84,7 +84,7 @@
       return `<div class="row2"><div class="nm">${c.ic} ${esc(c.key)}</div>
         <div class="track"><div class="barfill" style="width:${Math.round(Number(o.faturamento) / max * 100)}%;background:${c.cor}"></div></div>
         <div class="vl">${money(o.faturamento)}</div></div>`;
-    }).join('') : '<p style="color:#94a3b8;font-size:13px">Sem dados.</p>';
+    }).join('') : '<p style="color:#6b7280;font-size:13px">Sem dados.</p>';
   }
 
   function entregadores(porEnt) {
@@ -92,7 +92,7 @@
     $('porEntregador').innerHTML = ent.length ? ent.map(([nm, o], i) =>
       `<div class="topitem"><div class="rk ${i === 0 ? 'gold' : ''}">${i + 1}</div>
         <div class="nm">${esc(nm)}</div><div class="qt">${o.entregas} entregas · ${money(o.valor)}</div></div>`).join('')
-      : '<p style="color:#94a3b8;font-size:13px">Sem entregas com motoboy atribuído.</p>';
+      : '<p style="color:#6b7280;font-size:13px">Sem entregas com motoboy atribuído.</p>';
   }
 
   function produtos(porProd) {
@@ -103,7 +103,7 @@
       const cor = pct < 20 ? '#dc2626' : pct < 40 ? '#f59e0b' : '#059669';
       return `<tr><td><b>${i + 1}</b></td><td>${esc(nm)}</td><td>${o.quantidade}</td><td>${money(fat)}</td>
         <td>${cmv > 0 ? money(cmv) : '—'}</td><td><b style="color:${cor}">${money(mg)}${fat ? ` (${pct.toFixed(0)}%)` : ''}</b></td></tr>`;
-    }).join('') : '<tr><td colspan="6" style="color:#94a3b8">Sem vendas no período.</td></tr>';
+    }).join('') : '<tr><td colspan="6" style="color:#6b7280">Sem vendas no período.</td></tr>';
   }
 
   async function carregar() {

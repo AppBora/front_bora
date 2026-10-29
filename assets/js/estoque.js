@@ -168,11 +168,11 @@
         const mais = semContagem(l) ? '' : `
             <button onclick="__ajustar('${l.tipo}',${l.id},${passo})">+</button>
             <button onclick="__ajustar('${l.tipo}',${l.id},10)" style="background:#ecfdf5;color:#059669">+10</button>`;
-        return `<tr><td>${selo(l)} <b>${esc(l.nome)}</b><br><small style="color:#94a3b8">${esc(l.sub)}</small></td>
+        return `<tr><td>${selo(l)} <b>${esc(l.nome)}</b><br><small style="color:#6b7280">${esc(l.sub)}</small></td>
           <td>${semContagem(l)
-            ? '<span style="color:#94a3b8">não contado</span>'
+            ? '<span style="color:#6b7280">não contado</span>'
             : '<b style="font-size:16px">' + mostra(l) + '</b>'
-              + (ehInsumo(l) ? ' <small style="color:#94a3b8">' + esc(l.sub) + '</small>' : '')}</td>
+              + (ehInsumo(l) ? ' <small style="color:#6b7280">' + esc(l.sub) + '</small>' : '')}</td>
           <td>${l.estoqueMinimo == null ? '—' : mostra({ tipo: l.tipo, estoque: l.estoqueMinimo, sub: l.sub })}</td>
           <td>${status(l)}</td>
           <td><div class="qty">${ajuste}
@@ -182,7 +182,7 @@
               onchange="__definir('${l.tipo}',${l.id},this.value)">${mais}
           </div></td></tr>`;
       }).join('')
-        : '<tr><td colspan="5" style="color:#94a3b8">Nenhum insumo cadastrado e nenhum produto com '
+        : '<tr><td colspan="5" style="color:#6b7280">Nenhum insumo cadastrado e nenhum produto com '
           + 'estoque controlado. Cadastre os <b>Insumos</b> (copo, polpa, leite condensado) ou '
           + 'defina o estoque em <b>Produtos</b>.</td></tr>';
     } catch (e) { $('lista').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${e.message}</td></tr>`; }

@@ -33,7 +33,7 @@ O efeito é imediato: se ela estiver `
 
   // Uma pessoa, N lojas: chips do que ela já acessa + o que dá para somar.
   function celulaLojas(u) {
-    if (lojasEmpresa.length < 2) return '<span style="color:#94a3b8">—</span>';
+    if (lojasEmpresa.length < 2) return '<span style="color:#6b7280">—</span>';
     const dela = u.lojas || [];
     const chips = dela.map(l => {
       const x = l.principal ? '' :
@@ -122,7 +122,7 @@ O efeito é imediato: se ela estiver `
         return `<tr data-abrir="${u.id}" title="Abrir no formulário acima">`
           + `<td>${esc(u.nome) || '—'}</td><td>${esc(u.email)}</td><td>${PAPEL[u.papel] || esc(u.papel)}</td>`
           + `<td>${celulaLojas(comLojas)}</td><td>${badge}${toggle}${novaSenha}</td></tr>`;
-      }).join('') || '<tr><td colspan="5" style="color:#94a3b8">Nenhum usuário.</td></tr>';
+      }).join('') || '<tr><td colspan="5" style="color:#6b7280">Nenhum usuário.</td></tr>';
       tb.querySelectorAll('button[data-senha]').forEach(b =>
         b.onclick = () => window.__senha(Number(b.dataset.senha), b.dataset.nome));
       // A linha inteira abre a pessoa, MENOS os botoes dela: clicar em "Desativar" nao pode virar

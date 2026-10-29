@@ -165,7 +165,7 @@
       const tipo = (obrigatorio && g.maximo === 1) ? 'radio' : 'checkbox';
       const regra = g.minimo > 0 ? `escolha ${g.minimo === g.maximo ? g.minimo : g.minimo + ' a ' + g.maximo}` : `até ${g.maximo} (opcional)`;
       return `<div style="margin:12px 0" data-grupo="${g.id}" data-min="${g.minimo}" data-max="${g.maximo}" data-nome="${esc(g.nome)}">
-        <div style="font-weight:800">${esc(g.nome)} <small style="color:#94a3b8;font-weight:600">· ${regra}</small></div>
+        <div style="font-weight:800">${esc(g.nome)} <small style="color:#6b7280;font-weight:600">· ${regra}</small></div>
         ${g.itens.map(i => `<label style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed #e2e8f0;cursor:pointer">
           <span><input type="${tipo}" name="g${g.id}" value="${i.id}" data-preco="${i.preco || 0}" data-nome="${esc(i.nome)}" style="margin-right:8px">${esc(i.nome)}</span>
           <small style="color:#64748b">${Number(i.preco) > 0 ? '+ ' + money(i.preco) : ''}</small>
@@ -423,6 +423,37 @@
     if ($('ckEntregaComoWrap')) $('ckEntregaComoWrap').hidden = pix && pixDisponivel;
   }
 
+  /**
+   * Apaga o que era DAQUELE pedido, depois de ele ser gravado.
+   *
+   * <p>O `confirmarPedido` fazia `cart = []` e nada mais (pente fino de 29/10/2026). O saldo de
+   * cashback, o cupom aplicado, o visto de "usar meu saldo" e a caixa verde do saldo ficavam
+   * exatamente como estavam -- e a tela OFERECE pedir de novo sem recarregar nada: o botao
+   * "okVoltar" existe com o comentario "o cliente pode querer pedir mais".</p>
+   *
+   * <p>Num segundo pedido na MESMA pagina, o cliente via o desconto do cashback que ele acabou de
+   * gastar e o cupom que ele acabou de usar. O total na tela ficava menor que o cobrado -- preco na
+   * tela diferente do preco cobrado, que e o pior defeito possivel aqui. O servidor recusa o
+   * resgate (o saldo nao existe mais) ou o cupom (uso unico), e o cliente leva um erro que ele nao
+   * tem como entender.</p>
+   *
+   * <p>O NOME e o TELEFONE ficam de proposito: sao da pessoa, nao do pedido, e apaga-los faria o
+   * cliente digitar tudo de novo para pedir mais um acai. O saldo e reconsultado pelo
+   * `verCashback`, que e o unico que sabe o valor de verdade.</p>
+   */
+  function limparOqueEraDoPedidoAnterior() {
+    cupomOk = false;
+    cupomAplicado = null;
+    saldoCashback = 0;
+    if ($('ckCupom')) $('ckCupom').value = '';
+    if ($('ckCupomMsg')) $('ckCupomMsg').textContent = '';
+    if ($('ckUsarCashback')) $('ckUsarCashback').checked = false;
+    if ($('ckCashback')) $('ckCashback').hidden = true;
+    // O saldo novo vem do servidor, nao de uma subtracao feita aqui: so ele sabe quanto sobrou e
+    // quanto esta venda creditou. Com nome e telefone ainda preenchidos, isto reconsulta na hora.
+    verCashback();
+  }
+
   // Cashback: o cliente do cardapio nao tem login, entao o telefone e a identificacao.
   async function verCashback() {
     const caixa = $('ckCashback');
@@ -517,6 +548,7 @@
         cpf: $('ckCpf').value.trim()
       })});
       cart = []; atualizarBarra();
+      limparOqueEraDoPedidoAnterior();
       if (r.pix && r.pix.payload) {
         $('ckForm').hidden = true; $('ckPix').hidden = false;
         $('pxCodigo').textContent = r.codigo; $('pxValor').textContent = money(r.valorTotal);
@@ -708,7 +740,7 @@
             + `${b.tempoMin ? ' · ~' + b.tempoMin + ' min' : ''}</option>`).join('');
       }
       produtos = data.produtos || [];
-      if (!produtos.length) { document.getElementById('menu').innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px">Cardápio em montagem.</p>'; return; }
+      if (!produtos.length) { document.getElementById('menu').innerHTML = '<p style="text-align:center;color:#6b7280;padding:40px">Cardápio em montagem.</p>'; return; }
       render();
       await repetirPedidoAnterior(); // depois do render: precisa dos produtos carregados
     } catch (e) { document.getElementById('menu').innerHTML = `<p style="text-align:center;color:var(--danger);padding:40px">${e.message}</p>`; }

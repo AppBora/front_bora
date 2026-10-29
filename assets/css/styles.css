@@ -9,12 +9,35 @@
   /* sidebar vira barra de navegação inferior fixa */
   .side{position:fixed;left:0;right:0;bottom:0;top:auto;height:auto;width:100%;z-index:60;padding:6px 8px;box-shadow:0 -4px 16px rgba(0,0,0,.18)}
   .side .brand{display:none}
+  /* "Dono / Administrador" sai da barra de baixo. Na lateral do desktop ele diz com qual conta a
+     pessoa esta; numa barra fixa de celular ele sao 46px da tela que nao fazem nada -- nao e botao,
+     nao e link, e o nome ja esta no topo da pagina. Medido: com ele a barra ficava com 113px e o
+     `.main` reserva 84px, entao o fim do conteudo sumia atras dela. */
+  .side #quemSouEu{display:none}
   .nav{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .nav::-webkit-scrollbar{display:none}
-  .nav a{flex:0 0 auto;margin:0;padding:9px 11px;font-size:12px;border-radius:10px;white-space:nowrap}
+  /* NO CELULAR CADA ITEM LEVA O NOME CURTO EMBAIXO DO ICONE (pente fino de 29/10/2026).
+     Abaixo de 900px a barra lateral virava uma faixa de 26 EMOJI sem nenhum texto -- o rotulo era
+     escondido e nada o substituia. Tres dos itens sao de dinheiro e quase iguais no icone
+     (Fechar Caixa 💰, Acerto Motoboy 💵, Desempenho 💹), e eles rolam de lado numa faixa onde
+     metade nem aparece. Quem usa o painel no celular tinha de clicar para descobrir onde estava.
+     O icone sozinho so funciona para quem ja decorou, e no celular ninguem decorou 26. */
+  .nav a{flex:0 0 auto;margin:0;padding:6px 9px;font-size:12px;border-radius:10px;white-space:nowrap;
+         flex-direction:column;gap:2px;min-width:58px;text-align:center}
   .nav a.active{box-shadow:none;background:var(--primary);color:#fff}
-  .navtx{display:none}.navic{font-size:18px}
+  /* O rotulo inteiro sai (nao cabe: "Rede & Analise IA" ocuparia meia tela) e entra o curto. */
+  .navtx{display:none}
+  /* `.side .navtx-curto`, e nao so `.navtx-curto`: a regra que esconde este rotulo no desktop
+     esta DEPOIS deste bloco no arquivo, e com a mesma especificidade a ultima vence -- medido no
+     navegador, o rotulo saia com display:none em 375px. Dois seletores (0,2,0) ganham de um
+     (0,1,0) em qualquer ordem. */
+  .side .navtx-curto{display:block;font-size:10px;font-weight:700;line-height:1.1;max-width:62px;
+               overflow:hidden;text-overflow:ellipsis}
+  .navic{font-size:18px}
 }
+/* O rotulo curto e so do celular: no desktop vale o nome inteiro, que cabe na lateral. */
+.navtx-curto{display:none}
+
 /* ---- polish visual ---- */
 .card{transition:box-shadow .15s, transform .15s}
 .kpi{transition:transform .15s}
@@ -69,8 +92,8 @@ button:disabled:active{transform:none}
 .board-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:12px 14px;box-shadow:0 6px 20px rgba(0,0,0,.05);margin-bottom:16px}
 .board-search{flex:1;min-width:220px;position:relative}
 .board-search input{width:100%;padding:12px 14px 12px 40px;border:1px solid #e5e7eb;border-radius:12px;font-size:15px;background:#f8fafc}
-.board-search input:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,.12)}
-.board-search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#94a3b8}
+.board-search input:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(147,51,234,.12)}
+.board-search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted)}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{border:1px solid #e5e7eb;background:#fff;color:#475569;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .12s}
 .chip:hover{border-color:var(--primary);color:var(--primary)}
@@ -85,22 +108,22 @@ button:disabled:active{transform:none}
 .kcol-head{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px;border-top:4px solid var(--col);border-radius:16px 16px 0 0}
 .kcol-head .ttl{font-size:13px;font-weight:800;letter-spacing:.02em;color:#334155;display:flex;align-items:center;gap:8px;text-transform:uppercase}
 .kcol-head .ttl .ic{width:22px;height:22px;border-radius:7px;background:var(--col);display:grid;place-items:center;color:#fff;font-size:12px}
-.kcol-head .pill{background:var(--col);color:#fff;font-weight:800;font-size:13px;border-radius:999px;min-width:26px;height:24px;padding:0 8px;display:grid;place-items:center}
+.kcol-head .pill{background:var(--col-escura,var(--col));color:#fff;font-weight:800;font-size:13px;border-radius:999px;min-width:26px;height:24px;padding:0 8px;display:grid;place-items:center}
 .kcol-body{padding:0 10px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 230px);overflow-y:auto}
 .kcol-body::-webkit-scrollbar{width:6px}.kcol-body::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px}
-.kcol-empty{color:#94a3b8;font-size:13px;text-align:center;padding:24px 8px;border:2px dashed #e2e8f0;border-radius:12px;margin:4px}
+.kcol-empty{color:var(--muted);font-size:13px;text-align:center;padding:24px 8px;border:2px dashed #e2e8f0;border-radius:12px;margin:4px}
 
 .kcard{background:#fff;border-radius:14px;padding:12px 13px;box-shadow:0 2px 8px rgba(15,23,42,.06);border-left:4px solid var(--col,#cbd5e1);position:relative;cursor:default}
 .kcard:hover{box-shadow:0 8px 22px rgba(15,23,42,.13);transform:translateY(-2px)}
 .kcard.late{border-left-color:var(--danger);background:linear-gradient(180deg,#fff5f5,#fff)}
 .kcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .kcard .num{font-weight:900;font-size:15px;color:#0f172a}
-.kcard .num small{color:#94a3b8;font-weight:700}
+.kcard .num small{color:var(--muted);font-weight:700}
 .kcard .clock{font-size:11px;font-weight:800;color:#64748b;background:#f1f5f9;border-radius:999px;padding:3px 8px;white-space:nowrap}
 .kcard.late .clock{background:#fee2e2;color:#b91c1c}
 .kcard .cli{font-weight:800;font-size:14px;margin:8px 0 2px;color:#1e293b}
 .kcard .line{display:flex;align-items:center;gap:6px;font-size:12px;color:#64748b;margin:3px 0}
-.kcard .line svg{flex:0 0 14px;color:#94a3b8}
+.kcard .line svg{flex:0 0 14px;color:var(--muted)}
 .kcard .itens{background:#f8fafc;border-radius:10px;padding:7px 9px;margin:9px 0;font-size:12px;color:#475569;line-height:1.55}
 .kcard .itens b{color:#0f172a}
 .kcard .obs{font-size:11.5px;color:#92400e;background:#fffbeb;border-radius:8px;padding:5px 8px;margin:6px 0}
@@ -111,7 +134,14 @@ button:disabled:active{transform:none}
 .kacts{display:flex;gap:6px;margin-top:10px}
 .kacts button{flex:1;font-size:12px;font-weight:800;padding:9px;border:0;border-radius:10px;cursor:pointer;transition:filter .1s,transform .06s;display:flex;align-items:center;justify-content:center;gap:5px}
 .kacts button:hover{filter:brightness(1.06)}.kacts button:active{transform:scale(.97)}
-.kacts .adv{background:var(--col);color:#fff}
+/* TEXTO BRANCO EXIGE A VERSAO ESCURA DA COR DA COLUNA (pente fino de 29/10/2026).
+   A cor da coluna era usada como fundo de botao com texto branco. Medido sobre as cores reais do
+   pedidos.js: Cozinha #f59e0b 2,15:1, Aguardando #3b82f6 3,68:1, Saiu #a855f7 3,96:1, Entregue
+   #22c55e 2,28:1, Cancelados #94a3b8 2,56:1. Nenhuma chegava aos 4,5:1 exigidos. A cor clara
+   continua valendo onde ela e DECORACAO -- a borda esquerda do card --, e o `--col-escura` entra
+   onde ha texto em cima. O fallback para `--col` existe para a tela nao ficar sem cor se alguem
+   acrescentar coluna e esquecer o par escuro. */
+.kacts .adv{background:var(--col-escura,var(--col));color:#fff}
 .kacts .sec{flex:0 0 auto;background:#f1f5f9;color:#475569;padding:9px 11px}
 .kacts .danger{flex:0 0 auto;background:#fef2f2;color:#dc2626;padding:9px 11px}
 
@@ -145,7 +175,7 @@ button:disabled:active{transform:none}
 .bars .b{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;height:100%}
 .bars .b .fill{width:100%;max-width:26px;background:linear-gradient(180deg,#c084fc,#9333ea);border-radius:6px 6px 3px 3px;min-height:3px;transition:height .4s;position:relative}
 .bars .b .fill:hover{filter:brightness(1.08)}
-.bars .b .cap{font-size:10px;color:#94a3b8;font-weight:700}
+.bars .b .cap{font-size:10px;color:var(--muted);font-weight:700}
 .bars .b.peak .fill{background:linear-gradient(180deg,#34d399,#059669)}
 
 /* breakdown por canal */
@@ -175,16 +205,18 @@ button:disabled:active{transform:none}
 .prodtile:hover{border-color:var(--primary);transform:translateY(-2px)}
 .prodtile .pn{font-weight:800;font-size:14px;color:#1e293b;line-height:1.3;min-height:36px}
 .prodtile .pf{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;margin-bottom:8px;display:block;background:#f1f5f9}
-.prodtile .pf-vazia{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px;color:#cbd5e1;background:#f8fafc}
-.prodtile .pc{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+/* A inicial do produto sem foto tinha 1,42:1 sobre o azulejo e simplesmente nao aparecia -- abaixo
+   ate dos 3:1 que valeriam para texto grande (28px/900). O #6b7280 da 4,62:1 sobre o #f8fafc. */
+.prodtile .pf-vazia{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px;color:#6b7280;background:#f8fafc}
+.prodtile .pc{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
 .prodtile .pp{font-weight:900;color:var(--primary);font-size:16px;margin-top:6px}
 .cart{background:var(--card);border-radius:16px;box-shadow:0 6px 20px rgba(15,23,42,.06);position:sticky;top:16px;display:flex;flex-direction:column;max-height:calc(100vh - 32px)}
 .cart h2{margin:0;padding:16px 18px;border-bottom:1px solid #f1f5f9;font-size:16px}
 .cart-items{flex:1;overflow-y:auto;padding:8px 14px;min-height:120px}
-.cart-empty{color:#94a3b8;text-align:center;padding:30px 10px;font-size:14px}
+.cart-empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:14px}
 .citem{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px dashed #f1f5f9}
 .citem .cn{flex:1;font-size:13px;font-weight:700;color:#334155}
-.citem .cn small{display:block;color:#94a3b8;font-weight:600}
+.citem .cn small{display:block;color:var(--muted);font-weight:600}
 .qty{display:flex;align-items:center;gap:8px}
 .qty button{width:26px;height:26px;border:0;border-radius:8px;background:#f1f5f9;font-weight:900;cursor:pointer;color:#334155}
 .qty button:hover{background:#e2e8f0}
@@ -241,7 +273,11 @@ body.kds-mode{background:#0b1220;color:#e2e8f0}
 .menu-item .madd{width:40px;height:40px;border:0;border-radius:12px;background:var(--primary);color:#fff;font-size:22px;font-weight:700;cursor:pointer}
 .menu-bar{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -6px 22px rgba(0,0,0,.12);padding:14px 18px;display:flex;align-items:center;gap:14px;max-width:680px;margin:0 auto}
 .menu-bar .info{flex:1}.menu-bar .ct{font-weight:900;font-size:18px}.menu-bar .cs{font-size:12px;color:#64748b}
-.menu-bar .send{background:#25d366;color:#fff;border:0;border-radius:12px;padding:14px 18px;font-weight:900;font-size:15px;cursor:pointer}
+/* O ULTIMO CLIQUE ANTES DE O PEDIDO VIRAR DINHEIRO tinha 1,98:1: texto branco sobre o verde do
+   WhatsApp (#25d366). O verde fica -- e ele que o cliente reconhece --, e o texto passa a ser
+   escuro: #0b141a sobre #25d366 da 9,38:1. Escurecer o verde era a outra saida, e trocaria a cor
+   que o cliente conhece por uma parecida. */
+.menu-bar .send{background:#25d366;color:#0b141a;border:0;border-radius:12px;padding:14px 18px;font-weight:900;font-size:15px;cursor:pointer}
 .menu-bar.hidden{display:none}
 
 /* ===================== CARDÁPIO QR (admin) ===================== */
@@ -270,7 +306,7 @@ body.kds-mode{background:#0b1220;color:#e2e8f0}
 .share-fill{height:100%;border-radius:999px}
 .moto{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f1f5f9}
 .moto .av{width:42px;height:42px;border-radius:12px;background:#faf5ff;display:grid;place-items:center;font-size:20px}
-.moto .nm{flex:1}.moto .nm b{display:block;color:#1e293b}.moto .nm small{color:#94a3b8}
+.moto .nm{flex:1}.moto .nm b{display:block;color:#1e293b}.moto .nm small{color:var(--muted)}
 .moto .st{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px}
 .st.on{background:#dcfce7;color:#166534}.st.off{background:#fee2e2;color:#991b1b}
 .linkbtns{display:flex;gap:6px}
@@ -282,7 +318,7 @@ body.kds-mode{background:#0b1220;color:#e2e8f0}
 .intcard{background:var(--card);border-radius:16px;box-shadow:0 6px 20px rgba(15,23,42,.06);overflow:hidden;border-top:5px solid var(--c,#94a3b8)}
 .intcard .ih{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid #f1f5f9}
 .intcard .logo-mp{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:24px;background:var(--c,#eef2ff)}
-.intcard .ih .nm{flex:1}.intcard .ih .nm b{font-size:16px}.intcard .ih .nm small{color:#94a3b8;display:block}
+.intcard .ih .nm{flex:1}.intcard .ih .nm b{font-size:16px}.intcard .ih .nm small{color:var(--muted);display:block}
 .intstatus{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px}
 .is-CONECTADO{background:#dcfce7;color:#166534}.is-PRONTO{background:#fef3c7;color:#92400e}.is-DESCONECTADO{background:#f1f5f9;color:#64748b}.is-ERRO{background:#fee2e2;color:#991b1b}
 .intbody{padding:16px 18px;display:none}.intbody.open{display:block}
@@ -309,7 +345,7 @@ body.kds-mode{background:#0b1220;color:#e2e8f0}
 @media(max-width:900px){#boraToasts{left:12px;right:12px;top:12px}.btoast{max-width:none}}
 
 /* aceite/recusa nos cards do quadro */
-.kacts .ok{background:#22c55e;color:#fff}.kacts .no{background:#fef2f2;color:#dc2626;flex:0 0 auto;padding:9px 11px}
+.kacts .ok{background:#15803d;color:#fff}.kacts .no{background:#fef2f2;color:#dc2626;flex:0 0 auto;padding:9px 11px}
 .kacts .prt{background:#f1f5f9;color:#475569;flex:0 0 auto;padding:9px 11px}
 .kcard .canaltag{position:absolute;top:10px;right:10px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;background:#f1f5f9;color:#475569}
 

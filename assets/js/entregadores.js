@@ -26,12 +26,12 @@
         <div class="av">${veicIc(e.veiculo)}</div>
         <div class="nm"><b>${i === 0 && d.entregues > 0 ? '🏆 ' : ''}${esc(e.nome)}</b>
           <small>${esc(e.telefone || 'sem telefone')} · ${esc(e.veiculo || 'Moto')}</small></div>
-        <div style="text-align:center;min-width:70px"><b style="font-size:18px">${d.entregues}</b><br><small style="color:#94a3b8">entregas</small></div>
-        <div style="text-align:center;min-width:60px"><b style="font-size:18px;color:#a855f7">${d.rota}</b><br><small style="color:#94a3b8">em rota</small></div>
-        <div style="text-align:center;min-width:90px"><b>${money(d.valor)}</b><br><small style="color:#94a3b8">hoje</small></div>
+        <div style="text-align:center;min-width:70px"><b style="font-size:18px">${d.entregues}</b><br><small style="color:#6b7280">entregas</small></div>
+        <div style="text-align:center;min-width:60px"><b style="font-size:18px;color:#a855f7">${d.rota}</b><br><small style="color:#6b7280">em rota</small></div>
+        <div style="text-align:center;min-width:90px"><b>${money(d.valor)}</b><br><small style="color:#6b7280">hoje</small></div>
         <span class="st ${e.ativo === false ? 'off' : 'on'}">${e.ativo === false ? 'inativo' : 'ativo'}</span>
         <div class="linkbtns"><button onclick="__edit(${e.id})">✏</button><button onclick="__del(${e.id})">🗑</button></div>
-      </div>`).join('') : '<p style="color:#94a3b8">Nenhum entregador cadastrado. Use o formulário ao lado.</p>';
+      </div>`).join('') : '<p style="color:#6b7280">Nenhum entregador cadastrado. Use o formulário ao lado.</p>';
   }
 
   window.__edit = id => { const e = entregadores.find(x => x.id === id); if (!e) return;

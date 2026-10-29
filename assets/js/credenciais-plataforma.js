@@ -102,7 +102,7 @@
     if (!lista()) return;
     try {
       const cs = (await Bora.api('/admin-bora/credenciais')) || [];
-      if (!cs.length) { lista().innerHTML = '<span style="color:#94a3b8">Nenhum canal com credencial de plataforma.</span>'; return; }
+      if (!cs.length) { lista().innerHTML = '<span style="color:#6b7280">Nenhum canal com credencial de plataforma.</span>'; return; }
       lista().innerHTML = cs.map(cartao).join('');
       ligar();
     } catch (e) {

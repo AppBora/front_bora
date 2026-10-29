@@ -101,3 +101,41 @@ test('cardapio: o corpo enviado ao servidor continua levando o usarCashback', ()
   // O servidor é quem decide o valor final; o que a tela manda é a INTENÇÃO.
   assert.match(CODIGO, /usarCashback: !!\(\$\('ckUsarCashback'\)/);
 });
+
+// ------------------------------------------------------ o pedido SEGUINTE na mesma pagina
+
+/**
+ * A tela OFERECE pedir de novo sem recarregar: o botao "okVoltar" existe com o comentario "o
+ * cliente pode querer pedir mais". O `confirmarPedido` fazia `cart = []` e nada mais -- o saldo de
+ * cashback, o cupom aplicado, o visto e a caixa verde do saldo ficavam como estavam.
+ *
+ * No segundo pedido o cliente via o desconto do saldo que ele acabou de gastar, e o cupom que ele
+ * acabou de usar: preco na tela diferente do preco cobrado, que e o pior defeito possivel aqui
+ * (pente fino de 29/10/2026).
+ */
+test('cardapio: gravar o pedido limpa o cashback e o cupom DAQUELE pedido', () => {
+  const bloco = JS.match(/async function confirmarPedido\(\)([\s\S]*?)\n  \}/);
+  assert.ok(bloco, 'nao achei o confirmarPedido no cardapio.js');
+  assert.match(bloco[1], /limparOqueEraDoPedidoAnterior\(\)/,
+    'o pedido foi gravado e a tela ficou com o cupom e o saldo do pedido anterior');
+
+  const limpeza = JS.match(/function limparOqueEraDoPedidoAnterior\(\) \{([\s\S]*?)\n  \}/);
+  assert.ok(limpeza, 'nao achei o limparOqueEraDoPedidoAnterior');
+  const c = limpeza[1];
+  assert.match(c, /cupomAplicado = null/, 'o cupom aplicado continuaria valendo na tela');
+  assert.match(c, /cupomOk = false/);
+  assert.match(c, /saldoCashback = 0/, 'o saldo gasto continuaria descontando');
+  assert.match(c, /ckUsarCashback'\)\)\.checked = false|ckUsarCashback'\).checked = false/,
+    'o visto de usar o saldo continuaria marcado');
+  assert.match(c, /verCashback\(\)/,
+    'o saldo novo tem de vir do SERVIDOR; subtrair aqui inventaria um numero');
+});
+
+test('cardapio: a limpeza NAO apaga o nome nem o telefone do cliente', () => {
+  // Sao da pessoa, nao do pedido. Apagar faria o cliente digitar tudo de novo para pedir mais um
+  // acai -- e e justamente o caminho que o botao "pedir mais" existe para encurtar.
+  const c = JS.match(/function limparOqueEraDoPedidoAnterior\(\) \{([\s\S]*?)\n  \}/)[1];
+
+  assert.doesNotMatch(c, /ckNome'\)\.value = ''/, 'apagou o nome do cliente');
+  assert.doesNotMatch(c, /ckTel'\)\.value = ''/, 'apagou o telefone do cliente');
+});

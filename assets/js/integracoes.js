@@ -183,7 +183,7 @@
       </div>
       <div class="toggle-row" onclick="__toggleOpen('${i.canal}')">
         <span style="font-weight:700;font-size:13px">${i.recebendo ? '🟢 Recebendo pedidos' : 'Configurar conexão'}</span>
-        <span style="color:#94a3b8;font-size:12px">${i._open ? 'fechar ▲' : 'abrir ▼'}</span>
+        <span style="color:#6b7280;font-size:12px">${i._open ? 'fechar ▲' : 'abrir ▼'}</span>
       </div>
       <div class="intbody ${open}" id="body-${i.canal}">
         ${i.oficial && ehPlataforma ? boxCredencialApp(i) : ''}
