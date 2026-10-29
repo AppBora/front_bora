@@ -11,7 +11,7 @@
   const CATEGORIA = {
     CANCELAMENTO: { ic: '⛔', cor: '#dc2626' },
     HORARIO:      { ic: '⏰', cor: '#b45309' },
-    PRODUTO:      { ic: '🍧', cor: '#7c3aed' },
+    PRODUTO:      { ic: '🍧', cor: '#9333ea' },
     ESTOQUE:      { ic: '📦', cor: '#0f766e' },
     CANAL:        { ic: '📡', cor: '#1d4ed8' },
     LOJA:         { ic: '🏪', cor: '#166534' },
@@ -49,7 +49,7 @@
   }
 
   function cartao(r, idx) {
-    const cat = CATEGORIA[r.categoria] || { ic: '💡', cor: '#7c3aed' };
+    const cat = CATEGORIA[r.categoria] || { ic: '💡', cor: '#9333ea' };
     const d = destino(r.acao);
     return `<div class="panel" style="margin:0;border-top:3px solid ${cat.cor}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
@@ -60,7 +60,7 @@
       <p style="margin:8px 0 0;font-size:13px;color:#475569;line-height:1.5">${esc(r.porque)}</p>
       <span style="display:inline-block;margin-top:8px;font-size:10px;font-weight:800;letter-spacing:.06em;
             padding:2px 7px;border-radius:999px;${r.origem === 'IA'
-              ? 'background:#ede9fe;color:#5b21b6'
+              ? 'background:#f3e8ff;color:#6b21a8'
               : 'background:#e2e8f0;color:#475569'}">${r.origem === 'IA' ? '🤖 IA' : '⚙️ REGRA'}</span>
       ${r.ganhoEstimado ? `<p style="margin:8px 0 0;font-size:13px;font-weight:700;color:#166534">≈ ${esc(r.ganhoEstimado)}</p>` : ''}
       <button class="btn" style="margin-top:12px;width:100%" onclick="__iaAbrir(${idx})">
@@ -71,7 +71,7 @@
   window.__iaAbrir = idx => {
     const r = plano && plano.recomendacoes && plano.recomendacoes[idx];
     if (!r) return;
-    const cat = CATEGORIA[r.categoria] || { ic: '💡', cor: '#7c3aed' };
+    const cat = CATEGORIA[r.categoria] || { ic: '💡', cor: '#9333ea' };
     $('imTag').textContent = (r.categoria || 'SUGESTÃO') + ' · impacto ' + (r.impacto || '—');
     $('imTag').style.color = cat.cor;
     $('imTitulo').textContent = r.titulo || '';

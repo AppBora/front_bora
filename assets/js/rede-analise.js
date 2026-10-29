@@ -12,11 +12,11 @@
   function fim() { return $('dtFim').value; }
 
   const CANAL_COR = { 'iFood': '#EA1D2C', '99Food': '#d97706', 'Rappi': '#FF441F', 'Uber Eats': '#06C167',
-    'Goomer': '#6d28d9', 'aiqfome': '#e11d48', 'WhatsApp': '#25D366', 'Instagram': '#C13584',
-    'Telefone': '#3b82f6', 'Cardápio próprio': '#7c3aed', 'Balcão': '#8b5cf6', 'Delivery': '#7c3aed', 'Não informado': '#94a3b8' };
+    'Goomer': '#7e22ce', 'aiqfome': '#e11d48', 'WhatsApp': '#25D366', 'Instagram': '#C13584',
+    'Telefone': '#3b82f6', 'Cardápio próprio': '#9333ea', 'Balcão': '#a855f7', 'Delivery': '#9333ea', 'Não informado': '#94a3b8' };
   const cor = c => CANAL_COR[c] || '#64748b';
   const STLABEL = { RECEBIDO: 'Recebido', CONFIRMADO: 'Confirmado', EM_PREPARO: 'Em preparo', PRONTO: 'Pronto', SAIU_PARA_ENTREGA: 'Saiu para entrega' };
-  const STCOR = { RECEBIDO: '#3b82f6', CONFIRMADO: '#0ea5e9', EM_PREPARO: '#f59e0b', PRONTO: '#8b5cf6', SAIU_PARA_ENTREGA: '#22c55e' };
+  const STCOR = { RECEBIDO: '#3b82f6', CONFIRMADO: '#0ea5e9', EM_PREPARO: '#f59e0b', PRONTO: '#a855f7', SAIU_PARA_ENTREGA: '#22c55e' };
 
   // ---------------- Faturamento da rede ----------------
   async function carregarFaturamento() {
@@ -105,7 +105,7 @@
     $('heatUteis').innerHTML = '<div class="empty">Carregando…</div>';
     try {
       const d = await Bora.analiseHorario(ini(), fim());
-      heat($('heatUteis'), d.diasUteis, ['#f5f3ff', '#ede9fe', '#c4b5fd', '#a78bfa', '#7c3aed', '#5b21b6']);
+      heat($('heatUteis'), d.diasUteis, ['#faf5ff', '#f3e8ff', '#d8b4fe', '#c084fc', '#9333ea', '#6b21a8']);
       heat($('heatFds'), d.fimSemana, ['#f0fdf4', '#dcfce7', '#86efac', '#4ade80', '#22c55e', '#15803d']);
       const p = d.pico || {};
       const hu = p.horaPicoUteis, hf = p.horaPicoFimSemana;
@@ -128,7 +128,7 @@
         if (!gargalo || min > Number(gargalo.minutosMedio)) gargalo = t;
         const w = Math.round(min / max * 100);
         return `<div class="st"><div class="nm">${STLABEL[t.status] || t.status}</div>
-          <div class="track"><i style="width:${w}%;background:${STCOR[t.status] || '#7c3aed'}">${min > 0 ? min.toFixed(1) + ' min' : ''}</i></div>
+          <div class="track"><i style="width:${w}%;background:${STCOR[t.status] || '#9333ea'}">${min > 0 ? min.toFixed(1) + ' min' : ''}</i></div>
           <div class="tm">${min.toFixed(1)} min</div></div>`;
       }).join('') || '<div class="empty">Sem histórico de status no período</div>';
       if (gargalo && Number(gargalo.minutosMedio) > 0) {

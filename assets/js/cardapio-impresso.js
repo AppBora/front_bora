@@ -107,7 +107,7 @@
       try { return window.BoraCores.legivelSobreBranco(window.BoraCores.paraRgb(c || reserva)); }
       catch (e) { return reserva; }   // sem o cores.js carregado, a reserva ja e escura
     };
-    const cor = legivel(marca.corPrimaria, '#6d28d9');
+    const cor = legivel(marca.corPrimaria, '#7e22ce');
     const cor2 = legivel(marca.corSecundaria, '#15803d');
     const nome = marca.nome || (dados.loja && dados.loja.nome) || 'Cardápio';
 

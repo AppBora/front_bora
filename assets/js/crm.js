@@ -61,7 +61,7 @@
           <td><span class="cashtag">${money(c.cashback)}</span></td>
           <td>${dataTxt(c.ultimoPedido)}</td>
           <td style="text-align:right;white-space:nowrap">
-            ${rep ? `<a class="btn" style="display:inline-block;padding:12px;min-height:44px;background:#7c3aed;margin-right:6px" href="${rep}" target="_blank" rel="noopener" title="Abre o WhatsApp com a mensagem pronta e o link que monta o último pedido dele no carrinho">🔁 Mandar o último pedido</a>` : ''}
+            ${rep ? `<a class="btn" style="display:inline-block;padding:12px;min-height:44px;background:#9333ea;margin-right:6px" href="${rep}" target="_blank" rel="noopener" title="Abre o WhatsApp com a mensagem pronta e o link que monta o último pedido dele no carrinho">🔁 Mandar o último pedido</a>` : ''}
             ${wa ? `<a class="btn" style="display:inline-block;padding:12px;min-height:44px;background:#128c4a" href="${wa}" target="_blank" rel="noopener">📲 Chamar</a>` : ''}
           </td>
         </tr>`;

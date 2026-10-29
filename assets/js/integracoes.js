@@ -9,7 +9,7 @@
     RAPPI:     { ic: '🟠', cor: '#FF441F' },
     UBER_EATS: { ic: '🟢', cor: '#06C167' },
     AIQFOME:   { ic: '🔵', cor: '#0ea5e9' },
-    GOOMER:    { ic: '🟣', cor: '#8b5cf6' }
+    GOOMER:    { ic: '🟣', cor: '#a855f7' }
   };
 
   // Payloads de exemplo no formato de cada marketplace (prova que os adaptadores funcionam).

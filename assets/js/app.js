@@ -12,8 +12,8 @@ const BORA_CANAIS = [
   { key:'Instagram', ic:'📷', cor:'#C13584', match:['INSTA','IG'] },
   { key:'Telefone',  ic:'📞', cor:'#3b82f6', match:['FONE','TELEF'] },
   { key:'Site',      ic:'🌐', cor:'#0ea5e9', match:['SITE','CARDAP','WEB'] },
-  { key:'Balcão',    ic:'🏪', cor:'#8b5cf6', match:['BALC','LOJA','CAIXA','PDV'] },
-  { key:'Delivery',  ic:'🛵', cor:'#7c3aed', match:['DELIVERY','ENTREGA'] }
+  { key:'Balcão',    ic:'🏪', cor:'#a855f7', match:['BALC','LOJA','CAIXA','PDV'] },
+  { key:'Delivery',  ic:'🛵', cor:'#9333ea', match:['DELIVERY','ENTREGA'] }
 ];
 function boraCanal(origem){
   const o = (origem||'').toUpperCase();
@@ -338,7 +338,7 @@ async function renderLojaSwitcher(){
 (function(){
   if(!document.querySelector('link[rel="manifest"]')){
     const l=document.createElement('link');l.rel='manifest';l.href='/manifest.webmanifest';document.head.appendChild(l);
-    const m=document.createElement('meta');m.name='theme-color';m.content='#7c3aed';document.head.appendChild(m);
+    const m=document.createElement('meta');m.name='theme-color';m.content='#9333ea';document.head.appendChild(m);
   }
   if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
 })();

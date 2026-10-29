@@ -6,7 +6,7 @@
   const COLUNAS = [
     { key: 'COZINHA', titulo: 'Cozinha', icon: '🍳', cor: '#f59e0b', inclui: ['RECEBIDO', 'CONFIRMADO', 'EM_PREPARO'] },
     { key: 'AGUARDANDO', titulo: 'Aguardando entrega', icon: '📦', cor: '#3b82f6', inclui: ['PRONTO'] },
-    { key: 'SAIU', titulo: 'Saiu para entrega', icon: '🛵', cor: '#8b5cf6', inclui: ['SAIU_PARA_ENTREGA'] },
+    { key: 'SAIU', titulo: 'Saiu para entrega', icon: '🛵', cor: '#a855f7', inclui: ['SAIU_PARA_ENTREGA'] },
     { key: 'ENTREGUE', titulo: 'Entregue', icon: '✓', cor: '#22c55e', inclui: ['ENTREGUE'] },
     // Sem esta coluna a aba "Cancelados" existia e NUNCA mostrava nada: o filtro deixava o
     // cancelado passar, e o render so emite card para quem cabe numa coluna. Quem cancelou por

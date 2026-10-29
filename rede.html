@@ -4,11 +4,11 @@
 .subnav .chip{cursor:pointer}
 .view{display:none}.view.active{display:block}
 .rep{position:relative;background:#eef2ff;border-radius:999px;height:22px;min-width:110px;overflow:hidden}
-.rep i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:999px}
+.rep i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#9333ea,#a855f7);border-radius:999px}
 .rep span{position:relative;z-index:2;font-size:12px;font-weight:800;color:#312e81;line-height:22px;padding-left:9px}
 .bars{display:flex;align-items:flex-end;gap:16px;height:210px;padding:22px 6px 0;border-bottom:2px solid #e5e7eb}
 .bars .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end}
-.bars .fill{width:70%;max-width:74px;background:linear-gradient(180deg,#8b5cf6,#7c3aed);border-radius:10px 10px 0 0;position:relative;min-height:2px;transition:height .4s}
+.bars .fill{width:70%;max-width:74px;background:linear-gradient(180deg,#a855f7,#9333ea);border-radius:10px 10px 0 0;position:relative;min-height:2px;transition:height .4s}
 .bars .fill b{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;color:#0f172a;white-space:nowrap}
 .bars .lbl{font-size:12px;color:#475569;text-align:center;font-weight:600;line-height:1.15}
 .rankrow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f1f5f9}
@@ -20,8 +20,8 @@
 .channel .pct{font-size:19px;font-weight:900;min-width:52px}
 .channel .nm{flex:1;font-weight:700}
 .channel .vl{font-weight:800}
-.compare{background:linear-gradient(135deg,#faf5ff,#eff6ff);border:2px solid #ddd6fe;border-radius:16px;padding:20px;margin-top:16px}
-.compare h2{color:#5b21b6;margin:0 0 6px}
+.compare{background:linear-gradient(135deg,#faf5ff,#eff6ff);border:2px solid #e9d5ff;border-radius:16px;padding:20px;margin-top:16px}
+.compare h2{color:#6b21a8;margin:0 0 6px}
 .compare .big{font-size:30px;font-weight:900;letter-spacing:-.02em}
 .compare .muted{color:#6b7280;font-size:13px}
 .heat{display:grid;grid-template-columns:52px repeat(13,1fr);gap:4px;font-size:11px;overflow-x:auto}
@@ -38,7 +38,7 @@
 .sflow .tm{flex:0 0 84px;text-align:right;font-weight:800;font-size:14px}
 .note{border-left:4px solid var(--secondary);background:#f0fdf4;border-radius:8px;padding:10px 14px;font-size:13px;color:#166534;margin-top:14px}
 .note.warn{border-color:var(--warn);background:#fffbeb;color:#92400e}
-.note.pro{border-color:var(--primary);background:#faf5ff;color:#5b21b6}
+.note.pro{border-color:var(--primary);background:#faf5ff;color:#6b21a8}
 .empty{color:var(--muted);padding:26px;text-align:center}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
 @media(max-width:900px){.two{grid-template-columns:1fr}.sflow .nm{flex:0 0 130px}}
@@ -109,7 +109,7 @@
     <!-- HORÁRIO -->
     <section class="view" id="v-horario">
       <div class="panel" style="margin-top:0"><h2>Vendas por horário · dias úteis</h2><p class="sub" style="color:var(--muted);font-size:13px">Concentração de pedidos por faixa (seg–sex).</p><div class="heat" id="heatUteis"></div>
-        <div class="legend"><span>Menos</span><span class="sw" style="background:#ede9fe"></span><span class="sw" style="background:#c4b5fd"></span><span class="sw" style="background:#a78bfa"></span><span class="sw" style="background:#7c3aed"></span><span class="sw" style="background:#5b21b6"></span><span>Mais</span></div></div>
+        <div class="legend"><span>Menos</span><span class="sw" style="background:#f3e8ff"></span><span class="sw" style="background:#d8b4fe"></span><span class="sw" style="background:#c084fc"></span><span class="sw" style="background:#9333ea"></span><span class="sw" style="background:#6b21a8"></span><span>Mais</span></div></div>
       <div class="panel"><h2>Vendas por horário · fim de semana</h2><p class="sub" style="color:var(--muted);font-size:13px">Concentração de pedidos por faixa (sáb–dom).</p><div class="heat" id="heatFds"></div>
         <div class="legend"><span>Menos</span><span class="sw" style="background:#dcfce7"></span><span class="sw" style="background:#86efac"></span><span class="sw" style="background:#4ade80"></span><span class="sw" style="background:#22c55e"></span><span class="sw" style="background:#15803d"></span><span>Mais</span></div></div>
       <div class="note" id="picoNota"></div>
@@ -150,7 +150,7 @@
 <div id="iaModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:70;align-items:center;justify-content:center;padding:16px">
   <div style="background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:86vh;overflow:auto">
     <div style="padding:18px 20px;border-bottom:1px solid #e2e8f0">
-      <div id="imTag" style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7c3aed"></div>
+      <div id="imTag" style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9333ea"></div>
       <b id="imTitulo" style="font-size:18px;display:block;margin-top:4px"></b>
     </div>
     <div style="padding:16px 20px;font-size:14px;line-height:1.6">

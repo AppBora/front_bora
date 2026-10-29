@@ -16,7 +16,7 @@
   .rc-row input{padding:10px;border:1px solid #cbd5e1;border-radius:10px;font-size:15px;min-width:180px}
   .rc-badge{display:inline-block;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px}
   .rc-ok{background:#dcfce7;color:#166534}.rc-pend{background:#fef3c7;color:#92400e}.rc-off{background:#e5e7eb;color:#475569}
-  .rc-link{display:inline-block;margin-top:10px;background:#7c3aed;color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;text-decoration:none}
+  .rc-link{display:inline-block;margin-top:10px;background:#9333ea;color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;text-decoration:none}
   .rc-doc{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-top:8px}
   .rc-doc b{font-size:14px}
   .rc-recusa{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px;margin-top:8px;font-size:13px;color:#b91c1c}

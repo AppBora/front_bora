@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cardápio Digital</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20261023"><meta name="theme-color" content="#7c3aed"><style>#comp:not([hidden]),#checkout:not([hidden]),#ckOpPix:not([hidden]){display:flex}
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cardápio Digital</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20261023"><meta name="theme-color" content="#9333ea"><style>#comp:not([hidden]),#checkout:not([hidden]),#ckOpPix:not([hidden]){display:flex}
 /* O ZOOM DO IPHONE NO CHECKOUT (achado pelo QA em 24/10/2026).
    O Safari do iOS dá zoom na página sozinho quando o campo que recebeu o toque tem font-size menor
    que 16px -- e NÃO volta ao sair do campo. O cliente tocava em "Seu nome" e o checkout inteiro
@@ -56,7 +56,7 @@ input:not([type=radio]):not([type=checkbox]),select,textarea{font-size:16px}</st
     <h2 style="margin:0" id="compTitulo"></h2>
     <div id="compGrupos"></div>
     <div id="compErr" style="color:#dc2626;font-size:13px;margin-top:8px"></div>
-    <button id="compOk" style="width:100%;margin-top:14px;padding:13px;border:none;border-radius:10px;background:var(--primary,#7c3aed);color:#fff;font-weight:800;font-size:15px;cursor:pointer">Adicionar ao pedido</button>
+    <button id="compOk" style="width:100%;margin-top:14px;padding:13px;border:none;border-radius:10px;background:var(--primary,#9333ea);color:#fff;font-weight:800;font-size:15px;cursor:pointer">Adicionar ao pedido</button>
     <button id="compCancelar" style="width:100%;margin-top:8px;padding:10px;border:none;border-radius:10px;background:#f1f5f9;color:#334155;font-weight:600;cursor:pointer">Cancelar</button>
   </div>
 </div>
@@ -141,7 +141,7 @@ input:not([type=radio]):not([type=checkbox]),select,textarea{font-size:16px}</st
         <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:16px"><span><b>Total</b></span><b id="ctTotal">R$ 0,00</b></div>
       </div>
       <div id="ckErr" style="color:#dc2626;font-size:13px;margin-top:10px"></div>
-      <button id="ckEnviar" style="width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:var(--primary,#7c3aed);color:#fff;font-weight:800;font-size:16px;cursor:pointer">Confirmar pedido</button>
+      <button id="ckEnviar" style="width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:var(--primary,#9333ea);color:#fff;font-weight:800;font-size:16px;cursor:pointer">Confirmar pedido</button>
       <button id="ckFechar" style="width:100%;margin-top:8px;padding:10px;border:none;border-radius:10px;background:#f1f5f9;color:#334155;font-weight:600;cursor:pointer">Voltar</button>
     </div>
     <div id="ckPix" hidden style="text-align:center">
@@ -149,7 +149,7 @@ input:not([type=radio]):not([type=checkbox]),select,textarea{font-size:16px}</st
       <p style="color:#64748b;font-size:14px;margin:0 0 10px">Pedido <b id="pxCodigo"></b> · <span id="pxValor"></span></p>
       <img id="pxQr" alt="QR Code PIX" style="width:230px;height:230px;border:1px solid #e2e8f0;border-radius:12px">
       <textarea id="pxPayload" readonly style="width:100%;margin-top:10px;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:11px;height:64px"></textarea>
-      <button id="pxCopiar" style="width:100%;margin-top:8px;padding:12px;border:none;border-radius:10px;background:var(--primary,#7c3aed);color:#fff;font-weight:700;cursor:pointer">Copiar código PIX</button>
+      <button id="pxCopiar" style="width:100%;margin-top:8px;padding:12px;border:none;border-radius:10px;background:var(--primary,#9333ea);color:#fff;font-weight:700;cursor:pointer">Copiar código PIX</button>
       <div id="pxStatus" style="margin-top:14px;font-weight:800;color:#b45309">⏳ Aguardando pagamento…</div>
       <!--
         SAÍDA DA TELA DO PIX — faltava, e o cliente ficava preso (achado pelo QA em 26/10/2026).
@@ -169,7 +169,7 @@ input:not([type=radio]):not([type=checkbox]),select,textarea{font-size:16px}</st
       <h2>Pedido enviado!</h2>
       <p style="color:#64748b" id="okMsg"></p>
       <!-- Mesma falta na tela de sucesso: o cliente que quisesse pedir mais não tinha caminho. -->
-      <button id="okVoltar" style="width:100%;margin-top:16px;padding:12px;border:none;border-radius:10px;background:var(--primary,#7c3aed);color:#fff;font-weight:700;cursor:pointer">Voltar ao cardápio</button>
+      <button id="okVoltar" style="width:100%;margin-top:16px;padding:12px;border:none;border-radius:10px;background:var(--primary,#9333ea);color:#fff;font-weight:700;cursor:pointer">Voltar ao cardápio</button>
     </div>
   </div>
 </div>

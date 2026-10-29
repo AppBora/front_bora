@@ -109,7 +109,7 @@ window.__comp = async (produtoId) => {
     <h2 style="margin:0 0 4px">🧩 Complementos do produto</h2>
     <p style="color:#64748b;font-size:13px;margin:0 0 12px">Ex.: grupo "Tamanho" (escolha 1), grupo "Adicionais" (até 5). Preço 0 = sem custo extra.</p>
     <div id="cgGrupos"></div>
-    <button id="cgAddGrupo" style="margin-top:8px;padding:8px 14px;border:1px dashed #7c3aed;background:#f5f3ff;color:#7c3aed;border-radius:8px;cursor:pointer;font-weight:700">+ Adicionar grupo</button>
+    <button id="cgAddGrupo" style="margin-top:8px;padding:8px 14px;border:1px dashed #9333ea;background:#faf5ff;color:#9333ea;border-radius:8px;cursor:pointer;font-weight:700">+ Adicionar grupo</button>
     <div id="cgMsg" style="font-size:13px;margin-top:8px"></div>
     <div style="display:flex;gap:8px;margin-top:14px">
       <button id="cgSalvar" class="btn" style="flex:1">Salvar complementos</button>

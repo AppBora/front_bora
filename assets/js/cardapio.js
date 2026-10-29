@@ -541,7 +541,7 @@
   function linkDeAcompanhar(pedidoId, token) {
     const url = 'acompanhar.html?loja=' + lojaId + '&pedido=' + pedidoId
       + (token ? '&t=' + encodeURIComponent(token) : '');
-    return '<a href="' + url + '" style="color:#7c3aed;font-weight:800">📍 Acompanhar meu pedido ao vivo</a>';
+    return '<a href="' + url + '" style="color:#9333ea;font-weight:800">📍 Acompanhar meu pedido ao vivo</a>';
   }
 
   /**
