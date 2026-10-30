@@ -171,6 +171,12 @@
   }
 
   function card(i) {
+    // O CABECALHO TAMBEM MENTIA, e e o unico texto visivel SEM abrir o cartao: ele dizia
+    // "Recebendo pedidos", em verde, para o 99Food da Zira Acaiteria com ZERO pedido recebido.
+    // O campo `i.recebendo` da API quer dizer "a conexao esta de pe" -- nao "pedido esta
+    // entrando". O nome da variavel enganou quem escreveu o rotulo, que fui eu. Encontrado
+    // abrindo a tela num ensaio local com os dados medidos da producao, em 30/10/2026: a
+    // sintaxe estava valida e o texto na tela continuava errado.
     const mp = MP[i.canal] || { ic: '🧾', cor: '#94a3b8' };
     const zap = i.canal === 'WHATSAPP';
     const open = i._open ? 'open' : '';
@@ -182,7 +188,9 @@
         <span class="intstatus is-${i.status}">${i.status}</span>
       </div>
       <div class="toggle-row" onclick="__toggleOpen('${i.canal}')">
-        <span style="font-weight:700;font-size:13px">${i.recebendo ? '🟢 Recebendo pedidos' : 'Configurar conexão'}</span>
+        <span style="font-weight:700;font-size:13px">${!i.recebendo ? 'Configurar conexão'
+          : entrouAlgumPedido(i).algum ? '🟢 Recebendo pedidos'
+          : '🟡 Conectado, sem pedido ainda'}</span>
         <span style="color:#6b7280;font-size:12px">${i._open ? 'fechar ▲' : 'abrir ▼'}</span>
       </div>
       <div class="intbody ${open}" id="body-${i.canal}">
@@ -238,7 +246,16 @@
       // O "online" do iFood depende da nossa busca estar rodando: sem ela a loja aparece FECHADA
       // para o cliente do marketplace, mesmo com tudo certo aqui.
       const linhas = [
-        ['Recebendo agora', d.onlineNoMarketplace ? '🟢 sim' : '🔴 não'],
+        // DUAS LINHAS, e nao uma. "A busca esta rodando" e "pedido esta entrando" sao
+        // perguntas diferentes, e junta-las numa linha chamada "Recebendo agora" foi o que fez
+        // esta tela responder 🟢 para um canal que nunca recebeu um pedido na vida.
+        ['Busca rodando', d.onlineNoMarketplace ? '🟢 sim' : '🔴 não'],
+        ['Pedido entrando', (() => {
+          const j = entrouAlgumPedido(d);
+          if (j.algum) return '🟢 sim — ' + j.quantos + ' pedido(s) já entraram por aqui';
+          return '<span style="color:#b45309">⚠ nenhum pedido entrou por aqui ainda '
+            + '— buscar sem erro não é receber</span>';
+        })()],
         ['Conexão ativa', sim(d.ativo)],
         ['Situação', esc(d.status || '—')],
         ['Código da loja lá', esc(d.merchantId || '— (sem ele, nenhum pedido casa com esta loja)')],
@@ -313,6 +330,29 @@
    * instante. Na prática, nunca via. E o recado é o que explica por que o cliente final continua
    * vendo "em preparo" no aplicativo depois de ter recebido a comida.
    */
+  /**
+   * Entrou algum pedido por este canal, alguma vez?
+   *
+   * Mora numa funcao so porque a resposta aparece em DOIS lugares -- o cartao e o diagnostico -- e
+   * duas contas iguais escritas em dois lugares viram duas contas diferentes no mes seguinte. Os
+   * dois ja recebem `pedidosRecebidos` da API: nao precisa de endpoint novo.
+   *
+   * O QUE ESTA FUNCAO NAO FAZ, E POR QUE: ela nao diz "ha quantos dias esta assim". Eu ia medir
+   * isso pelo `ultimaSync`, e fui conferir: o `ultima_sync` SO e gravado quando um pedido entra
+   * (`registrarRecebido`, `contarPedidoRecebido`, o webhook e o poller -- os quatro). Nao existe
+   * nenhuma coluna de "conectado desde" em `integracao_canal`. Com o contador em zero, o
+   * `ultimaSync` ou e nulo ou e de um "Simular pedido" que depois foi apagado (`descontarRecebido`
+   * desconta) -- foi exatamente o caso da Zira: `ultima_sync` de 21/10 com contador 0.
+   *
+   * Entao a tela afirma o que da para medir ("nenhum pedido entrou por aqui") e NAO afirma duracao.
+   * Para o aviso virar "ativo ha mais de 48 h sem pedido" falta uma coluna `conectado_em`, que e
+   * migracao e versao nova da API.
+   */
+  function entrouAlgumPedido(i) {
+    const n = Number(i.pedidosRecebidos || 0);
+    return { algum: n > 0, quantos: n };
+  }
+
   function recados(i) {
     const erro = i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : '';
     if (!i.ultimoAviso) return erro;
@@ -406,6 +446,41 @@
           ${recados(i)}
         </div>`;
       }
+
+      // AQUI MORAVA O VERDE QUE MENTIA. Achado em 30/10/2026, pelo operador da Zira Acaiteria.
+      //
+      // O `merchantId` estava preenchido, o token valido, a busca rodando a cada 2 minutos e sem
+      // erro nenhum -- e o cartao dizia "os pedidos chegam sozinhos" com o contador em ZERO desde
+      // 21/10. O operador ligou dizendo que pedido do 99 nao entrava; ele e eu abrimos esta tela e
+      // lemos "conectado". O ID gravado era `zira-acaiteria`, um apelido digitado a mao, e nao um
+      // App Shop ID da 99: com um ID que o marketplace nao conhece, ele responde lista vazia --
+      // sem erro, sem log e sem pedido, para sempre.
+      //
+      // A frase "os pedidos chegam sozinhos" e uma PROMESSA. So pode aparecer depois que pelo
+      // menos um pedido chegou de verdade.
+      const jaEntrou = entrouAlgumPedido(i);
+      if (!tokenVencido && !jaEntrou.algum) {
+        return `<div class="oficial-box" style="background:#fffbeb;border-color:#fde68a">
+          <b>🟡 Conectado — mas nenhum pedido entrou por aqui ainda</b>
+          <p>A busca está rodando e <b>não dá erro</b>. Isso não é o mesmo que receber: quando o
+          <b>${esc(i.label === 'iFood' ? 'Merchant ID' : 'ID da loja')}</b> gravado aqui não
+          corresponde à sua loja no ${esc(i.label)}, ele responde "nenhum pedido" — sem acusar
+          erro. Última consulta: ${quando}.</p>
+          <p style="margin:6px 0 0"><b>Se você já vende no ${esc(i.label)}</b>, confira nesta ordem:</p>
+          <ol style="margin:4px 0 0 18px;padding:0">
+            <li>o ID gravado aqui é <code>${esc(i.merchantId)}</code> — é esse mesmo que aparece no
+            portal do ${esc(i.label)}?</li>
+            ${i.oficial ? `<li>a sua loja está <b>vinculada ao aplicativo BoraHapp</b> no portal
+            deles? Vincular exige um <b>super-administrador</b> da sua conta ${esc(i.label)}.</li>` : ''}
+            <li>a loja está <b>ativa e aberta</b> lá? Loja inativa não recebe pedido.</li>
+          </ol>
+          <p style="margin:6px 0 0">Enquanto isso <b>nada se perde</b>: os pedidos continuam no
+          aplicativo do ${esc(i.label)} e podem ser lançados pela Frente de Caixa.</p>
+          ${avisoToken}
+          ${recados(i)}
+        </div>`;
+      }
+
       // Com o token vencido a caixa NAO pode ser a verde que diz "os pedidos chegam sozinhos":
       // essa frase e a promessa exata que deixou de ser verdade.
       return `<div class="oficial-box ${tokenVencido ? '' : 'ok'}" ${tokenVencido ? 'style="background:#fffbeb;border-color:#fde68a"' : ''}>
