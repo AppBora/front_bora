@@ -351,6 +351,11 @@ body.kds-mode{background:#0b1220;color:#e2e8f0}
 
 /* Conexao oficial com marketplace (iFood, 99Food): o app e da plataforma e o lojista so autoriza. */
 .oficial-box{border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:14px;line-height:1.55}
+/* Nesta caixa, <b> e o TITULO dela -- por isso e bloco. Para enfatizar NO MEIO de uma frase
+   use <strong>, senao o negrito vira bloco e pica o texto em varias linhas (visto na tela
+   do dono em 30/10/2026). Nao tente separar os dois por posicao: `b:first-child` ignora
+   texto solto, entao em "<p>A busca roda e <b>nao da erro</b>.</p>" o <b> ainda e o
+   primeiro ELEMENTO do paragrafo e continua bloco. Eu tentei, e nao funciona. */
 .oficial-box b{display:block;margin-bottom:4px}
 .oficial-box p{margin:4px 0}
 .oficial-box.passo{background:#faf5ff;border:1px solid #e9d5ff;color:#581c87}

@@ -399,7 +399,7 @@
         <div class="usercode" ${vencido ? 'style="opacity:.45;text-decoration:line-through"' : ''}>${esc(i.userCode)}</div>
         <p style="font-size:12px;margin:6px 0">${vencido
           ? '<b style="color:#b91c1c">Este código venceu.</b> Gere um novo e autorize em seguida.'
-          : (vence ? 'Vale até <b>' + vence.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '</b>.' : '')}
+          : (vence ? 'Vale até <strong>' + vence.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '</strong>.' : '')}
           <button class="btn secondary" style="padding:4px 10px;font-size:12px;margin-left:6px" onclick="__vincular('${i.canal}')">🔄 Gerar novo código</button></p>
         ${i.verificationUrl ? `<p><a href="${esc(i.verificationUrl)}" target="_blank" rel="noopener">Abrir o portal do ${esc(i.label)} ↗</a></p>` : ''}
         <div class="field"><label>Código de autorização devolvido pelo portal</label>
@@ -428,11 +428,11 @@
         <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px;margin-top:8px;color:#7f1d1d">
           <b>⛔ A autorização do ${esc(i.label)} venceu</b> em
           ${esc(venc.toLocaleDateString('pt-BR'))}.
-          <p style="margin:6px 0 0">Enquanto não for renovada, <b>nenhum pedido novo entra</b> por
+          <p style="margin:6px 0 0">Enquanto não for renovada, <strong>nenhum pedido novo entra</strong> por
           este canal — mesmo com o cartão dizendo conectado.
           ${i.oficial && i.appConfigurado
             ? 'A renovação é automática; se a data já passou, ela está falhando. Clique em Conectar para refazer.'
-            : 'Refaça a conexão: clique em <b>Conectar</b> e autorize no portal outra vez.'}</p>
+            : 'Refaça a conexão: clique em <strong>Conectar</strong> e autorize no portal outra vez.'}</p>
           <button class="btn" style="margin-top:8px" onclick="__vincular('${i.canal}')">🔗 Reconectar ao ${esc(i.label)}</button>
         </div>`;
       // Conectado NAO e o mesmo que recebendo. Sem o ID da loja no marketplace, a busca de pedidos
@@ -442,8 +442,8 @@
       if (!i.merchantId) {
         return `<div class="oficial-box" style="background:#fffbeb;border-color:#fde68a">
           <b>🟡 Autorizado, mas ainda não recebendo</b>
-          <p>A conexão com o ${esc(i.label)} foi autorizada, só falta dizer <b>qual é a sua loja lá</b>.
-          Informe o <b>${esc(i.label === 'iFood' ? 'Merchant ID' : 'ID da loja')}</b> no campo abaixo e salve —
+          <p>A conexão com o ${esc(i.label)} foi autorizada, só falta dizer <strong>qual é a sua loja lá</strong>.
+          Informe o <strong>${esc(i.label === 'iFood' ? 'Merchant ID' : 'ID da loja')}</strong> no campo abaixo e salve —
           sem ele os pedidos não chegam.</p>
           ${avisoToken}
           ${recados(i)}
@@ -465,19 +465,19 @@
       if (!tokenVencido && !jaEntrou.algum) {
         return `<div class="oficial-box" style="background:#fffbeb;border-color:#fde68a">
           <b>🟡 Conectado — mas nenhum pedido entrou por aqui ainda</b>
-          <p>A busca está rodando e <b>não dá erro</b>. Isso não é o mesmo que receber: quando o
-          <b>${esc(i.label === 'iFood' ? 'Merchant ID' : 'ID da loja')}</b> gravado aqui não
+          <p>A busca está rodando e <strong>não dá erro</strong>. Isso não é o mesmo que receber: quando o
+          <strong>${esc(i.label === 'iFood' ? 'Merchant ID' : 'ID da loja')}</strong> gravado aqui não
           corresponde à sua loja no ${esc(i.label)}, ele responde "nenhum pedido" — sem acusar
           erro. Última consulta: ${quando}.</p>
-          <p style="margin:6px 0 0"><b>Se você já vende no ${esc(i.label)}</b>, confira nesta ordem:</p>
+          <p style="margin:6px 0 0"><strong>Se você já vende no ${esc(i.label)}</strong>, confira nesta ordem:</p>
           <ol style="margin:4px 0 0 18px;padding:0">
             <li>o ID gravado aqui é <code>${esc(i.merchantId)}</code> — é esse mesmo que aparece no
             portal do ${esc(i.label)}?</li>
-            ${i.oficial ? `<li>a sua loja está <b>vinculada ao aplicativo BoraHapp</b> no portal
-            deles? Vincular exige um <b>super-administrador</b> da sua conta ${esc(i.label)}.</li>` : ''}
-            <li>a loja está <b>ativa e aberta</b> lá? Loja inativa não recebe pedido.</li>
+            ${i.oficial ? `<li>a sua loja está <strong>vinculada ao aplicativo BoraHapp</strong> no portal
+            deles? Vincular exige um <strong>super-administrador</strong> da sua conta ${esc(i.label)}.</li>` : ''}
+            <li>a loja está <strong>ativa e aberta</strong> lá? Loja inativa não recebe pedido.</li>
           </ol>
-          <p style="margin:6px 0 0">Enquanto isso <b>nada se perde</b>: os pedidos continuam no
+          <p style="margin:6px 0 0">Enquanto isso <strong>nada se perde</strong>: os pedidos continuam no
           aplicativo do ${esc(i.label)} e podem ser lançados pela Frente de Caixa.</p>
           ${avisoToken}
           ${recados(i)}
