@@ -171,8 +171,11 @@
   }
 
   function card(i) {
-    // O CABECALHO TAMBEM MENTIA, e e o unico texto visivel SEM abrir o cartao: ele dizia
-    // "Recebendo pedidos", em verde, para o 99Food da Zira Acaiteria com ZERO pedido recebido.
+    // O CABECALHO TAMBEM MENTIA, e e o unico texto visivel SEM abrir o cartao: ele afirmava em
+    // verde que a loja estava recebendo, para o 99Food da Zira Acaiteria com ZERO pedido
+    // recebido. (Nao repito aqui a frase antiga de proposito: comentario que cita o texto
+    // velho faz a proxima busca por ele achar uma ocorrencia que nao esta em tela nenhuma --
+    // ja me enganei assim em 30/10, conferindo a landing.)
     // O campo `i.recebendo` da API quer dizer "a conexao esta de pe" -- nao "pedido esta
     // entrando". O nome da variavel enganou quem escreveu o rotulo, que fui eu. Encontrado
     // abrindo a tela num ensaio local com os dados medidos da producao, em 30/10/2026: a
