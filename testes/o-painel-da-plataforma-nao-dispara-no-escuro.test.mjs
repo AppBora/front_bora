@@ -48,8 +48,15 @@ function fichaDoPainel() {
   const fonteEsc = /\n(  const esc = v => String[\s\S]*?\[c\]\)\);)/.exec(CONFIG);
   assert.ok(fonteEsc, 'não achei o esc() do painel');
 
+  // O `ficha` passou a mostrar o endereço da unidade (V66), e o endereço também vem do banco:
+  // escapá-lo é o mesmo problema deste arquivo. Por isso a FichaEndereco entra aqui pelo código
+  // REAL do arquivo, como o `esc` — uma cópia dublada mediria a minha versão, não a que vai ao ar.
+  const fonteFicha2 = /\n(const FichaEndereco = \(function \(\) \{[\s\S]*?\n\}\)\(\);)/.exec(CONFIG);
+  assert.ok(fonteFicha2, 'não achei a FichaEndereco no HTML: este teste está medindo nada');
+
   const ctx = vm.createContext({ console, Date, Math, Number, String, Object, Array });
   vm.runInContext([
+    fonteFicha2[1],
     fonteEsc[1],
     // Os outros ajudantes que o ficha usa não são objeto deste teste; o mínimo honesto para ele
     // rodar.

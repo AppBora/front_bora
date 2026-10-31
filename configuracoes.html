@@ -127,6 +127,24 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
       <div class="theme-preview" id="preview"></div>
       </div>
     </details>
+    <!-- Endereço da loja (V66). Separado da Identidade de propósito: identidade é a cara da loja
+         (nome, cor, logo); endereço é cadastro, e é o que distingue uma unidade da outra numa
+         rede. Quem grava é o administrador da loja; os outros papéis leem. -->
+    <details class="bloco raiz" id="cardEndereco">
+      <summary>📍 Endereço da loja <span class="pista" id="endPista">· onde esta unidade fica</span></summary>
+      <div class="conteudo">
+      <p style="color:var(--muted);font-size:13px;margin:0 0 12px">
+        É o endereço <b>desta unidade</b> — de onde o pedido sai. Em rede com mais de uma loja, é o
+        que diferencia uma da outra na hora de conferir.
+      </p>
+      <div id="endCampos"></div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:12px">
+        <button class="btn" id="endSalvar">Salvar endereço</button>
+        <span id="endMsg" style="font-size:13px"></span>
+      </div>
+      </div>
+    </details>
+
     <!-- Minha senha (todo usuário logado troca a própria) -->
     <details class="bloco raiz" id="cardSenha">
       <summary>🔒 Minha senha <span class="pista">· troque de tempos em tempos</span></summary>
@@ -266,6 +284,14 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
           <input id="nlSenha" type="password" placeholder="o lojista troca no 1º acesso" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
         <label style="font-size:13px">Preço mensal negociado <span style="color:var(--muted)">(vazio = tabela)</span><br>
           <input id="nlPreco" type="number" min="0" step="0.01" placeholder="Ex.: 149.00" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px"></label>
+      </div>
+      <!-- Endereco da unidade. Fica aqui, e nao numa tela depois, porque cliente com varias lojas
+           cadastra tudo de uma vez: sem endereco, "Zira - Centro" e "Zira - Zona Norte" sao dois
+           nomes que ninguem consegue conferir qual e qual. Opcional: quem nao tiver o CEP na mao
+           preenche depois pelo botao Endereço na lista. -->
+      <div style="margin-top:12px;border-top:1px dashed #e2e8f0;padding-top:10px">
+        <p style="font-size:13px;font-weight:600;margin:0 0 8px">Endereço da unidade <span style="color:var(--muted);font-weight:400">· opcional, dá para preencher depois</span></p>
+        <div id="nlEndereco"></div>
       </div>
       <button class="btn" id="nlCriar" style="margin-top:12px">Criar loja</button>
       <span id="nlMsg" style="font-size:13px;margin-left:10px"></span>
@@ -410,6 +436,74 @@ const Sanfona = (function () {
 })();
 Sanfona.ligar(document);
 
+/**
+ * A ficha de endereco de uma loja (V66), em um lugar so.
+ *
+ * Tres telas gravam o mesmo endereco: o cadastro de loja nova, o botao Endereço da lista de
+ * clientes e o cartao do proprio lojista. Sete campos escritos tres vezes viram tres formularios
+ * diferentes na primeira correcao -- foi assim que o preco da Zira ficou certo numa loja e velho
+ * em duas.
+ *
+ * `montar` desenha, `ler` devolve o que esta na tela e `preencher` joga um endereco de volta nela.
+ * O servidor e quem confere (CEP de 8 digitos, UF que existe, largura de coluna): repetir a regra
+ * aqui criaria uma segunda regra, que um dia discorda da primeira.
+ */
+const FichaEndereco = (function () {
+  const CAMPOS = [
+    ['cep',         'CEP',          '00000-000',               '1 / span 1'],
+    ['logradouro',  'Rua / avenida','Ex.: Rua Firmino Mineli', '1 / span 2'],
+    ['numero',      'Número',       'Ex.: 751',                '1 / span 1'],
+    ['complemento', 'Complemento',  'Ex.: loja 2, fundos',     '1 / span 1'],
+    ['bairro',      'Bairro',       'Ex.: Vila Mineirão',      '1 / span 1'],
+    ['cidade',      'Cidade',       'Ex.: Sorocaba',           '1 / span 1'],
+    ['uf',          'UF',           'SP',                      '1 / span 1']
+  ];
+  const ENTRADA = 'width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px';
+
+  function montar(container, prefixo) {
+    container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">'
+      + CAMPOS.map(([id, rotulo, dica]) =>
+          `<label style="font-size:13px">${rotulo}<br>
+             <input id="${prefixo}${id}" placeholder="${dica}"
+                    ${id === 'uf' ? 'maxlength="2" style="text-transform:uppercase;' : 'style="'}${ENTRADA}"></label>`
+        ).join('')
+      + '</div>';
+  }
+
+  function ler(prefixo) {
+    const e = {};
+    CAMPOS.forEach(([id]) => {
+      const el = document.getElementById(prefixo + id);
+      e[id] = el && el.value.trim() ? el.value.trim() : null;
+    });
+    return e;
+  }
+
+  function preencher(prefixo, endereco) {
+    CAMPOS.forEach(([id]) => {
+      const el = document.getElementById(prefixo + id);
+      if (el) el.value = (endereco && endereco[id]) || '';
+    });
+  }
+
+  /** Vazio = ninguem preencheu ainda. Nao e o mesmo que endereco errado. */
+  function vazio(e) {
+    return !e || CAMPOS.every(([id]) => !e[id]);
+  }
+
+  /** Uma linha legivel: "Rua Firmino Mineli, 751 - Vila Mineirão, Sorocaba/SP · 18087-000". */
+  function emUmaLinha(e) {
+    if (vazio(e)) return '';
+    const rua = [e.logradouro, e.numero].filter(Boolean).join(', ');
+    const comp = e.complemento ? ' (' + e.complemento + ')' : '';
+    const cidadeUf = [e.cidade, e.uf].filter(Boolean).join('/');
+    const fim = [e.bairro, cidadeUf].filter(Boolean).join(', ');
+    return [rua + comp, fim].filter(Boolean).join(' - ') + (e.cep ? ' · ' + e.cep : '');
+  }
+
+  return { montar, ler, preencher, vazio, emUmaLinha };
+})();
+
 // Identidade da loja: quem nao administra a loja nao edita o nome, as cores nem o custo fixo.
 //
 // A tela INTEIRA continua no menu do operador de proposito -- e aqui que cada um troca a propria
@@ -421,6 +515,64 @@ Sanfona.ligar(document);
   const p = (Bora.user() && Bora.user().papel) || '';
   if (p === 'ADMINISTRADOR_LOJA' || p === 'ADMINISTRADOR_BORA') return;
   bloco.hidden = true;
+})();
+
+// Endereco da loja (V66) — le para todo mundo que esta na loja, grava so o administrador dela.
+//
+// O card nao aparece para quem nao tem loja no contexto (o ADMINISTRADOR_BORA antes de "Entrar na
+// loja"): ali `GET /api/loja` responde 409 pedindo para escolher uma loja, e um card com erro
+// permanente na tela nao ajuda ninguem.
+(function () {
+  const card = document.getElementById('cardEndereco');
+  // `typeof Bora`, e NAO `window.Bora`: o api.js declara `const Bora = {...}`, e const no escopo
+  // global do script NAO cria propriedade em window. `window.Bora` e sempre undefined -- foi assim
+  // que este cartao ficou invisivel no ensaio, com o codigo certo na pagina.
+  if (!card || typeof Bora === 'undefined' || !Bora.user) return;
+  const u = Bora.user();
+  if (!u || (u.papel === 'ADMINISTRADOR_BORA' && !u.lojaId)) { card.hidden = true; return; }
+  const podeGravar = u.papel === 'ADMINISTRADOR_LOJA' || u.papel === 'ADMINISTRADOR_BORA';
+  const salvar = document.getElementById('endSalvar');
+  const msg = document.getElementById('endMsg');
+  const pista = document.getElementById('endPista');
+  FichaEndereco.montar(document.getElementById('endCampos'), 'endL');
+
+  (async () => {
+    try {
+      const r = await Bora.api('/api/loja');
+      FichaEndereco.preencher('endL', r.endereco);
+      if (pista) {
+        pista.textContent = r.enderecoCadastrado
+          ? '· ' + FichaEndereco.emUmaLinha(r.endereco)
+          : '· ainda não cadastrado';
+      }
+      // Quem nao grava ve os campos, mas nao edita: esconder o endereco da propria loja do gerente
+      // seria esconder um dado que ele le no cupom impresso todo dia.
+      if (!podeGravar) {
+        document.querySelectorAll('#endCampos input').forEach(i => i.disabled = true);
+        salvar.hidden = true;
+        msg.style.color = 'var(--muted)';
+        msg.textContent = 'Só o administrador da loja pode mudar o endereço.';
+      }
+    } catch (e) {
+      msg.style.color = '#b45309';
+      msg.textContent = 'Não consegui ler o endereço: ' + e.message;
+    }
+  })();
+
+  salvar.onclick = async () => {
+    salvar.disabled = true;
+    msg.style.color = 'var(--muted)'; msg.textContent = 'salvando…';
+    try {
+      const r = await Bora.api('/api/loja/endereco',
+        { method: 'PUT', body: JSON.stringify(FichaEndereco.ler('endL')) });
+      FichaEndereco.preencher('endL', r.endereco);   // mostra o CEP e a UF do jeito que ficaram
+      if (pista) pista.textContent = '· ' + FichaEndereco.emUmaLinha(r.endereco);
+      msg.style.color = '#166534'; msg.textContent = 'salvo ✓';
+      setTimeout(() => { msg.textContent = ''; }, 4000);
+    } catch (e) {
+      msg.style.color = '#dc2626'; msg.textContent = e.message;
+    } finally { salvar.disabled = false; }
+  };
 })();
 
 // Troca da propria senha — disponivel para qualquer usuario logado.
@@ -644,7 +796,13 @@ Sanfona.ligar(document);
     partes.push('cliente desde ' + data(c.criadoEm));
     partes.push(c.ultimoPedidoEm ? 'último pedido ' + data(c.ultimoPedidoEm) : 'nenhum pedido ainda');
     if (c.motivo) partes.push('motivo: ' + esc(c.motivo));
-    return partes.join(' · ');
+    // O endereco em linha propria, e nao no meio dos outros dados: e o que distingue duas unidades
+    // do mesmo cliente uma da outra, e ler isso no meio de "3/5 usuários · cliente desde ..." nao
+    // funciona. Quando falta, a tela DIZ que falta em vez de omitir.
+    const end = FichaEndereco.vazio(c.endereco)
+      ? '<span style="color:#b45309">📍 sem endereço cadastrado</span>'
+      : '📍 ' + esc(FichaEndereco.emUmaLinha(c.endereco));
+    return partes.join(' · ') + '<br>' + end;
   }
   function botao(acao, id, texto, cor) {
     return `<button class="btn" data-acao="${acao}" data-loja="${id}"
@@ -665,6 +823,7 @@ Sanfona.ligar(document);
     const temPrazo = !!c.acessoAte || c.assinatura === 'CANCELADA' || devendo;
     return botao('entrar', c.id, 'Entrar na loja', '#4f46e5') + ' '
       + botao('renomear', c.id, 'Renomear', '#0369a1') + ' '
+      + botao('endereco', c.id, FichaEndereco.vazio(c.endereco) ? '📍 Cadastrar endereço' : '📍 Endereço', '#0369a1') + ' '
       + (devendo ? botao('pagamento', c.id, '💰 Recebi o pagamento', '#166534') + ' ' : '')
       + (temPrazo ? botao('liberar', c.id, '🔓 Liberar acesso', '#9333ea') + ' ' : '')
       + (c.situacao === 'SUSPENSA'
@@ -825,6 +984,55 @@ Sanfona.ligar(document);
     } catch (e) { wrap.textContent = 'Erro: ' + e.message; }
   }
 
+  /**
+   * O endereco de uma unidade, numa janela com os sete campos.
+   *
+   * Nao e prompt() como o Renomear: sete prompts seguidos nao deixam ver o que ja foi digitado, e
+   * Esc no quarto perderia os tres primeiros. A janela mostra a ficha inteira, com o que ja esta
+   * gravado dentro.
+   */
+  let dlgEnd = null;
+  async function abrirEndereco(cliente, nome) {
+    if (!dlgEnd) {
+      dlgEnd = document.createElement('dialog');
+      dlgEnd.style.cssText = 'border:none;border-radius:12px;padding:18px;max-width:560px;width:92%;box-shadow:0 10px 40px rgba(0,0,0,.2)';
+      dlgEnd.innerHTML = `<h3 id="edTitulo" style="margin:0 0 4px;font-size:16px"></h3>
+        <p style="margin:0 0 12px;color:var(--muted);font-size:13px">
+          É o endereço da unidade — de onde a comida sai. Campo apagado aqui fica apagado lá.</p>
+        <div id="edCampos"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:14px">
+          <button class="btn" id="edSalvar">Salvar endereço</button>
+          <button class="btn" id="edFechar" style="background:#64748b">Cancelar</button>
+          <span id="edMsg" style="font-size:13px"></span>
+        </div>`;
+      document.body.appendChild(dlgEnd);
+      FichaEndereco.montar(document.getElementById('edCampos'), 'edEnd');
+      document.getElementById('edFechar').onclick = () => dlgEnd.close();
+    }
+    document.getElementById('edTitulo').textContent = 'Endereço da loja ' + nome;
+    document.getElementById('edMsg').textContent = '';
+    FichaEndereco.preencher('edEnd', cliente && cliente.endereco);
+    const salvar = document.getElementById('edSalvar');
+    salvar.disabled = false;
+    salvar.onclick = async () => {
+      const msg = document.getElementById('edMsg');
+      salvar.disabled = true;
+      msg.style.color = 'var(--muted)'; msg.textContent = 'salvando…';
+      try {
+        await Bora.api('/admin-bora/lojas/' + cliente.id + '/endereco',
+          { method: 'PUT', body: JSON.stringify(FichaEndereco.ler('edEnd')) });
+        await carregarLojas();
+        dlgEnd.close();
+      } catch (e) {
+        // O servidor e quem recusa CEP curto e UF que nao existe. A janela fica aberta com o que
+        // foi digitado: fechar aqui faria o dono redigitar os sete campos por causa de um.
+        msg.style.color = '#dc2626'; msg.textContent = e.message;
+        salvar.disabled = false;
+      }
+    };
+    dlgEnd.showModal();
+  }
+
   async function executarAcao(btn) {
     const id = btn.dataset.loja, acao = btn.dataset.acao;
     // O NOME DA LOJA, e nao "#18" (26/10/2026).
@@ -850,6 +1058,10 @@ Sanfona.ligar(document);
         await carregarLojas();
         alert('Renomeada: "' + (r.nomeAnterior || '-') + '" para "' + r.nome + '"');
       } catch (e) { alert('Erro: ' + e.message); btn.disabled = false; }
+      return;
+    }
+    if (acao === 'endereco') {
+      await abrirEndereco(cliente, nome);
       return;
     }
     if (acao === 'pagamento') {
@@ -1077,6 +1289,7 @@ Sanfona.ligar(document);
 
   // Cadastro de loja nova pela plataforma (POST /admin-bora/lojas) — o unico caminho que grava o CNPJ.
   const nl = id => document.getElementById(id);
+  if (nl('nlEndereco')) FichaEndereco.montar(nl('nlEndereco'), 'nlEnd');
   nl('nlCriar').onclick = async () => {
     const btn = nl('nlCriar'), msg = nl('nlMsg'), out = nl('nlResultado');
     const nome = nl('nlNome').value.trim();
@@ -1095,7 +1308,10 @@ Sanfona.ligar(document);
         plano: 'UNICO',
         adminNome: nl('nlAdminNome').value.trim() || null,
         adminEmail: email,
-        adminSenha: senha
+        adminSenha: senha,
+        // Endereco vazio vai como null: a loja nasce sem endereco, que e a verdade, em vez de
+        // nascer com sete campos em branco gravados.
+        endereco: (() => { const e = FichaEndereco.ler('nlEnd'); return FichaEndereco.vazio(e) ? null : e; })()
       })});
       let avisoPreco = '';
       if (preco !== '') {
@@ -1117,6 +1333,7 @@ Sanfona.ligar(document);
         + '<br>Falta o lojista: marca, cardápio, taxas de entrega, horário real e assinatura.';
       msg.textContent = ''; 
       ['nlNome','nlDoc','nlAdminNome','nlEmail','nlSenha','nlPreco'].forEach(i => nl(i).value = '');
+      FichaEndereco.preencher('nlEnd', null);   // senao a unidade seguinte nasce no endereco da anterior
       carregarLojas();
     } catch (e) {
       msg.style.color = '#dc2626';
