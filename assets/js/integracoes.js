@@ -188,12 +188,10 @@
       <div class="ih">
         <div class="logo-mp">${mp.ic}</div>
         <div class="nm"><b>${esc(i.label)}</b><small>${i.configurado ? 'Conexão criada' : 'Não configurado'}</small></div>
-        <span class="intstatus is-${i.status}">${i.status}</span>
+        ${chip(i)}
       </div>
       <div class="toggle-row" onclick="__toggleOpen('${i.canal}')">
-        <span style="font-weight:700;font-size:13px">${!i.recebendo ? 'Configurar conexão'
-          : entrouAlgumPedido(i).algum ? '🟢 Recebendo pedidos'
-          : '🟡 Conectado, sem pedido ainda'}</span>
+        <span style="font-weight:700;font-size:13px">${linhaDeEstado(i)}</span>
         <span style="color:#6b7280;font-size:12px">${i._open ? 'fechar ▲' : 'abrir ▼'}</span>
       </div>
       <div class="intbody ${open}" id="body-${i.canal}">
@@ -356,6 +354,81 @@
     return { algum: n > 0, quantos: n };
   }
 
+  /** Sem busca bem-sucedida por mais que isto, a conexao nao esta funcionando AGORA. */
+  const SEM_BUSCAR_MIN = 5;
+
+  function faz(min) {
+    if (min === null || min === undefined) return 'nunca';
+    if (min < 1) return 'agora';
+    if (min < 60) return 'há ' + min + ' min';
+    const h = Math.floor(min / 60);
+    return h < 24 ? 'há ' + h + ' h' : 'há ' + Math.floor(h / 24) + ' dia(s)';
+  }
+
+  /**
+   * A saúde da integração AGORA — não desde sempre.
+   *
+   * O VERDE QUE MENTIA, medido na tela em 10/11/2026: com `ultimoErro = "HTTP 403"` e a última
+   * busca há 3 horas, o chip ficava VERDE, a caixa dizia "a busca está rodando e não dá erro" e o
+   * "Último erro" ficava 335 px abaixo da dobra — dentro do corpo, que nasce fechado. Quem abria a
+   * tela para saber se estava tudo bem lia "conectado" e fechava.
+   *
+   * ARMADILHA DE LEITURA, e é a que me pegou: `ultimoPollingEm` é gravado TAMBÉM NA FALHA. "Última
+   * busca 21 s atrás" prova que o sistema TENTOU, não que funcionou. Por isso a conta aqui olha o
+   * erro junto com a hora, nunca a hora sozinha.
+   *
+   * E `pedidosRecebidos` é contador ACUMULADO desde sempre: "já entrou pedido algum dia" não é
+   * "está recebendo". Por isso o rótulo verde passou a vir com a data do último.
+   */
+  function saudeAgora(i) {
+    const comErro = !!(i.ultimoErro && String(i.ultimoErro).trim());
+    const min = i.ultimoPollingEm
+      ? Math.floor((Date.now() - new Date(i.ultimoPollingEm).getTime()) / 60000)
+      : null;
+    const semBuscar = min === null || min >= SEM_BUSCAR_MIN;
+    const venc = i.tokenExpiraEm ? new Date(i.tokenExpiraEm) : null;
+    const tokenVencido = !!(venc && venc.getTime() < Date.now());
+    const conectado = i.status === 'CONECTADO';
+    return {
+      comErro, minutos: min, semBuscar, tokenVencido, venc,
+      // "ruim" só vale para quem se diz CONECTADO: é aí que o verde mente. Quem está
+      // DESCONECTADO ou AGUARDANDO já diz a verdade pelo próprio status.
+      ruim: conectado && (comErro || semBuscar || tokenVencido),
+      conectado,
+    };
+  }
+
+  /** O chip do topo do cartão: a primeira coisa que alguém lê, e tem de ser verdade. */
+  function chip(i) {
+    const s = saudeAgora(i);
+    if (!s.ruim) return `<span class="intstatus is-${i.status}">${i.status}</span>`;
+    if (s.tokenVencido) return '<span class="intstatus is-ERRO">AUTORIZAÇÃO VENCIDA</span>';
+    if (s.comErro) return '<span class="intstatus is-ERRO">COM ERRO</span>';
+    return '<span class="intstatus is-PRONTO">SEM BUSCAR</span>';
+  }
+
+  /**
+   * A linha SEMPRE VISÍVEL do cartão (o corpo nasce fechado).
+   *
+   * Era aqui que ficava "🟢 Recebendo pedidos" baseado só no contador acumulado. Agora o problema,
+   * quando existe, aparece nesta linha — e não dentro do corpo, abaixo da dobra.
+   */
+  function linhaDeEstado(i) {
+    if (!i.recebendo) return 'Configurar conexão';
+    const s = saudeAgora(i);
+    if (s.tokenVencido) return '🔴 A autorização venceu — nenhum pedido novo entra';
+    if (s.comErro) return '🔴 Conectado, mas com erro: ' + esc(String(i.ultimoErro).slice(0, 60));
+    if (s.semBuscar) return '🔴 A busca parou — última tentativa ' + faz(s.minutos);
+    const e = entrouAlgumPedido(i);
+    if (!e.algum) return '🟡 Conectado, sem pedido ainda';
+    const ultimo = i.ultimaSync
+      ? new Date(i.ultimaSync).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+      : null;
+    // Com a data: contador acumulado sozinho fazia "Recebendo pedidos" aparecer para loja cujo
+    // último pedido foi semanas atrás.
+    return '🟢 Recebendo pedidos' + (ultimo ? ' — último em ' + ultimo : '');
+  }
+
   function recados(i) {
     const erro = i.ultimoErro ? `<p class="err">Último erro: ${esc(i.ultimoErro)}</p>` : '';
     if (!i.ultimoAviso) return erro;
@@ -462,6 +535,30 @@
       // A frase "os pedidos chegam sozinhos" e uma PROMESSA. So pode aparecer depois que pelo
       // menos um pedido chegou de verdade.
       const jaEntrou = entrouAlgumPedido(i);
+      const saude = saudeAgora(i);
+
+      // A BUSCA PAROU, OU ESTA DANDO ERRO: isto vem ANTES de qualquer caixa que fale de pedido.
+      //
+      // Medido em 10/11/2026: com ultimoErro = "HTTP 403" e ultima busca ha 3 h, a tela mostrava a
+      // caixa amarela abaixo, que afirma "a busca esta rodando e nao da erro" -- uma frase
+      // literalmente falsa naquele estado -- e o erro de verdade ficava no fim do corpo fechado.
+      if (saude.comErro || saude.semBuscar) {
+        return `<div class="oficial-box" style="background:#fef2f2;border-color:#fca5a5;color:#7f1d1d">
+          <b>🔴 ${saude.comErro ? 'A busca está dando erro' : 'A busca parou'}</b>
+          ${saude.comErro ? `<p>O ${esc(i.label)} respondeu: <strong>${esc(i.ultimoErro)}</strong></p>` : ''}
+          <p>Última tentativa: <strong>${faz(saude.minutos)}</strong>${saude.minutos === null ? '' : ` (${quando})`}.
+          Enquanto isso, <strong>nenhum pedido novo entra</strong> por este canal.</p>
+          <p style="margin:6px 0 0"><strong>Atenção ao ler esta tela:</strong> a hora da última
+          tentativa é gravada <em>também quando a busca falha</em> — ver que ela foi "agora" prova que
+          o sistema tentou, não que funcionou.</p>
+          <p style="margin:6px 0 0">Os pedidos continuam no aplicativo do ${esc(i.label)} e podem ser
+          lançados pela Frente de Caixa. Use <strong>🩺 Diagnosticar conexão</strong> abaixo para ver
+          o detalhe.</p>
+          ${avisoToken}
+          ${recados(i)}
+        </div>`;
+      }
+
       if (!tokenVencido && !jaEntrou.algum) {
         return `<div class="oficial-box" style="background:#fffbeb;border-color:#fde68a">
           <b>🟡 Conectado — mas nenhum pedido entrou por aqui ainda</b>
@@ -486,9 +583,12 @@
 
       // Com o token vencido a caixa NAO pode ser a verde que diz "os pedidos chegam sozinhos":
       // essa frase e a promessa exata que deixou de ser verdade.
+      // Chegar aqui significa: sem erro, buscando dentro dos ultimos SEM_BUSCAR_MIN minutos e com
+      // pelo menos um pedido ja recebido. So nesse estado a frase "os pedidos chegam sozinhos" --
+      // que e uma PROMESSA -- pode aparecer.
       return `<div class="oficial-box ${tokenVencido ? '' : 'ok'}" ${tokenVencido ? 'style="background:#fffbeb;border-color:#fde68a"' : ''}>
         <b>${tokenVencido ? '🟡 Conectado, mas a autorização venceu' : '🟢 Conectado — os pedidos chegam sozinhos'}</b>
-        <p>Última consulta ao ${esc(i.label)}: ${quando}.${tokenVencido ? ''
+        <p>Última consulta ao ${esc(i.label)}: ${quando} (${faz(saude.minutos)}).${tokenVencido ? ''
           : ' A loja fica online no aplicativo enquanto esta consulta acontecer.'}</p>
         ${avisoToken}
         ${recados(i)}
