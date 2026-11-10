@@ -46,6 +46,23 @@ self.addEventListener('fetch', e => {
   // doente reapareceria depois, e o lojista veria tela velha achando que e a de agora.
   if (e.request.mode === 'navigate') return;
 
+  // OUTRA ORIGEM: nao intercepta. MEDIDO pelo QA de tela em 10/11/2026, em producao.
+  //
+  // O guia-zira.html e o cardapio-folha.html pedem fonte ao fonts.googleapis.com. Entrando no
+  // respondWith abaixo, o pedido passa a ser feito pelo `fetch()` DE DENTRO do service worker -- e a
+  // CSP com `connect-src 'self'` bloqueia esse fetch. O cache nao tem copia (so gravamos mesma
+  // origem, logo abaixo), entao o catch relanca e o navegador aborta com **ERR_FAILED**. Sintoma
+  // medido: request com 0 byte, `document.fonts` vazio, titulos caindo para serif. Desregistrar o
+  // service worker fazia o mesmo CSS carregar (13.976 bytes).
+  //
+  // A checagem de origem ja existia uma linha adiante, mas so decidia SE GRAVA no cache -- nao
+  // impedia a interceptacao. Eram duas decisoes diferentes com a mesma condicao, e eu so tinha
+  // tratado uma. Este service worker nao guarda nada de outra origem, entao nao tem por que se meter
+  // no caminho: deixar o navegador buscar direto e exatamente o comportamento certo.
+  //
+  // O guia-zira.html e o documento que o dono manda para a equipe da loja. Era ele quebrando.
+  if (url.origin !== location.origin) return;
+
   // estáticos: rede primeiro, cache como fallback (offline básico)
   e.respondWith(
     fetch(e.request).then(r => {
