@@ -7,6 +7,21 @@
   let produtos = [], clientes = [], cart = [], cat = 'TODAS', termo = '', pagamento = 'Dinheiro';
   // A ordem das secoes escolhida pela loja (nome -> posicao). Vazio = ordem alfabetica, como antes.
   let posicaoDaSecao = {};
+
+  /**
+   * A chave desta venda. Uma por carrinho: sorteada aqui e trocada DEPOIS de a venda entrar.
+   *
+   * Diferente do novo-pedido.html, esta tela nao sai da pagina ao finalizar -- o balconista atende o
+   * proximo na mesma tela. Entao a chave tem de ser renovada no fim de cada venda; renovar antes, ou
+   * nao renovar, trocaria o defeito de duplicar pela segunda venda do dia nao entrar.
+   */
+  let chaveDaVenda = novaChaveDeVenda();
+
+  function novaChaveDeVenda() {
+    return (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : 'bora-pdv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12);
+  }
   const complementosPorProduto = {}; // cache por produto, para o toque no tile abrir na hora
 
   const $ = id => document.getElementById(id);
@@ -208,11 +223,15 @@
     };
     $('finish').disabled = true; $('finish').textContent = 'Processando…';
     try {
-      const ped = await Bora.criarPedido(body);
+      const ped = await Bora.criarPedido(body, chaveDaVenda);
       // venda de balcão já entregue na hora
       let aviso = '';
       try { await Bora.mudarStatus(ped.id, 'ENTREGUE'); } catch (e) { aviso = 'Venda registrada, mas não consegui marcá-la como entregue (' + e.message + '). Finalize o pedido em Pedidos para ele sair da cozinha.'; }
       cart = [];
+      // A venda entrou: a proxima e outra venda, e precisa de chave propria. Se este `finalizar`
+      // tivesse estourado, a chave continuaria a mesma -- e o reenvio seria reconhecido como
+      // repeticao, que e exatamente o que se quer.
+      chaveDaVenda = novaChaveDeVenda();
       // Cada venda de balcao e uma pessoa diferente. Sem zerar o cliente aqui, o seletor continuava
       // no anterior e `atualizarCashback()` logo abaixo voltava a oferecer o saldo DELE -- e, como
       // ele so desmarca quando o saldo e zero, com saldo sobrando a marcacao ficava ligada para a

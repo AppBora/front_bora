@@ -11,6 +11,21 @@
   const num = v => { const n = Number(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : 0; };
 
   let produtos = [], clientes = [], taxas = [], itens = [];
+
+  /**
+   * A chave desta venda. Sorteada UMA vez por tela aberta, e repetida em todo reenvio.
+   *
+   * O `btn.disabled` abaixo barra o clique duplo rapido, e so isso -- ele nao cobre o caso que
+   * duplica venda de verdade: a resposta que se perde na VOLTA. O pedido foi gravado, o navegador
+   * nao soube, o balconista ve "erro" e lanca de novo. Com esta chave no cabecalho, a segunda
+   * chamada devolve o MESMO pedido em vez de gravar outra venda (estoque baixado duas vezes,
+   * cashback dobrado, faturamento inflado). Ver PedidoIdempotenteService e a V71.
+   *
+   * Uma por tela e exatamente uma por venda: o salvamento que da certo sai desta pagina.
+   */
+  const chaveDaVenda = (window.crypto && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : 'bora-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12);
   let criandoCliente = false;
   const complementosPorProduto = {}; // cache: produtoId -> grupos (evita rebuscar a cada troca)
   let escolhaAtual = [];             // ids marcados no produto em foco
@@ -32,7 +47,7 @@
       box.style.display = 'none';
       $('usarCashback').checked = false;
     }
-    $('taxa').value = taxaDoBairro().toFixed(2);
+    $('taxa').value = taxaParaOcampo().toFixed(2);
     renderTotais();
   }
 
@@ -52,13 +67,51 @@
     return c ? String(c.bairro || '') : '';
   }
 
-  /** Taxa cadastrada para o bairro do pedido. Balcão não tem frete. */
+  /**
+   * Taxa cadastrada para o bairro do pedido, ou `null` quando o bairro NÃO está na lista.
+   *
+   * O `null` existe porque devolver 0 juntava duas coisas diferentes: "o frete deste bairro é
+   * zero" e "este bairro não tem frete cadastrado". A tela pré-enchia o campo com 0,00 nos dois
+   * casos e ninguém era avisado — quem mora em bairro fora da lista recebia de graça, todo dia.
+   * Isso estava armado na produção: a loja chamada "Zirá - Montreal" não tem Montreal entre os
+   * bairros dela. Medido em 11/11/2026. Quem avisa é o `avisoDoBairro`.
+   */
   function taxaDoBairro() {
     const bairro = bairroDoPedido();
-    if (!bairro) return 0;
+    if (!bairro) return null;
     if (/BALC/i.test($('origem').value || '')) return 0;
     const t = taxas.find(x => x.ativo !== false && String(x.bairro || '').trim().toLowerCase() === bairro.toLowerCase());
-    return t ? Number(t.taxa || 0) : 0;
+    return t ? Number(t.taxa || 0) : null;
+  }
+
+  /** O que pré-encher no campo Taxa. Fora da lista vale 0,00 — mas com o aviso na tela. */
+  function taxaParaOcampo() {
+    const t = taxaDoBairro();
+    return t == null ? 0 : t;
+  }
+
+  /**
+   * O aviso de bairro fora da lista, do lado do campo que ele explica.
+   *
+   * Não bloqueia: o balconista pode combinar frete fora da tabela, e travar a venda com o cliente
+   * na frente é pior. O que não pode é sair R$ 0,00 calado.
+   */
+  function avisoDoBairro() {
+    const el = $('avisoBairro');
+    if (!el) return;
+    const retira = $('retirada') && $('retirada').checked;
+    const balcao = /BALC/i.test($('origem').value || '');
+    const bairro = bairroDoPedido();
+    let texto = '';
+    if (!retira && !balcao) {
+      if (!bairro) texto = 'Sem bairro, não há taxa de entrega: o frete vai R$ 0,00.';
+      else if (taxaDoBairro() == null) {
+        texto = '⚠ "' + bairro + '" não está na lista de entrega desta loja — a taxa está em '
+              + 'R$ 0,00. Informe o valor aqui, ou cadastre o bairro em Taxas de entrega.';
+      }
+    }
+    el.textContent = texto;
+    el.style.display = texto ? 'block' : 'none';
   }
 
   function alternarNovoCliente(abrir) {
@@ -195,6 +248,7 @@
     $('boxCashback').style.display = cashback > 0 ? 'flex' : 'none';
     $('linhaCashback').textContent = '- ' + money(cashback);
     $('total').textContent = money(Math.max(0, sub + taxa - cashback));
+    avisoDoBairro();
   }
 
   function render() {
@@ -350,6 +404,9 @@
 
       await Bora.api('/api/pedidos', {
         method: 'POST',
+        // A chave da venda. Reenvio com a mesma chave devolve o pedido que já existe em vez de
+        // gravar uma segunda venda. Ver `chaveDaVenda` no topo deste arquivo.
+        headers: { 'Idempotency-Key': chaveDaVenda },
         body: JSON.stringify({
           clienteId,
           codigo: '#' + Date.now().toString().slice(-6),

@@ -63,7 +63,21 @@ const Bora = {
   pedidos() { return this.api('/api/pedidos'); },
   board(dia, desde) { const q = []; if (dia) q.push('dia=' + dia); if (desde) q.push('desde=' + desde);
     return this.api('/api/pedidos/board' + (q.length ? '?' + q.join('&') : '')); },
-  criarPedido(body) { return this.api('/api/pedidos', { method: 'POST', body: JSON.stringify(body) }); },
+  /**
+   * Lanca a venda. Com `chaveDaVenda`, lanca UMA vez por mais que o clique repita.
+   *
+   * O botao desabilitado barra o clique duplo rapido, e so isso -- nao cobre o caso que duplica
+   * venda de verdade: a resposta que se perde na VOLTA. O pedido foi gravado, o navegador nao soube,
+   * e o balconista lanca de novo. Com a chave, a segunda chamada devolve o MESMO pedido. Ver
+   * PedidoIdempotenteService e a V71.
+   */
+  criarPedido(body, chaveDaVenda) {
+    return this.api('/api/pedidos', {
+      method: 'POST',
+      headers: chaveDaVenda ? { 'Idempotency-Key': chaveDaVenda } : {},
+      body: JSON.stringify(body)
+    });
+  },
   mudarStatus(id, status, motivo) { let u = `/api/pedidos/${id}/status?status=${status}`; if (motivo) u += '&motivo=' + encodeURIComponent(motivo); return this.api(u, { method: 'PATCH' }); },
   definirEntregador(id, nome) { return this.api(`/api/pedidos/${id}/entregador${nome ? '?nome=' + encodeURIComponent(nome) : ''}`, { method: 'PATCH' }); },
   cardapioPublico(lojaId) { return this.api('/public/loja/' + lojaId + '/cardapio'); },

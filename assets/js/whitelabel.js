@@ -16,11 +16,15 @@
  * So grava o que veio preenchido: nome vazio por cima faria o papel sair SEM nome nenhum, que e
  * pior que sair generico.
  */
-function guardarTema(c) {
+function guardarTema(c, nomeResolvido) {
   try {
     const anterior = JSON.parse(localStorage.getItem('boraTheme') || '{}');
     const tema = { ...anterior };
-    if (c.nomeExibicao) tema.name = c.nomeExibicao;
+    // O nome JA RESOLVIDO, o mesmo que a tela mostra -- e nao so o `nomeExibicao`. Com o campo de
+    // exibicao apagado, o papel saia generico ("BoraHapp") enquanto a tela mostrava o nome certo:
+    // era o mesmo furo da rede de seguranca, chegando na comanda da cozinha e no recibo do motoboy.
+    if (nomeResolvido) tema.name = nomeResolvido;
+    else if (c.nomeExibicao) tema.name = c.nomeExibicao;
     if (c.corPrimaria) tema.primary = c.corPrimaria;
     if (c.corSecundaria) tema.secondary = c.corSecundaria;
     if (c.logoUrl) tema.logo = c.logoUrl;
@@ -33,16 +37,26 @@ async function aplicarWhiteLabel() {
     // Cores da loja + as derivadas de contraste (ver assets/js/cores.js). O botao "Finalizar venda"
     // da Frente de Caixa tinha texto branco fixo em cima da secundaria: na Zira isso dava 1,46:1.
     BoraCores.aplicar(document.documentElement.style, c);
-    // O nome da loja, com uma rede de seguranca.
+    // O nome da loja, com uma rede de seguranca -- esta, agora, viva.
     //
     // Era `if (c.nomeExibicao)`: apagar o campo em Configuracoes grava "", que e falsy, entao a
     // tela ficava com o texto do HTML -- que era "Sorveteria da Rosa", nome de uma loja de
     // verdade. O lojista via o nome de outra pessoa no proprio painel.
     //
-    // Agora cai para o nome da sessao antes de desistir. Se nem isso houver, o HTML ja traz um
-    // texto neutro.
+    // A PRIMEIRA tentativa de rede caia para `Bora.user().lojaNome`, e estava MORTA por tres
+    // motivos somados (medidos em 31/10/2026): `window.Bora` e sempre undefined, porque o
+    // `const Bora` do api.js nao cria propriedade em `window`; o `boraUser` da sessao guarda so
+    // {nome, papel, lojaId}, sem `lojaNome`; e `lojaNome` so vinha de dois endpoints, nenhum deles
+    // o login normal. Tres condicoes, nenhuma satisfeita -- a rede nunca pegou ninguem.
+    //
+    // Agora o nome REAL da loja vem na propria resposta de /api/configuracao (`nomeDaLoja`, campo
+    // transiente), que esta tela ja pede. Sem segunda chamada, sem depender da sessao. E o
+    // `Bora.user()` fica como ultimo degrau, sem o `window.` que o anulava, para o dia em que o
+    // login passar a trazer o nome.
+    const daSessao = (typeof Bora !== 'undefined' && Bora.user && Bora.user()) || {};
     const nomeDaLoja = (c.nomeExibicao || '').trim()
-      || (((window.Bora && Bora.user && Bora.user()) || {}).lojaNome || '').trim();
+      || (c.nomeDaLoja || '').trim()
+      || (daSessao.lojaNome || '').trim();
     if (nomeDaLoja) document.querySelectorAll('[data-store]').forEach(e => e.textContent = nomeDaLoja);
     if (c.logoUrl) document.querySelectorAll('.logo').forEach(e => {
       e.style.backgroundImage = `url(${c.logoUrl})`; e.style.backgroundSize = 'cover'; e.textContent = '';
@@ -51,7 +65,7 @@ async function aplicarWhiteLabel() {
     document.querySelectorAll('[data-marca-bora]').forEach(e => {
       e.style.display = c.mostrarMarcaBora ? '' : 'none';
     });
-    guardarTema(c);
+    guardarTema(c, nomeDaLoja);
   } catch (e) { /* mantém o que já estava guardado: erro de rede não pode apagar a marca */ }
 }
 document.addEventListener('DOMContentLoaded', () => { if (Bora.token()) aplicarWhiteLabel(); });
