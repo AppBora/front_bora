@@ -201,6 +201,11 @@
           i.oficial && ehPlataforma && i.appConfigurado ? boxCredencialDaLoja(i) : ''}
         ${i.oficial ? corpoOficial(i) : ''}
         ${zap ? '' : `<div class="field"><label>${i.canal === 'NOVE_NOVE' ? 'App Shop ID (o código desta loja que você cadastrou no portal da 99)' : 'Merchant ID (ID da loja no ' + esc(i.label) + ')'}</label><input id="m-${i.canal}" value="${esc(i.merchantId || '')}" placeholder="${i.canal === 'NOVE_NOVE' ? 'ex.: zira-acaiteria' : 'ex.: 123e4567-...'}" ${i.oficial && !ehPlataforma ? 'readonly style="background:#f1f5f9"' : ''}>${i.oficial && !ehPlataforma ? '<small style="color:#64748b">Definido pelo suporte do BoraHapp — é o código que liga esta loja aos pedidos dela no ' + esc(i.label) + '.</small>' : ''}</div>`}
+        ${/* O "ID do loja" NUMERICO da 99. Nao entra na credencial (quem entra e o App Shop ID,
+             acima), mas TAMBEM roteia o webhook: a 99 nao documenta qual dos dois ela manda no
+             X-App-MerchantId, e o nosso webhook casa pelos dois. Sem este campo, abrir uma unidade
+             nova ficava pela metade esperando alguem escrever no banco. */
+          i.canal !== 'NOVE_NOVE' ? '' : `<div class="field"><label>ID do loja na 99 <span style="font-weight:400;color:#64748b">· o número que aparece no portal, ao lado do nome da loja</span></label><input id="sid-${i.canal}" value="${esc(i.shopIdCanal || '')}" placeholder="ex.: 5764615393256407102" ${!ehPlataforma ? 'readonly style="background:#f1f5f9"' : ''}><small style="color:#64748b">${ehPlataforma ? 'Guardado além do App Shop ID porque a 99 pode mandar qualquer um dos dois ao avisar de um pedido novo.' : 'Definido pelo suporte do BoraHapp.'}</small></div>`}
         ${i.oficial ? '' : `<div class="field"><label>${zap ? 'Phone Number ID (Meta)' : 'Client ID'}</label><input id="c-${i.canal}" value="${esc(i.clientId || '')}" placeholder="${zap ? 'ex.: 123456789012345' : 'chave de aplicação'}"></div>
         <div class="field"><label>${zap ? 'Token permanente do System User' : 'Client Secret / Token'} ${i.temSecret ? '<span style="color:#059669">· salvo ✓</span>' : ''}</label><input id="s-${i.canal}" type="password" placeholder="${i.temSecret ? '•••••• (deixe em branco p/ manter)' : 'cole o segredo aqui'}"></div>`}
         <div class="toggle-row" style="padding:6px 0" onclick="__switch('${i.canal}',this)">
@@ -684,6 +689,9 @@
       merchantId: val('m-' + canal),
       ativo: document.querySelector(`#body-${canal} .switch`).dataset.on === 'true'
     };
+    // Só vai no corpo quando o campo EXISTE na tela (ele só aparece na 99, e só para a
+    // plataforma): mandar string vazia apagaria o ID já gravado de quem não tem o campo.
+    if (document.getElementById('sid-' + canal)) body.shopIdCanal = val('sid-' + canal);
     const cid = val('c-' + canal) || val('oc-' + canal);
     if (cid) body.clientId = cid;
     const secret = val('s-' + canal) || val('os-' + canal);

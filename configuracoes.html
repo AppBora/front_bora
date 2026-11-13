@@ -293,6 +293,22 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
         <p style="font-size:13px;font-weight:600;margin:0 0 8px">Endereço da unidade <span style="color:var(--muted);font-weight:400">· opcional, dá para preencher depois</span></p>
         <div id="nlEndereco"></div>
       </div>
+      <!-- Copiar cardapio: abrir a 6a unidade de um cliente era digitar tudo de novo. Medido na
+           loja 18 em 13/11/2026: 44 produtos, 59 grupos e 639 itens de complemento. A 99Food
+           analisa o cardapio por pessoa e exige o mesmo preco do balcao -- a unidade nova precisa
+           sair IDENTICA a irma, nao parecida. O servidor recusa origem de outro CNPJ. -->
+      <div style="margin-top:12px;border-top:1px dashed #e2e8f0;padding-top:10px">
+        <label style="font-size:13px;font-weight:600">Copiar cardápio de outra unidade <span style="color:var(--muted);font-weight:400">· só do mesmo CNPJ</span><br>
+          <select id="nlCopiarDe" style="width:100%;max-width:520px;padding:9px;border:1px solid #e2e8f0;border-radius:6px;margin-top:4px;font-weight:400">
+            <option value="">— não copiar (a loja nasce com o cardápio vazio) —</option>
+          </select></label>
+        <p style="font-size:12px;color:var(--muted);margin:6px 0 0">
+          <b>Vem:</b> produtos, ordem das categorias, complementos, insumos, fichas técnicas, taxas de
+          entrega e a marca (logo e cores). <b>Não vem:</b> saldo de estoque (nasce zerado, a decisão
+          de controlar é mantida), horários, formas de pagamento, cupons, e o código do produto no
+          iFood/99 — esse é por loja. Roda uma vez só, em loja com cardápio vazio.
+        </p>
+      </div>
       <button class="btn" id="nlCriar" style="margin-top:12px">Criar loja</button>
       <span id="nlMsg" style="font-size:13px;margin-left:10px"></span>
       <div id="nlResultado" style="display:none;margin-top:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;font-size:13px"></div>
@@ -926,6 +942,24 @@ const FichaEndereco = (function () {
 
   let ultimaLista = [];
 
+  /**
+   * Enche a lista de "copiar cardápio de" com as lojas que já existem.
+   *
+   * Só lojas com empresa: a cópia exige mesmo CNPJ, e loja sem empresa não casa com ninguém. O
+   * CNPJ aparece ao lado do nome de propósito — "Zirá - Montreal" e "Zirá - Zona Norte" são dois
+   * nomes parecidos, e quem escolhe aqui precisa ver por qual cliente está copiando.
+   */
+  function pintarCopiarDe() {
+    const s = document.getElementById('nlCopiarDe');
+    if (!s) return;
+    const escolhido = s.value;
+    s.innerHTML = '<option value="">— não copiar (a loja nasce com o cardápio vazio) —</option>'
+      + ultimaLista.filter(c => c.empresaId != null).map(c =>
+          '<option value="' + c.id + '">#' + c.id + ' · ' + esc(c.nome)
+          + (c.documento ? ' · CNPJ ' + esc(c.documento) : '') + '</option>').join('');
+    s.value = escolhido;   // a lista recarrega a cada ação da tela; a escolha do operador fica
+  }
+
   async function carregarLojas() {
     try {
       const clientes = await Bora.api('/admin-bora/clientes'
@@ -939,6 +973,7 @@ const FichaEndereco = (function () {
       });
       wrap.innerHTML = [...grupos].map(([k, ls]) => blocoCliente(k, ls)).join('')
         || 'Nenhum cliente ainda.';
+      pintarCopiarDe();
       Sanfona.ligar(wrap);
       wrap.querySelectorAll('button[data-empacao]').forEach(b => b.onclick = () => executarAcaoEmpresa(b));
       // O add-on custa R$ 99/mes. A tela ignorava a resposta do servidor: o administrador marcava o
@@ -1324,15 +1359,38 @@ const FichaEndereco = (function () {
             + ' — ajuste antes de o lojista ativar a assinatura.';
         }
       }
+      // Copia do cardapio: DEPOIS de a loja existir, e com o resultado contado na tela em vez de
+      // um "pronto". Falhando, a loja continua criada -- e a mensagem diz isso, porque silencio
+      // aqui deixaria o operador achando que o cardapio veio.
+      let avisoCopia = '';
+      const origemCopia = nl('nlCopiarDe') ? nl('nlCopiarDe').value : '';
+      if (origemCopia) {
+        try {
+          const c = await Bora.api('/admin-bora/lojas/' + r.lojaId + '/copiar-cardapio',
+            { method: 'POST', body: JSON.stringify({ origemLojaId: Number(origemCopia) }) });
+          avisoCopia = '<br>Cardápio copiado da loja <b>#' + c.origem + '</b>: '
+            + c.produtos + ' produtos em ' + c.ordemDeCategorias + ' categorias, '
+            + c.gruposDeComplemento + ' grupos e ' + c.itensDeComplemento + ' itens de complemento, '
+            + c.insumos + ' insumos, ' + c.fichasTecnicas + ' fichas técnicas e '
+            + c.taxasDeEntrega + ' taxas de entrega. O estoque nasceu zerado.';
+        } catch (e) {
+          avisoCopia = '<br><b style="color:#b45309">A loja foi criada, mas o cardápio NÃO foi copiado:</b> '
+            + e.message + ' — a loja está no ar com o cardápio vazio.';
+        }
+      }
       const link = location.origin + '/cardapio.html?loja=' + r.lojaId;
       out.style.display = 'block';
       out.innerHTML = '<b>Loja #' + r.lojaId + ' criada.</b><br>'
         + 'Login do lojista: <b>' + r.adminEmail + '</b> (senha provisória — peça para trocar em Configurações › Minha senha)<br>'
         + 'Cardápio: <a href="' + link + '" target="_blank">' + link + '</a>'
         + avisoPreco
-        + '<br>Falta o lojista: marca, cardápio, taxas de entrega, horário real e assinatura.';
-      msg.textContent = ''; 
+        + avisoCopia
+        + (origemCopia && avisoCopia.indexOf('NÃO foi copiado') < 0
+            ? '<br>Falta: horário real, saldo de estoque, assinatura — e o App Shop ID, se a unidade for vender em marketplace.'
+            : '<br>Falta o lojista: marca, cardápio, taxas de entrega, horário real e assinatura.');
+      msg.textContent = '';
       ['nlNome','nlDoc','nlAdminNome','nlEmail','nlSenha','nlPreco'].forEach(i => nl(i).value = '');
+      if (nl('nlCopiarDe')) nl('nlCopiarDe').value = '';   // a unidade seguinte nao copia por inercia
       FichaEndereco.preencher('nlEnd', null);   // senao a unidade seguinte nasce no endereco da anterior
       carregarLojas();
     } catch (e) {
