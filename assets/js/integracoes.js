@@ -338,16 +338,15 @@
    * duas contas iguais escritas em dois lugares viram duas contas diferentes no mes seguinte. Os
    * dois ja recebem `pedidosRecebidos` da API: nao precisa de endpoint novo.
    *
-   * O QUE ESTA FUNCAO NAO FAZ, E POR QUE: ela nao diz "ha quantos dias esta assim". Eu ia medir
-   * isso pelo `ultimaSync`, e fui conferir: o `ultima_sync` SO e gravado quando um pedido entra
-   * (`registrarRecebido`, `contarPedidoRecebido`, o webhook e o poller -- os quatro). Nao existe
-   * nenhuma coluna de "conectado desde" em `integracao_canal`. Com o contador em zero, o
-   * `ultimaSync` ou e nulo ou e de um "Simular pedido" que depois foi apagado (`descontarRecebido`
-   * desconta) -- foi exatamente o caso da Zira: `ultima_sync` de 21/10 com contador 0.
+   * A DURACAO NAO SAI DAQUI, E NAO SAI DO `ultimaSync`. Eu ia medir por ele e fui conferir: o
+   * `ultima_sync` e gravado em QUATRO caminhos, e um deles -- o webhook do PIX, no
+   * PublicController -- nao e pedido nenhum; e o `descontarRecebido` desconta o contador sem mexer
+   * na data. Medido na producao em 13/11/2026: a loja 18 com `ultima_sync` de 21/10 e contador 0, e
+   * o PIX da loja 1 com data e contador zerado. Ou seja, `ultimaSync` quer dizer "ultima coisa que
+   * chegou por aqui", e nao "ultimo pedido".
    *
-   * Entao a tela afirma o que da para medir ("nenhum pedido entrou por aqui") e NAO afirma duracao.
-   * Para o aviso virar "ativo ha mais de 48 h sem pedido" falta uma coluna `conectado_em`, que e
-   * migracao e versao nova da API.
+   * Quem responde "ha quanto tempo" e o `conectadoEm` (V73): a primeira busca de pedido que deu
+   * certo nesta ligacao. Ver `tempoLigadaSemPedido`, logo abaixo.
    */
   function entrouAlgumPedido(i) {
     const n = Number(i.pedidosRecebidos || 0);
@@ -356,6 +355,30 @@
 
   /** Sem busca bem-sucedida por mais que isto, a conexao nao esta funcionando AGORA. */
   const SEM_BUSCAR_MIN = 5;
+
+  /**
+   * Ligada mais do que isto sem NENHUM pedido deixa de ser tarde fraca e vira suspeita de vinculo
+   * errado no marketplace -- que e o caso que custou dois meses no 99Food da Zira.
+   *
+   * Duas noites inteiras: curto demais acusa a loja que fechou na segunda, longo demais deixa a
+   * loja calada a semana toda.
+   */
+  const SEM_PEDIDO_SUSPEITO_H = 48;
+
+  /**
+   * Ha quanto tempo esta ligada e funcionando, em minutos -- ou null quando nao da para saber.
+   *
+   * Null acontece em dois casos legitimos, e nos dois a tela NAO afirma duracao: canal que nao faz
+   * busca de pedido (PIX, WhatsApp, manual) e integracao ligada antes da V73, que nao tem de onde
+   * tirar a data real. Dizer "ligada ha 1 minuto" para uma loja ligada ha uma semana seria trocar
+   * "nao sei" por uma mentira precisa.
+   */
+  function tempoLigadaSemPedido(i) {
+    if (!i.conectadoEm) return null;
+    const t = new Date(i.conectadoEm).getTime();
+    if (!isFinite(t)) return null;
+    return Math.max(0, Math.floor((Date.now() - t) / 60000));
+  }
 
   function faz(min) {
     if (min === null || min === undefined) return 'nunca';
@@ -420,7 +443,16 @@
     if (s.comErro) return '🔴 Conectado, mas com erro: ' + esc(String(i.ultimoErro).slice(0, 60));
     if (s.semBuscar) return '🔴 A busca parou — última tentativa ' + faz(s.minutos);
     const e = entrouAlgumPedido(i);
-    if (!e.algum) return '🟡 Conectado, sem pedido ainda';
+    if (!e.algum) {
+      const min = tempoLigadaSemPedido(i);
+      // Sem a duracao, o texto de 30/10 continua valendo: ele ja nao promete nada.
+      if (min === null) return '🟡 Conectado, sem pedido ainda';
+      if (min >= SEM_PEDIDO_SUSPEITO_H * 60) {
+        return '🔴 Ligada ' + faz(min) + ' e nenhum pedido entrou — confira o vínculo desta loja no '
+             + esc(i.label || 'marketplace');
+      }
+      return '🟡 Conectado ' + faz(min) + ', sem pedido ainda';
+    }
     const ultimo = i.ultimaSync
       ? new Date(i.ultimaSync).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
       : null;
