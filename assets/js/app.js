@@ -397,6 +397,11 @@ document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();rende
     return Number(m[3]) + ' de ' + meses[Number(m[2]) - 1] + ' de ' + m[1];
   }
 
+  // Fora do DOMContentLoaded porque a janela de leitura tambem usa, quando o texto nao carrega.
+  var links = '<a href="https://borahapp.com.br/termos.html" target="_blank" rel="noopener" style="color:#7c2d12">'
+    + '<b>Ler os Termos de Uso</b></a> · <a href="https://borahapp.com.br/privacidade.html" target="_blank" '
+    + 'rel="noopener" style="color:#7c2d12"><b>Política de Privacidade</b></a>';
+
   function faixa(html, cor) {
     var d = document.createElement('div');
     d.id = 'boraTermos';
@@ -413,12 +418,13 @@ document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();rende
     return d;
   }
 
-  async function aceitar(botao) {
+  async function aceitar(botao, aoTerminar) {
     botao.disabled = true;
     var texto = botao.textContent;
     botao.textContent = 'Registrando...';
     try {
       var r = await Bora.aceitarTermos();
+      if (typeof aoTerminar === 'function') aoTerminar();   // fecha a janela de leitura, se houver
       var ok = faixa('<b>Termos aceitos.</b> Registramos o seu aceite da versão de '
         + dataLegivel(r && r.versaoVigente) + '. Obrigado!', '#ecfdf5');
       // faixa() devolve null em tela sem .main; sem esta guarda o sucesso estourava num null.
@@ -431,6 +437,153 @@ document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();rende
     }
   }
 
+  /**
+   * Abre os Termos PARA LER, ali mesmo, com o aceite no FIM do texto.
+   *
+   * Por que isto existe (15/11/2026): a faixa trazia um link "Ler os Termos" que abria outra aba e,
+   * ao lado, um botao "Li e aceito". Dava para aceitar sem ter aberto nada -- e "li e aceito" sem
+   * leitura nao e aceite de coisa nenhuma. O dono pediu o caminho certo: clicar, LER, e so entao
+   * aceitar, com o botao no fim do documento.
+   *
+   * O texto vem de /termos.html e /privacidade.html, que sao do MESMO dominio (o fetch passa) e
+   * ja estao no ar. Se nao vier, a janela nao vira beco sem saida: mostra os links para abrir
+   * fora e libera o aceite assim mesmo, porque prender o lojista fora do painel por causa de um
+   * fetch que falhou seria pior do que o problema que isto conserta.
+   */
+  /**
+   * Chegou ao fim do texto?
+   *
+   * A folga de 40px nao e capricho: com zoom do navegador, barra de rolagem e arredondamento de
+   * subpixel, `scrollTop + clientHeight` costuma parar alguns pixels antes de `scrollHeight`, e
+   * o usuario NAO consegue rolar esses pixels. Sem folga o botao nunca liberava e o lojista
+   * ficava preso. Funcao propria para poder ser medida: a conta e o coracao da regra.
+   */
+  function chegouAoFim(el) {
+    return el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
+  }
+
+  function abrirLeitura() {
+    var velha = document.getElementById('boraTermosJanela');
+    if (velha) velha.remove();
+
+    var fundo = document.createElement('div');
+    fundo.id = 'boraTermosJanela';
+    fundo.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;'
+      + 'display:flex;align-items:center;justify-content:center;padding:16px';
+
+    var caixa = document.createElement('div');
+    caixa.style.cssText = 'background:#fff;border-radius:16px;max-width:760px;width:100%;'
+      + 'max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)';
+
+    var topo = document.createElement('div');
+    topo.style.cssText = 'padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;'
+      + 'justify-content:space-between;align-items:center;gap:12px';
+    topo.innerHTML = '<b style="font-size:16px">Termos de Uso e Política de Privacidade</b>';
+    var xis = document.createElement('button');
+    xis.type = 'button';
+    xis.setAttribute('aria-label', 'Fechar');
+    xis.textContent = '✕';
+    xis.style.cssText = 'border:0;background:#f1f5f9;width:32px;height:32px;border-radius:8px;'
+      + 'cursor:pointer;font-size:15px;line-height:1;flex:0 0 auto';
+    topo.appendChild(xis);
+
+    var corpo = document.createElement('div');
+    corpo.id = 'boraTermosCorpo';
+    corpo.style.cssText = 'overflow:auto;padding:20px 24px;line-height:1.65;font-size:14px;color:#1f2937';
+    corpo.innerHTML = '<p style="color:#6b7280">Carregando o texto…</p>';
+
+    caixa.appendChild(topo);
+    caixa.appendChild(corpo);
+    fundo.appendChild(caixa);
+    document.body.appendChild(fundo);
+
+    function fechar() {
+      fundo.remove();
+      document.removeEventListener('keydown', naTecla);
+    }
+    function naTecla(ev) { if (ev.key === 'Escape') fechar(); }
+    document.addEventListener('keydown', naTecla);
+    xis.addEventListener('click', fechar);
+    fundo.addEventListener('click', function (ev) { if (ev.target === fundo) fechar(); });
+
+    // O rodape do aceite fica DENTRO da rolagem, no fim do texto -- foi o pedido, e e o unico
+    // lugar onde ele significa alguma coisa.
+    function rodape(liberado, recado) {
+      var r = document.createElement('div');
+      r.style.cssText = 'margin-top:28px;padding-top:18px;border-top:2px solid #e5e7eb';
+      var b = document.createElement('button');
+      b.id = 'boraAceitarTermos';
+      b.type = 'button';
+      b.className = 'btn';
+      b.textContent = 'Li e aceito os Termos';
+      b.disabled = !liberado;
+      b.style.cssText = 'background:#b45309;color:#fff' + (liberado ? '' : ';opacity:.45;cursor:not-allowed');
+      var aviso = document.createElement('div');
+      aviso.id = 'boraTermosDica';
+      aviso.style.cssText = 'font-size:13px;color:#6b7280;margin-bottom:10px';
+      aviso.textContent = recado || 'Role até o fim do texto para liberar o aceite.';
+      var erro = document.createElement('span');
+      erro.id = 'boraTermosErro';
+      erro.style.cssText = 'margin-left:10px;color:#991b1b;font-size:13px';
+      r.appendChild(aviso);
+      r.appendChild(b);
+      r.appendChild(erro);
+      b.addEventListener('click', function () { aceitar(this, fechar); });
+      return r;
+    }
+
+    function soMiolo(html) {
+      // DOMParser nao executa script nem carrega imagem: o HTML entra como texto, nao como pagina.
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var m = doc.querySelector('main') || doc.body;
+      if (!m) return null;
+      Array.prototype.forEach.call(m.querySelectorAll('script,style,link,iframe'), function (n) { n.remove(); });
+      return m.innerHTML;
+    }
+
+    Promise.all([
+      fetch('/termos.html', { credentials: 'omit' }).then(function (r) { return r.ok ? r.text() : null; }),
+      fetch('/privacidade.html', { credentials: 'omit' }).then(function (r) { return r.ok ? r.text() : null; })
+    ]).catch(function () { return [null, null]; }).then(function (paginas) {
+      var t = paginas && paginas[0] && soMiolo(paginas[0]);
+      var p = paginas && paginas[1] && soMiolo(paginas[1]);
+      corpo.innerHTML = '';
+      if (!t && !p) {
+        var falhou = document.createElement('div');
+        falhou.innerHTML = '<p><b>Não deu para carregar o texto aqui.</b> Abra em outra aba: ' + links + '</p>';
+        corpo.appendChild(falhou);
+        // Liberado assim mesmo: travar o painel por causa de um fetch seria pior.
+        corpo.appendChild(rodape(true, 'O texto não carregou nesta janela. Leia pelos links acima antes de aceitar.'));
+        return;
+      }
+      if (t) { var dt = document.createElement('div'); dt.innerHTML = t; corpo.appendChild(dt); }
+      if (p) {
+        var sep = document.createElement('hr');
+        sep.style.cssText = 'margin:32px 0;border:0;border-top:2px solid #e5e7eb';
+        corpo.appendChild(sep);
+        var dp = document.createElement('div'); dp.innerHTML = p; corpo.appendChild(dp);
+      }
+      var rod = rodape(false);
+      corpo.appendChild(rod);
+
+      // Libera ao chegar no fim do texto.
+      function conferirFim() {
+        if (chegouAoFim(corpo)) {
+          var b = document.getElementById('boraAceitarTermos');
+          var dica = document.getElementById('boraTermosDica');
+          if (b && b.disabled) {
+            b.disabled = false;
+            b.style.cssText = 'background:#b45309;color:#fff';
+            if (dica) dica.textContent = 'Você chegou ao fim do texto.';
+          }
+        }
+      }
+      corpo.addEventListener('scroll', conferirFim);
+      // Texto curto ou tela grande: ja esta tudo a vista, nao ha o que rolar.
+      conferirFim();
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', async function(){
     var s;
     try { s = await Bora.termos(); } catch (e) { return; } // nunca derrubar a tela por causa da faixa
@@ -440,16 +593,13 @@ document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();rende
       ? 'Ainda não temos o seu aceite dos Termos de Uso e da Política de Privacidade.'
       : 'Os Termos de Uso foram atualizados em ' + dataLegivel(s.versaoVigente)
         + ', depois do seu último aceite.';
-    var links = '<a href="https://borahapp.com.br/termos.html" target="_blank" rel="noopener" style="color:#7c2d12">'
-      + '<b>Ler os Termos de Uso</b></a> · <a href="https://borahapp.com.br/privacidade.html" target="_blank" '
-      + 'rel="noopener" style="color:#7c2d12"><b>Política de Privacidade</b></a>';
 
     if (s.podeAceitar) {
+      // O botao ABRE o texto; o aceite fica no fim dele. Antes dava para aceitar sem abrir nada.
       var d = faixa('<b>' + oQue + '</b><br>' + links
-        + '<div style="margin-top:10px"><button id="boraAceitarTermos" class="btn" '
-        + 'style="background:#b45309;color:#fff">Li e aceito os Termos</button>'
-        + '<span id="boraTermosErro" style="margin-left:10px;color:#991b1b"></span></div>');
-      if (d) d.querySelector('#boraAceitarTermos').addEventListener('click', function(){ aceitar(this); });
+        + '<div style="margin-top:10px"><button id="boraLerTermos" class="btn" '
+        + 'style="background:#b45309;color:#fff">Ler e aceitar os Termos</button></div>');
+      if (d) d.querySelector('#boraLerTermos').addEventListener('click', abrirLeitura);
     } else {
       faixa('<b>' + oQue + '</b> ' + (s.recado || '') + '<br>' + links);
     }
