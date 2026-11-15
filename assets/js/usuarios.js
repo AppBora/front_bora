@@ -152,6 +152,21 @@ O efeito é imediato: se ela estiver `
    */
   let editando = null;
 
+  /**
+   * Quem esta logado, lido do proprio token (o `sub` do JWT e o id do usuario).
+   * Devolve null se nao der para ler — e ai a tela PERGUNTA mesmo assim, em vez de
+   * deixar passar calado. Nao e checagem de seguranca: quem decide e o servidor.
+   */
+  function meuId() {
+    try {
+      const t = localStorage.getItem('boraToken');
+      if (!t) return null;
+      const p = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const n = Number(p.sub);
+      return Number.isFinite(n) ? n : null;
+    } catch (e) { return null; }
+  }
+
   function modoCriar() {
     editando = null;
     $('form').reset();
@@ -172,13 +187,13 @@ O efeito é imediato: se ela estiver `
     document.dispatchEvent(new Event('bora:usuario-criado'));   // esconde senha de quem foi editado antes
     $('tituloForm').textContent = 'Editando ' + (u.nome || u.email);
     $('avisoEdicao').hidden = false;
-    $('avisoEdicao').innerHTML = '<b>Nome e e-mail não mudam por aqui</b> — o e-mail é o login da '
-      + 'pessoa. Dá para trocar o <b>papel</b> e definir uma <b>nova senha</b>.';
+    $('avisoEdicao').innerHTML = '<b>O e-mail é o login da pessoa.</b> Trocar aqui troca o jeito '
+      + 'dela entrar — avise antes. O <b>nome</b> não muda por esta tela.';
     $('nome').value = u.nome || '';
     $('email').value = u.email || '';
     $('papel').value = u.papel || 'OPERADOR';
     $('nome').disabled = true;
-    $('email').disabled = true;
+    $('email').disabled = false;   // o login provisorio tem de poder virar o definitivo
     $('senha').value = '';
     $('senha').required = false;
     $('rotuloSenha').innerHTML = 'Nova senha <span style="font-weight:400;font-size:12px">'
@@ -199,6 +214,23 @@ O efeito é imediato: se ela estiver `
       if (editando) {
         const novaSenha = $('senha').value;
         const trocaPapel = $('papel').value !== editando.papel;
+        // O servidor guarda em minusculas (o login busca assim). Comparar sem normalizar faria
+        // "Fulano@X.com" parecer mudanca toda vez que a tela abrisse.
+        const emailNovo = ($('email').value || '').trim().toLowerCase();
+        const trocaEmail = !!emailNovo && emailNovo !== (editando.email || '').trim().toLowerCase();
+        if (trocaEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(emailNovo)) {
+          throw new Error('E-mail inválido: ' + emailNovo);
+        }
+        // Trocar o e-mail de si mesmo e permitido de proposito (o caso do login provisorio),
+        // mas um erro de digitacao aqui tranca a propria pessoa para fora no proximo login.
+        // Se nao der para saber quem sou eu, pergunta do mesmo jeito: calar aqui e o risco maior.
+        const eMeu = meuId() === null || meuId() === editando.id;
+        if (trocaEmail && eMeu
+            && !confirm('Se este for o SEU login, no próximo acesso você entra com '
+                        + emailNovo + '.' + String.fromCharCode(10)
+                        + 'Se estiver errado, você não consegue mais entrar. Continuar?')) {
+          btn.disabled = false; return;
+        }
         if (novaSenha && novaSenha.length < 8) {
           throw new Error('A nova senha precisa ter ao menos 8 caracteres.');
         }
@@ -209,10 +241,14 @@ O efeito é imediato: se ela estiver `
                         + 'você perde o acesso à tela de Usuários na hora. Continuar?')) {
           btn.disabled = false; return;
         }
-        if (!trocaPapel && !novaSenha) {
+        if (!trocaPapel && !novaSenha && !trocaEmail) {
           $('msg').style.color = 'var(--muted)';
-          $('msg').textContent = 'Nada para salvar: nem o papel mudou, nem há senha nova.';
+          $('msg').textContent = 'Nada para salvar: nem o papel, nem o e-mail, nem há senha nova.';
           btn.disabled = false; return;
+        }
+        if (trocaEmail) {
+          await Bora.api('/api/usuarios/' + editando.id + '/email',
+            { method: 'PUT', body: JSON.stringify({ email: emailNovo }) });
         }
         if (trocaPapel) {
           await Bora.api('/api/usuarios/' + editando.id + '/papel?papel='
@@ -226,6 +262,7 @@ O efeito é imediato: se ela estiver `
         modoCriar();
         if (typeof boraToast === 'function') {
           boraToast('<b>' + esc(quem) + '</b> atualizado ✓'
+            + (trocaEmail ? ' — o login agora é ' + esc(emailNovo) + '.' : '')
             + (novaSenha ? ' — combine a senha nova com a pessoa.' : ''), 'ok');
         }
       } else {
