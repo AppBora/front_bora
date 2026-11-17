@@ -520,7 +520,26 @@
 
     btn.disabled = true; btn.textContent = 'Enviando…';
     try {
-      const r = await Bora.api('/public/loja/' + lojaId + '/pedido', { method: 'POST', body: JSON.stringify({
+      // A MESMA CHAVE ENQUANTO FOR A MESMA TENTATIVA DE PEDIDO.
+      //
+      // O botão já é desabilitado acima, e isso basta para o clique duplo na mesma tela. O que ele
+      // NÃO resolve é o caso comum do celular: a requisição sai, o pedido é gravado, e a VOLTA se
+      // perde (sinal oscilou, app em segundo plano, 4G trocando de torre). A tela mostra erro, o
+      // cliente toca "Confirmar" de novo — e a loja recebe dois pedidos iguais, com estoque e
+      // cashback dobrados, de uma pessoa que vai pagar um.
+      //
+      // Medido na varredura de 17/11/2026: três envios idênticos em paralelo criaram TRÊS pedidos.
+      // O painel tem essa trava desde a V71 e o marketplace desde a V28; o cardápio, que é o canal
+      // mais usado, não tinha.
+      //
+      // A chave vive enquanto a tentativa viver: nasce aqui se não existir, e só é apagada quando o
+      // pedido entra de verdade (logo abaixo). Mudar de carrinho começa um pedido novo, com chave
+      // nova — por isso ela é apagada no sucesso, e não a cada envio.
+      if (!window.__boraChavePedido) {
+        window.__boraChavePedido = (crypto.randomUUID && crypto.randomUUID())
+          || ('p-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10));
+      }
+      const r = await Bora.api('/public/loja/' + lojaId + '/pedido', { method: 'POST', headers: { 'Idempotency-Key': window.__boraChavePedido }, body: JSON.stringify({
         itens: itensCarrinho(),
         clienteNome: $('ckNome').value.trim(),
         telefone: $('ckTel').value.trim(),
@@ -547,9 +566,20 @@
         formaPagamento: forma === 'PIX' ? 'PIX' : formaNaEntrega(),
         cpf: $('ckCpf').value.trim()
       })});
+      // O pedido entrou: a próxima tentativa é um pedido NOVO e precisa de chave nova.
+      window.__boraChavePedido = null;
       cart = []; atualizarBarra();
       limparOqueEraDoPedidoAnterior();
-      if (r.pix && r.pix.payload) {
+      // Reenvio que o servidor reconheceu: o pedido já estava gravado, então não há PIX novo para
+      // mostrar. Levar para a tela de acompanhar é o certo — repetir o formulário faria o cliente
+      // tentar de novo um pedido que já existe.
+      if (r.jaEstavaGravado) {
+        $('ckForm').hidden = true; $('ckOk').hidden = false;
+        $('okMsg').innerHTML = 'Seu pedido ' + (r.codigo || '') + ' já tinha sido recebido'
+          + (r.valorTotal != null ? ' (' + money(r.valorTotal) + ')' : '') + '. Não foi feito outro.<br><br>'
+          + (r.pixJaGerado ? 'A cobrança PIX dele já existe — acompanhe por aqui.<br><br>' : '')
+          + linkDeAcompanhar(r.pedidoId, r.acompanharToken);
+      } else if (r.pix && r.pix.payload) {
         $('ckForm').hidden = true; $('ckPix').hidden = false;
         $('pxCodigo').textContent = r.codigo; $('pxValor').textContent = money(r.valorTotal);
         if (r.pix.encodedImage) $('pxQr').src = 'data:image/png;base64,' + r.pix.encodedImage;
