@@ -9,14 +9,24 @@ const BORA_CANAIS = [
   { key:'Rappi',     ic:'🟠', cor:'#FF441F', match:['RAPPI'] },
   { key:'Uber Eats', ic:'🟢', cor:'#06C167', match:['UBER','UBEREATS','UBER EATS'] },
   { key:'WhatsApp',  ic:'💬', cor:'#25D366', match:['WHATS','ZAP'] },
-  { key:'Instagram', ic:'📷', cor:'#C13584', match:['INSTA','IG'] },
+  // 'IG' SAIU daqui (17/11/2026). Como o casamento é por `includes`, duas letras pegam qualquer
+  // palavra que as contenha -- e a origem que o servidor grava para o cardápio próprio é
+  // "Cardápio Digital", que contém D-IG-ITAL. Como Instagram vem antes de Site nesta lista, TODO
+  // pedido do cardápio da loja aparecia como "📷 Instagram" em Pedidos, Canais, Relatórios, KDS e
+  // Caixa. O lojista olhava e decidia onde divulgar em cima de um canal que não vendeu nada.
+  // Ficou só 'INSTA', que não é substring de nada que o sistema grave.
+  { key:'Instagram', ic:'📷', cor:'#C13584', match:['INSTA'] },
   { key:'Telefone',  ic:'📞', cor:'#3b82f6', match:['FONE','TELEF'] },
   { key:'Site',      ic:'🌐', cor:'#0ea5e9', match:['SITE','CARDAP','WEB'] },
   { key:'Balcão',    ic:'🏪', cor:'#a855f7', match:['BALC','LOJA','CAIXA','PDV'] },
   { key:'Delivery',  ic:'🛵', cor:'#9333ea', match:['DELIVERY','ENTREGA'] }
 ];
 function boraCanal(origem){
-  const o = (origem||'').toUpperCase();
+  // SEM ACENTO antes de comparar. O servidor grava "Cardápio Digital" (PublicController), e a lista
+  // acima procura 'CARDAP' -- que NUNCA casava, porque "CARDÁP" tem o acento no meio. O pedido do
+  // cardápio da loja só não caía em "Outros" porque casava com o 'IG' de Instagram, por acidente.
+  // Tirar o acento conserta os dois lados de uma vez, e vale para a próxima origem acentuada.
+  const o = (origem||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   for (const c of BORA_CANAIS){ if (c.match.some(m=>o.includes(m))) return c; }
   return { key: origem || 'Outros', ic:'🧾', cor:'#94a3b8' };
 }
