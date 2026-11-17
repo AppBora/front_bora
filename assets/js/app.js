@@ -357,7 +357,12 @@ document.addEventListener('DOMContentLoaded',()=>{renderNav();applyTheme();rende
   if (typeof Bora === 'undefined' || !Bora.token()) return;
   var u = Bora.user();
   if (!u || u.papel !== 'ADMINISTRADOR_BORA' || u.lojaId) return;
-  var telasDaPlataforma = ['configuracoes.html', 'desempenho.html', 'login.html', 'index.html', ''];
+  // `usuarios.html` entrou nesta lista em 17/11/2026: para o ADMINISTRADOR_BORA sem loja ela deixou
+  // de ser tela de operacao e passou a mostrar os usuarios da PLATAFORMA. A faixa dizia "esta tela
+  // nao vai funcionar assim" em cima de uma tela que funciona -- aviso que mente treina o dono a
+  // ignorar aviso.
+  var telasDaPlataforma = ['configuracoes.html', 'desempenho.html', 'login.html', 'index.html',
+                           'usuarios.html', ''];
   var atual = location.pathname.split('/').pop();
   if (telasDaPlataforma.indexOf(atual) >= 0) return;
   document.addEventListener('DOMContentLoaded', function(){

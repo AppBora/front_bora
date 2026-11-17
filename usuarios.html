@@ -39,7 +39,22 @@
     <!-- Quem clicou em "Esqueci minha senha" no login aparece aqui. E o canal que funciona hoje: o
          sistema nao envia e-mail, e nenhuma loja tem WhatsApp valido da Meta. -->
     <div id="pedidosSenha" hidden style="background:#fffbeb;border:1px solid #fde68a;border-left:5px solid #d97706;border-radius:12px;padding:14px 16px;margin-bottom:16px"></div>
-    <section class="row">
+    <!-- A visao do ADMINISTRADOR_BORA sem loja selecionada. Para ele nao existe "equipe da loja":
+         o /api/usuarios responde 409 "Nenhuma loja selecionada", e esta tela era um beco sem saida.
+         Quem decide qual das duas aparece e o usuarios.js, pelo papel. -->
+    <section id="cardPlataformaUsuarios" hidden>
+      <div class="card">
+        <h2>Todos os usuários da plataforma</h2>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 14px">
+          Toda conta do sistema, de qualquer loja — <b>mais</b> as contas de plataforma, que não
+          pertencem a loja nenhuma e por isso não aparecem na tela de Usuários de loja alguma.
+          <b>Inativos aparecem na lista</b>, de propósito: esconder quem está desativado é o jeito
+          mais rápido de concluir que a conta não existe.
+        </p>
+        <div id="upRaiz"></div>
+      </div>
+    </section>
+    <section class="row" id="cardsDaLoja">
       <div class="card"><h2 id="tituloForm">Novo usuário</h2>
         <p id="avisoEdicao" hidden style="margin:0 0 12px;font-size:13px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px"></p>
         <form id="form" class="form">
@@ -72,5 +87,5 @@
     </section>
   </main>
 </div>
-<script src="assets/js/api.js?v=20261028"></script><script src="assets/js/app.js?v=20261024"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261024"></script><script src="assets/js/usuarios.js?v=20260930"></script>
+<script src="assets/js/api.js?v=20261028"></script><script src="assets/js/app.js?v=20261117"></script><script src="assets/js/cores.js?v=20261009"></script><script src="assets/js/whitelabel.js?v=20261024"></script><script src="assets/js/usuarios-plataforma.js?v=20261117"></script><script src="assets/js/usuarios.js?v=20261117"></script>
 </body></html>

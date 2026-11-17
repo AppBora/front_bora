@@ -1,6 +1,35 @@
 // Gestão de usuários (admin da loja). Backend exige papel ADMINISTRADOR_LOJA.
 (function () {
   if (!Bora.requireAuth()) return;
+
+  /**
+   * O ADMINISTRADOR_BORA sem loja selecionada ve a PLATAFORMA aqui, nao "a equipe da loja".
+   *
+   * <p>Esta tela pede /api/usuarios, que chama ctx.lojaId() -- e para quem nao tem loja isso e 409
+   * "Nenhuma loja selecionada". O dono da plataforma clicava em Usuarios, lia a mensagem de erro e
+   * concluia que o recurso nao existia. O recurso existia: estava atras de duas sanfonas fechadas
+   * em Configuracoes > Plataforma, que NAO e onde se procura usuario.</p>
+   *
+   * <p><b>Depois de "Entrar na loja" pelo suporte ele TEM lojaId</b>, e ai a tela volta a ser a da
+   * loja -- que e exatamente o que o suporte precisa ver quando esta dentro do cliente. Por isso a
+   * condicao olha o lojaId, e nao so o papel.</p>
+   */
+  const eu = Bora.user();
+  if (eu && eu.papel === 'ADMINISTRADOR_BORA' && !eu.lojaId) {
+    // `style.display`, e NAO o atributo `hidden`: a secao da loja tem class="row", e o
+    // `.row{display:grid}` do styles.css vence o `[hidden]{display:none}` do navegador por
+    // especificidade. Com `hidden = true` os cards da loja continuavam na tela, embaixo da lista da
+    // plataforma -- medido no navegador antes de publicar. O atributo vai junto pelo leitor de tela.
+    const daLoja = document.getElementById('cardsDaLoja');
+    if (daLoja) { daLoja.style.display = 'none'; daLoja.hidden = true; }
+    const plataforma = document.getElementById('cardPlataformaUsuarios');
+    if (plataforma) plataforma.hidden = false;
+    const sub = document.querySelector('.top .title p');
+    if (sub) { sub.textContent = 'Plataforma — todas as lojas'; sub.removeAttribute('data-store'); }
+    BoraUsuariosPlataforma.montar(document.getElementById('upRaiz'));
+    return; // nada do fluxo de loja abaixo roda: ele todo depende de uma loja no contexto
+  }
+
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
