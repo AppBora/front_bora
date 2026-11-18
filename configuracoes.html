@@ -218,6 +218,39 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
       </details>
 
       <!--
+        A FILA DE EVENTOS DO ERP (outbox), entrega A2 da fase A.
+
+        Este bloco existe porque a v167 subiu a gravacao da fila com uma chave global que PODIA SER
+        LIDA na tela e NAO PODIA SER ESCRITA por lugar nenhum: ligar ou desligar exigia escrever
+        direto no banco de producao. Como a gravacao fica no caminho de toda venda, o interruptor de
+        emergencia dela so era alcancavel por quem tem acesso ao banco -- o que numa emergencia e o
+        mesmo que nao ter interruptor.
+
+        O numero ao lado do interruptor nao e enfeite: desligar ou nao e uma decisao que se toma
+        olhando quanto a fila esta custando por venda.
+      -->
+      <details class="bloco" id="secOutbox">
+        <summary>📬 Fila de eventos do ERP <span class="pista">· chave da plataforma inteira · entra no caminho de toda venda</span></summary>
+        <div class="conteudo">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700">
+          <input type="checkbox" id="outboxToggle" style="width:22px;height:22px;cursor:pointer">
+          Gravar os eventos de pedido
+        </label>
+        <span id="outboxStatus" class="badge">—</span>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin-top:8px">
+        Cada pedido criado, cancelado ou com status alterado grava tambem um evento, na mesma
+        transacao da venda. <b>Ninguem consome esses eventos ainda</b> — a fila enche e fica, para os
+        modulos do ERP se inscreverem depois. Ligada, isto acrescenta uma gravacao ao tempo de cada
+        venda; desligada, nao custa nada.
+      </p>
+      <div id="outboxMedicao" style="font-size:14px;margin-top:10px">Carregando…</div>
+      <span id="outboxMsg" style="font-size:13px"></span>
+        </div>
+      </details>
+
+      <!--
         O "pedido bruto" existia no servidor e NENHUMA tela chamava (item 25). Quando um pedido do
         iFood chega torto -- item que nao casa, endereco faltando, valor diferente -- a unica
         forma de ver o que o marketplace REALMENTE mandou era abrir o banco. Agora o suporte vê
@@ -690,6 +723,90 @@ const FichaEndereco = (function () {
       msg.textContent = 'Salvo ✓'; setTimeout(() => msg.textContent = '', 3000);
     } catch (e) { t.checked = !alvo; msg.textContent = 'Erro: ' + e.message; }
   };
+  // A fila de eventos do ERP (outbox). Mesmo formato do interruptor fiscal logo acima, com uma
+  // diferenca que muda o jeito de apresentar: esta chave entra no caminho da VENDA. Por isso a
+  // tela mostra o custo medido ao lado do interruptor -- quem decide desligar decide olhando o
+  // numero, nao no escuro.
+  (() => {
+    const t = document.getElementById('outboxToggle');
+    const st = document.getElementById('outboxStatus');
+    const med = document.getElementById('outboxMedicao');
+    const msg = document.getElementById('outboxMsg');
+    if (!t || !med) return;
+
+    function pintar(r) {
+      const on = r.habilitado === true;
+      t.checked = on;
+      st.textContent = on ? 'LIGADA' : 'DESLIGADA';
+      st.style.cssText = 'padding:3px 10px;border-radius:999px;font-weight:700;font-size:12px;' +
+        (on ? 'background:#dcfce7;color:#166534' : 'background:#fee2e2;color:#991b1b');
+
+      const n = Number(r.gravacoes || 0);
+      if (!on && n === 0) {
+        med.innerHTML = '<div style="background:#f1f5f9;padding:10px;border-radius:8px">'
+          + 'Nenhuma gravacao. Com a chave desligada, o custo por venda e <b>zero</b>.</div>';
+        return;
+      }
+      if (n === 0) {
+        // A ARMADILHA: contagem zero com a chave LIGADA nao e sinal de problema. Os contadores sao
+        // do processo e zeram em cada deploy -- e e normal nao ter venda nenhuma por horas.
+        med.innerHTML = '<div style="background:#fef9c3;color:#854d0e;padding:10px;border-radius:8px">'
+          + '<b>Ligada, e ainda sem gravar nada.</b> A contagem e desta instancia da API e zera em cada '
+          + 'deploy, entao isto e o esperado enquanto nenhuma venda acontecer. A primeira gravacao '
+          + 'tambem sai no log do servidor, com hora.</div>';
+        return;
+      }
+      const media = Number(r.mediaMs);
+      const maior = Number(r.maiorMs);
+      const lenta = Number(r.lentaAcimaDeMs || 250);
+      const ruim = maior >= lenta;
+      med.innerHTML = '<div style="background:' + (ruim ? '#fee2e2' : '#dcfce7')
+        + ';color:' + (ruim ? '#991b1b' : '#166534') + ';padding:10px;border-radius:8px">'
+        + '<b>' + n + '</b> gravacao(oes) desde que a API subiu · media <b>' + media.toFixed(1)
+        + ' ms</b> · maior <b>' + maior.toFixed(1) + ' ms</b>'
+        + '<br><span style="font-size:13px">E este o tempo que a fila acrescenta a cada venda. '
+        + (ruim
+            ? 'Passou de ' + lenta + ' ms em pelo menos uma venda — vale desligar e investigar.'
+            : 'Abaixo do limite de ' + lenta + ' ms.')
+        + '</span></div>';
+    }
+
+    function erro(e) {
+      med.innerHTML = '<div style="background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px">'
+        + 'Nao consegui ler o estado da fila: ' + ((e && e.message) || 'erro') + '</div>';
+    }
+
+    Bora.api('/admin-bora/config/outbox').then(pintar).catch(erro);
+
+    t.onchange = async () => {
+      const alvo = t.checked;
+      const pergunta = alvo
+        ? 'LIGAR a fila de eventos do ERP?\n\nA partir de agora cada venda de TODAS as lojas grava '
+          + 'tambem um evento, na mesma transacao. Vale na proxima venda, sem deploy — e da para '
+          + 'desligar aqui mesmo do mesmo jeito.'
+        : 'DESLIGAR a fila de eventos do ERP?\n\nAs vendas voltam a nao gravar evento nenhum. O que '
+          + 'ja esta na fila continua gravado.';
+      if (!confirm(pergunta)) { t.checked = !alvo; return; }
+      try {
+        const r = await Bora.api('/admin-bora/config/outbox',
+          { method: 'PUT', body: JSON.stringify({ habilitado: alvo }) });
+        pintar(r);
+        msg.textContent = 'Salvo ✓'; setTimeout(() => msg.textContent = '', 3000);
+      } catch (e) {
+        t.checked = !alvo;
+        msg.textContent = 'Erro: ' + ((e && e.message) || 'nao consegui salvar');
+      }
+    };
+
+    // Enquanto o bloco estiver aberto, atualiza a medicao: e assim que se acompanha o custo depois
+    // de ligar, sem recarregar a pagina.
+    const bloco = document.getElementById('secOutbox');
+    setInterval(() => {
+      if (!bloco || !bloco.open) return;
+      Bora.api('/admin-bora/config/outbox').then(pintar).catch(() => {});
+    }, 15000);
+  })();
+
   // Cifragem em repouso. O endpoint existia desde a v114 e NENHUMA tela chamava: ligar a chave
   // protegia o que viesse depois e o que ja estava gravado ficava em texto puro para sempre, sem
   // ninguem ter como descobrir nem como consertar pelo painel.
