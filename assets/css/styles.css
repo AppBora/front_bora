@@ -407,3 +407,6 @@ body.kds-mode{background:#0b1220;color:#e2e8f0}
   /* botao de 44px e o minimo para o dedo acertar */
   .btn{padding:12px 14px;min-height:44px}
 }
+/* hidden de verdade: .row{display:grid} e .cart-foot .ln{display:flex} ganham do [hidden] do navegador por especificidade.
+   Sem isto o Balancete da rede aparecia vazio em loja de uma unidade, e a linha Cashback do PDV aparecia com - R$ 0,00. */
+.row[hidden],.cart-foot .ln[hidden],.ln[hidden]{display:none!important}

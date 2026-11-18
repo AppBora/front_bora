@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cardápio Digital</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20261023"><meta name="theme-color" content="#9333ea"><style>#comp:not([hidden]),#checkout:not([hidden]),#ckOpPix:not([hidden]){display:flex}
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cardápio Digital</title><link rel="icon" href="assets/img/icone-bora.svg"><link rel="stylesheet" href="assets/css/styles.css?v=20261118"><meta name="theme-color" content="#9333ea"><style>#comp:not([hidden]),#checkout:not([hidden]),#ckOpPix:not([hidden]),#ctCashbackLinha:not([hidden]){display:flex}
 /* O ZOOM DO IPHONE NO CHECKOUT (achado pelo QA em 24/10/2026).
    O Safari do iOS dá zoom na página sozinho quando o campo que recebeu o toque tem font-size menor
    que 16px -- e NÃO volta ao sair do campo. O cliente tocava em "Seu nome" e o checkout inteiro
@@ -136,7 +136,7 @@ input:not([type=radio]):not([type=checkbox]),select,textarea{font-size:16px}</st
         <!-- O desconto do cashback PRECISA aparecer aqui. Sem esta linha a conta mostrava o preco
              cheio e o servidor descontava: no PIX o QR saia certo e o cliente percebia, mas no
              "pagar na entrega" ele separava o dinheiro errado e chegava faltando troco. -->
-        <div id="ctCashbackLinha" hidden style="display:flex;justify-content:space-between;margin-top:4px;color:#166534;font-weight:700"><span>Cashback</span><b id="ctCashback">- R$ 0,00</b></div>
+        <div id="ctCashbackLinha" hidden style="justify-content:space-between;margin-top:4px;color:#166534;font-weight:700"><span>Cashback</span><b id="ctCashback">- R$ 0,00</b></div>
         <div id="ctFreteLinha" style="display:flex;justify-content:space-between;margin-top:4px"><span>Entrega</span><b id="ctFrete">R$ 0,00</b></div>
         <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:16px"><span><b>Total</b></span><b id="ctTotal">R$ 0,00</b></div>
       </div>

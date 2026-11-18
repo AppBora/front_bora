@@ -243,7 +243,11 @@
     const taxa = retira ? 0 : num($('taxa').value);
     const c = clienteSelecionado();
     // estimativa: o servidor tem a palavra final sobre quanto do saldo pode entrar neste pedido
-    const cashback = $('usarCashback').checked && c ? Math.min(Number(c.cashback || 0), sub) : 0;
+    // mesmo teto do servidor (FidelidadeService.resgatePossivel), do PDV e do cardapio: nunca zera o pedido,
+    // sobra R$ 0,01 a pagar. Antes era min(saldo, sub) e a tela mostrava R$ 0,01 a menos que o cobrado.
+    const teto = sub - 0.01;
+    const cashback = $('usarCashback').checked && c && teto > 0
+      ? Math.round(Math.min(Number(c.cashback || 0), teto) * 100) / 100 : 0;
     $('linhaSub').textContent = money(sub);
     $('boxCashback').style.display = cashback > 0 ? 'flex' : 'none';
     $('linhaCashback').textContent = '- ' + money(cashback);

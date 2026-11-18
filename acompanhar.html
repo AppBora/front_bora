@@ -81,7 +81,10 @@
       // pedido sao sequenciais, e sem assinatura qualquer um varria os pedidos de qualquer loja.
       const r = await fetch(location.origin + '/public/loja/' + lojaId + '/pedido/' + pedidoId
         + '/status?t=' + encodeURIComponent(token));
-      if(!r.ok) throw new Error('Pedido não encontrado');
+      // So o 404 quer dizer "esse pedido nao existe". 5xx/429 (servidor reiniciando, limite de taxa) e
+      // problema passageiro: tratar como 404 dizia ao cliente que o pedido sumiu e parava de atualizar.
+      if(r.status === 404) throw new Error('Pedido não encontrado');
+      if(!r.ok) throw new Error('Falha temporária ' + r.status);
       const d = await r.json();
       document.getElementById('loja').textContent = d.loja || 'Seu pedido';
       document.title = (d.loja || 'Pedido') + ' · ' + d.codigo;
@@ -89,6 +92,7 @@
       if(d.status === 'CANCELADO'){
         document.getElementById('timeline').innerHTML =
           '<div class="cancel">😔 Pedido cancelado' + (d.motivoCancelamento ? '<br><small style="font-weight:400">' + String(d.motivoCancelamento).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}) + '</small>' : '') + '</div>';
+        clearInterval(timer);   // cancelado nao muda mais: parar de perguntar a cada 5 s
         return;
       }
       const fases = fasesPara(d.retirada);
