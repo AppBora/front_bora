@@ -54,7 +54,7 @@
       // O servidor e quem decide de verdade, na hora de gravar: entre carregar o cardapio e confirmar,
       // alguem pode comprar o ultimo. Isto aqui e so para o cliente nao tomar o susto no fim.
       itens.map(p => `<div class="menu-item"${p.esgotado ? ' style="opacity:.55"' : ''}>
-        ${p.imagem ? `<img src="${p.imagem}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:10px;margin-right:10px;flex-shrink:0${p.esgotado ? ';filter:grayscale(1)' : ''}">` : ''}
+        ${p.imagem ? `<img src="${esc(p.imagem)}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:10px;margin-right:10px;flex-shrink:0${p.esgotado ? ';filter:grayscale(1)' : ''}">` : ''}
         <div class="mi"><div class="mn">${esc(p.nome)}</div>${(() => {
           // Os tamanhos saem ESCRITOS no cartao, com o preco ja somado ao da base -- e o que o
           // cliente vai pagar, e o que o cardapio de papel promete.
