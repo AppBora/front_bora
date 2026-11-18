@@ -744,7 +744,8 @@ const FichaEndereco = (function () {
       const n = Number(r.gravacoes || 0);
       if (!on && n === 0) {
         med.innerHTML = '<div style="background:#f1f5f9;padding:10px;border-radius:8px">'
-          + 'Nenhuma gravacao. Com a chave desligada, o custo por venda e <b>zero</b>.</div>';
+          + 'Nenhuma gravacao. Com a chave desligada, o custo por venda e <b>zero</b>.</div>'
+          + empresaHtml(r);
         return;
       }
       if (n === 0) {
@@ -753,7 +754,8 @@ const FichaEndereco = (function () {
         med.innerHTML = '<div style="background:#fef9c3;color:#854d0e;padding:10px;border-radius:8px">'
           + '<b>Ligada, e ainda sem gravar nada.</b> A contagem e desta instancia da API e zera em cada '
           + 'deploy, entao isto e o esperado enquanto nenhuma venda acontecer. A primeira gravacao '
-          + 'tambem sai no log do servidor, com hora.</div>';
+          + 'tambem sai no log do servidor, com hora.</div>'
+          + empresaHtml(r);
         return;
       }
       const media = Number(r.mediaMs);
@@ -768,7 +770,35 @@ const FichaEndereco = (function () {
         + (ruim
             ? 'Passou de ' + lenta + ' ms em pelo menos uma venda — vale desligar e investigar.'
             : 'Abaixo do limite de ' + lenta + ' ms.')
-        + '</span></div>';
+        + '</span></div>'
+        + empresaHtml(r);
+    }
+
+    // DE QUEM E A VENDA: a fila grava `empresa_id` junto de `loja_id`, e esta linha e a prova de
+    // que a coluna esta sendo preenchida. Ela existe porque o modo de falha dessa coluna e o
+    // SILENCIO: a empresa sai de uma subconsulta na loja, e loja sem empresa no cadastro devolve
+    // nulo sem erro nenhum -- de proposito, porque a fila nao pode recusar uma venda. Sem numero
+    // na tela, "a coluna esta preenchida" seria afirmacao, nao medida.
+    //
+    // Importa porque a rede da Zira sao CINCO lojas de UMA empresa: sem essa coluna, quem consome
+    // a fila veria cinco clientes em vez de cinco unidades de um.
+    function empresaHtml(r) {
+      const sem = r.eventosSemEmpresa;
+      if (sem === null || sem === undefined) {
+        // A API nao conseguiu contar. Dizer "0" aqui seria inventar uma boa noticia.
+        return '<div style="font-size:13px;color:#64748b;margin-top:6px">'
+          + 'Nao consegui contar os eventos sem empresa agora.</div>';
+      }
+      const q = Number(sem);
+      if (q > 0) {
+        return '<div style="background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;'
+          + 'margin-top:6px"><b>' + q + ' evento(s) na fila sem empresa.</b> Isso quer dizer loja '
+          + 'sem empresa no cadastro — o conserto e no cadastro da loja, nao aqui. A fila '
+          + 'grava assim mesmo de proposito: ela nunca recusa uma venda por causa disso.</div>';
+      }
+      return '<div style="font-size:13px;color:#166534;margin-top:6px">'
+        + '✓ Todo evento da fila tem empresa — quem consome sabe de qual cliente e a venda, '
+        + 'nao so de qual loja.</div>';
     }
 
     function erro(e) {
