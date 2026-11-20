@@ -487,6 +487,137 @@
       + '<span class="url">' + esc(link.replace(/^https?:\/\//, '')) + '</span></div></div>';
   }
 
+  /**
+   * Troca o tom principal da folha pela cor da marca da loja, quando ela tem uma.
+   *
+   * So aceita `#rgb` ou `#rrggbb` -- a cor vem do cadastro, e cadastro e texto que o lojista digita.
+   * Valor estranho e ignorado: a folha sai na paleta de casa, que e feia para a marca dele mas nao
+   * quebra a impressao.
+   *
+   * O tom CLARO e derivado do principal, nao pedido ao lojista: pedir duas cores para quem quer
+   * imprimir um cardapio e pedir demais, e duas cores escolhidas sem relacao entre si saem piores
+   * que uma derivada.
+   */
+  function aplicarCorDaLoja(cor) {
+    if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(cor || '').trim())) return;
+    const hex = String(cor).trim();
+    const cheio = hex.length === 4
+      ? '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3]
+      : hex;
+    const n = parseInt(cheio.slice(1), 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    const claro = (x) => Math.min(255, Math.round(x + (255 - x) * 0.35));
+    const paraHex = (x) => x.toString(16).padStart(2, '0');
+    const raiz = document.documentElement.style;
+    raiz.setProperty('--uva', cheio);
+    raiz.setProperty('--uva-claro', '#' + paraHex(claro(r)) + paraHex(claro(g)) + paraHex(claro(b)));
+    // O fundo de bloco acompanha, bem lavado: 8% da cor sobre o papel.
+    const lavado = (x) => Math.round(x + (251 - x) * 0.92);
+    raiz.setProperty('--lilas', '#' + paraHex(lavado(r)) + paraHex(lavado(g)) + paraHex(lavado(b)));
+  }
+
+  // ----------------------------------------------------------------- a folha GENERICA
+  //
+  // A FOLHA DE CIMA E UM DESENHO FEITO A MAO PARA UMA LOJA. Esta e a de todas as outras.
+  //
+  // Ate 19/11/2026 o `cardapio-qr` abria a folha desenhada para QUALQUER loja, e a Pizzaria recebia
+  // um papel de acaiteria com o nome de outro cliente. O primeiro conserto foi RECUSAR. Esta funcao
+  // e o segundo: em vez de recusar, entregar uma folha de verdade.
+  //
+  // O que ela NAO tenta ser: a folha desenhada. Nao ha destaque escolhido a dedo, nem bloco de
+  // especialidade, nem tagline -- essas coisas sao decisao de quem conhece a loja, e inventar por
+  // conta sairia pior que o papel em branco. O que ela entrega e o cardapio ARRUMADO: as categorias
+  // reais da loja, na ordem em que a loja as mostra no cardapio online, com as cores da marca dela
+  // e o QR no fim.
+  //
+  // Mesma regra de agrupamento do `cardapio.js` (categoria, "Outros" quando nao ha), de proposito:
+  // o papel tem de sair na mesma ordem que o cliente ve na tela, senao um desmente o outro.
+  function montarGenerica(dados, link) {
+    const marca = dados.marca || {};
+    const nome = marca.nome || (dados.loja || {}).nome || 'Cardápio';
+    const produtos = (dados.produtos || []).filter((p) => !p.esgotado);
+
+    // A COR DA LOJA ENTRA AQUI, e era um dos pontos do achado: a folha tinha "zero leituras da cor
+    // da marca da loja" -- paleta fixa, roxa de acaiteria, impressa para quem vende pizza.
+    //
+    // So o tom principal e trocado. O papel, a tinta do texto e o verde de apoio ficam: contraste de
+    // texto em papel impresso nao e lugar para seguir cor escolhida numa tela, e a cor da marca aqui
+    // e do cabecalho e do preco, nao do corpo do texto.
+    aplicarCorDaLoja(marca.corPrimaria);
+
+    // Agrupa preservando a ordem de chegada -- a MESMA que o servidor usa no cardapio online, e a
+    // mesma regra do `cardapio.js` (categoria, "Outros" quando nao ha). O papel tem de sair na ordem
+    // que o cliente ve na tela, senao um desmente o outro.
+    const grupos = [];
+    const porNome = {};
+    produtos.forEach((p) => {
+      const c = p.categoria || 'Outros';
+      if (!porNome[c]) { porNome[c] = []; grupos.push([c, porNome[c]]); }
+      porNome[c].push(p);
+    });
+
+    // LISTA, E NAO VITRINE DE FOTOS -- e isto foi MEDIDO, nao preferido (19/11/2026).
+    //
+    // A primeira versao desta folha usava o cartao com foto do desenho a mao. Medido no navegador
+    // com 11 produtos: a folha deu **749 mm**, contra 297 mm do A4, porque cada cartao ocupa 62 mm.
+    // Numa loja com 40 itens sairiam sete paginas de vitrine.
+    //
+    // Cardapio impresso de verdade e lista: nome, pontilhado, preco. Cabe dezenas de itens por
+    // folha, nao depende de foto (a maioria dos produtos nao tem) e e o formato que o cliente sabe
+    // ler no balcao. As classes `.colunas` e `.pt` ja existiam neste arquivo para o "Monte Seu
+    // Acai" -- e o mesmo desenho, reusado.
+    const MUITOS = 10;   // categoria grande ocupa a largura inteira e se reparte por dentro
+    const linha = (p) => '<li><span>' + esc(p.nome) + '</span><span class="pt"></span>'
+      + '<span class="v">' + reais(p.preco) + '</span></li>';
+
+    const celulas = grupos.map(([cat, itens]) =>
+      '<div' + (itens.length > MUITOS ? ' class="largo"' : '') + '>'
+      + '<h3>' + esc(cat) + '</h3><ul>' + itens.map(linha).join('') + '</ul></div>');
+
+    const topo = (comFita) =>
+      '<div class="topo' + (comFita ? '' : ' curto') + '">'
+      + (comFita && marca.logoUrl
+        ? '<img class="logo" src="' + esc(marca.logoUrl) + '" alt="">' : '')
+      + '<p class="marca">' + esc(nome) + '</p>'
+      + (comFita ? '<span class="fita">Cardápio</span>' : '')
+      + '</div>';
+
+    // Quebra por LINHAS, nao por categoria: uma categoria de 30 itens nao pode decidir sozinha o
+    // tamanho da pagina. O numero vem da medida: ~178 mm uteis por folha depois do topo, do QR e do
+    // pe, e cada linha ocupa ~5 mm em tres colunas -- com folga, 90 linhas. O aviso de "nao cabe no
+    // A4" la embaixo mede a altura DE VERDADE depois de desenhar, e e ele quem manda.
+    const LINHAS_POR_FOLHA = 90;
+    const paginas = [];
+    let atual = [];
+    let linhasNaPagina = 0;
+    grupos.forEach(([cat, itens], i) => {
+      const custo = itens.length + 2;   // os itens mais o cabecalho da categoria
+      if (linhasNaPagina > 0 && linhasNaPagina + custo > LINHAS_POR_FOLHA) {
+        paginas.push(atual); atual = []; linhasNaPagina = 0;
+      }
+      atual.push(celulas[i]);
+      linhasNaPagina += custo;
+    });
+    if (atual.length) paginas.push(atual);
+
+    if (!paginas.length) {
+      return '<div class="folha" data-folha="1">' + topo(true)
+        + '<div class="bloco">' + cabecalho('Cardápio em montagem')
+        + '<p class="pe">Esta loja ainda não tem produto disponível no cardápio.</p></div>'
+        + blocoDoQr(link) + '</div>';
+    }
+
+    return paginas.map((celulasDaPagina, i) =>
+      '<div class="folha" data-folha="' + (i + 1) + '">'
+      + topo(i === 0)
+      + '<div class="monte"><div class="colunas">' + celulasDaPagina.join('') + '</div></div>'
+      + (i === paginas.length - 1 ? blocoDoQr(link) : '')
+      + '<p class="pe">Preços e itens deste cardápio saem do próprio sistema da loja. '
+      + 'Impresso em ' + new Date().toLocaleDateString('pt-BR') + '.'
+      + (paginas.length > 1 ? ' Folha ' + (i + 1) + ' de ' + paginas.length + '.' : '')
+      + '</p></div>').join('');
+  }
+
   // ----------------------------------------------------------------- monta tudo
   function montar(dados, link) {
     const marca = dados.marca || {};
@@ -620,14 +751,10 @@
         + 'Volte em <b>Cardapio por QR</b>, escolha a loja e clique em "folha impressa".';
       return;
     }
-    if (!LOJAS_DESENHADAS.includes(lojaId)) {
-      estado.innerHTML = '<b>A folha impressa ainda nao esta pronta para esta loja.</b><br>'
-        + 'O desenho desta folha (os blocos, os destaques e as especialidades) foi feito a mao para '
-        + 'uma loja especifica, e imprimi-la aqui sairia com os nomes dela, nao os seus.<br><br>'
-        + 'O <b>cardapio por QR Code</b> funciona normalmente para a sua loja, e a folha generica '
-        + 'esta na lista de pendencias.';
-      return;
-    }
+    // A loja com desenho proprio usa o desenho; as outras usam a folha GENERICA, montada das
+    // categorias reais delas. Ate 19/11/2026 as outras eram RECUSADAS aqui -- melhor que receber o
+    // papel de outro cliente, mas pior que receber o proprio.
+    const desenhada = LOJAS_DESENHADAS.includes(lojaId);
 
     try {
       const link = linkPublico();
@@ -643,7 +770,8 @@
         throw new Error('esta loja não tem nenhum produto ativo no cardápio');
       }
 
-      $('saida').innerHTML = montar(dados, link);
+      // O desenho a mao para quem tem; a folha das categorias reais para todo mundo mais.
+      $('saida').innerHTML = desenhada ? montar(dados, link) : montarGenerica(dados, link);
       document.title = 'Cardápio · ' + ((dados.marca || {}).nome || 'loja ' + lojaId);
       estado.textContent = (dados.produtos || []).length + ' produtos no cardápio.';
 

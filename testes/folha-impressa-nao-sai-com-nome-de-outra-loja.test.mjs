@@ -11,9 +11,9 @@
 //    dentro do arquivo. A Pizzaria Bella Napoli clicando em "folha impressa" recebia um papel de
 //    açaiteria, quase vazio, com o nome de outro cliente.
 //
-// O CONSERTO É RECUSAR, NÃO ADIVINHAR. Folha genérica — montada das categorias reais de cada loja —
-// é recurso novo, está anotado como pendência, e não se resolve escondendo o problema. Até existir,
-// dizer "ainda não tem" é melhor do que entregar o papel errado.
+// O CONSERTO FOI EM DOIS PASSOS, no mesmo dia. Primeiro RECUSAR (melhor que o papel de outro
+// cliente). Depois a folha GENÉRICA: montada das categorias reais da loja, na ordem do cardápio
+// online dela, com a cor da marca dela. O desenho à mão continua valendo para a loja que o tem.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -61,20 +61,56 @@ test('SEM ?loja= a folha NAO cai na Zira', () => {
   assert.equal(resolver('?loja=0'), null);
 });
 
-test('a folha RECUSA loja para a qual nao foi desenhada', () => {
+// O CONSERTO EVOLUIU EM 19/11/2026, no mesmo dia.
+//
+// O primeiro passo foi RECUSAR a loja sem desenho próprio: melhor que entregar o papel de outro
+// cliente. O segundo foi parar de recusar e entregar uma folha DE VERDADE — montada das categorias
+// reais da loja, na ordem do cardápio online dela, com a cor da marca dela.
+//
+// Os testes abaixo trocaram de sentido junto: o que exigia a mensagem de recusa agora exige que a
+// folha genérica exista e seja escolhida.
+test('loja SEM desenho proprio recebe a folha GENERICA, nao uma recusa', () => {
   const lojas = lojasDesenhadas();
   assert.ok(!lojas.includes(23),
     'a loja 23 (Doce Jardim) está na lista de desenhadas, e o desenho é da Zirá');
   assert.ok(!lojas.includes(1), 'a loja 1 é a de teste');
 
-  const i = FOLHA.indexOf('if (!LOJAS_DESENHADAS.includes(lojaId))');
-  assert.ok(i > 0, 'não há guarda para loja sem desenho próprio');
-  const bloco = FOLHA.slice(i, i + 900);
-  assert.ok(/ainda n[ãa]o esta|ainda n[ãa]o está/i.test(bloco),
-    'a mensagem tem de dizer que a folha ainda não existe para esta loja');
-  assert.ok(/QR/.test(bloco),
-    'a mensagem tem de dizer o que AINDA funciona para ela (o QR), senão parece que nada funciona');
-  assert.ok(/return;/.test(bloco), 'a guarda tem de parar antes de desenhar');
+  assert.ok(/function montarGenerica\(/.test(FOLHA), 'não existe folha genérica');
+  assert.ok(/desenhada \? montar\(dados, link\) : montarGenerica\(dados, link\)/.test(FOLHA),
+    'a escolha entre o desenho à mão e a folha genérica não está ligada');
+  assert.ok(!/ainda n[ãa]o esta pronta para esta loja/i.test(FOLHA),
+    'a mensagem de recusa ficou no arquivo: ou a folha genérica não está sendo usada, ou sobrou '
+    + 'texto que contradiz o que o código faz');
+});
+
+test('a folha generica monta das CATEGORIAS reais, na ordem do cardapio online', () => {
+  const i = FOLHA.indexOf('function montarGenerica(');
+  const corpo = FOLHA.slice(i, FOLHA.indexOf('\\n  }', i));
+  assert.ok(/p\.categoria \|\| 'Outros'/.test(corpo),
+    "tem de agrupar por categoria com 'Outros' como sobra — a MESMA regra do cardapio.js, senão o "
+    + 'papel sai numa ordem e a tela noutra');
+  assert.ok(/grupos\.push/.test(corpo),
+    'a ordem de chegada tem de ser preservada: é a ordem que o servidor usa no cardápio online');
+  assert.ok(/esgotado/.test(corpo), 'produto esgotado não deve ir para o papel');
+  assert.ok(/blocoDoQr\(link\)/.test(corpo), 'a folha genérica também precisa do QR');
+});
+
+test('a folha generica usa a COR da marca da loja', () => {
+  assert.ok(/function aplicarCorDaLoja\(/.test(FOLHA), 'não existe aplicação da cor da loja');
+  const i = FOLHA.indexOf('function montarGenerica(');
+  const corpo = FOLHA.slice(i, FOLHA.indexOf('\\n  }', i));
+  assert.ok(/aplicarCorDaLoja\(marca\.corPrimaria\)/.test(corpo),
+    'a folha genérica não lê a cor da marca — era exatamente o achado: "zero leituras da cor da '
+    + 'marca da loja", paleta de açaiteria impressa para quem vende pizza');
+});
+
+test('a cor so e aceita se for hexadecimal de verdade', () => {
+  const i = FOLHA.indexOf('function aplicarCorDaLoja(');
+  const corpo = FOLHA.slice(i, FOLHA.indexOf('\\n  }', i));
+  const m = corpo.match(/\/\^#\(\[0-9a-f\]\{3\}\|\[0-9a-f\]\{6\}\)\$\/i/);
+  assert.ok(m,
+    'a cor vem do cadastro, que é texto que o lojista digita: sem validar, qualquer coisa entra '
+    + 'numa propriedade CSS');
 });
 
 test('a guarda do link sem loja tambem para antes de desenhar', () => {
