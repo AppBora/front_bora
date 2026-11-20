@@ -21,7 +21,26 @@ const Bora = {
     localStorage.setItem('boraUser', JSON.stringify({ nome: resp.nome, papel: resp.papel, lojaId: resp.lojaId }));
   },
   user() { try { return JSON.parse(localStorage.getItem('boraUser') || 'null'); } catch { return null; } },
-  logout() { localStorage.removeItem('boraToken'); localStorage.removeItem('boraUser'); location.href = 'login.html'; },
+  /**
+   * Sair da conta. APAGA A MARCA TAMBEM -- e isso e o conserto (19/11/2026).
+   *
+   * O defeito: o logout apagava `boraToken` e `boraUser` e deixava `boraTheme`. Quem entrasse em
+   * seguida no MESMO navegador via o nome, as cores e o logo da loja anterior. Foi assim que o painel
+   * da plataforma apareceu como "Zira - Montreal" para o dono.
+   *
+   * E era pior que a tela: `app.js:205`, `caixa.js:22` e `acerto-entregadores.js:159` leem esse nome
+   * guardado para PAPEL IMPRESSO -- comanda da cozinha, fechamento de caixa e recibo do motoboy. O
+   * nome de um cliente saia impresso no papel de outro.
+   *
+   * O comentario do `whitelabel.js` afirmava que a chave "so e apagada no logout". Era falso: quem
+   * apagava era so o seletor de loja (`app.js:339`) e a tela de configuracoes. Agora e verdade.
+   */
+  logout() {
+    localStorage.removeItem('boraToken');
+    localStorage.removeItem('boraUser');
+    localStorage.removeItem('boraTheme');
+    location.href = 'login.html';
+  },
 
   async api(path, opts = {}) {
     const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});

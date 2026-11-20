@@ -88,6 +88,8 @@
       return;
     }
     aviso.textContent = '';
+    // A folha confere se foi DESENHADA para esta loja e avisa se nao foi -- a lista mora la,
+    // num lugar so (`LOJAS_DESENHADAS` em cardapio-folha.html). Ver o comentario de lá.
     window.open('cardapio-folha.html?loja=' + loja, '_blank');
   });
 </script>

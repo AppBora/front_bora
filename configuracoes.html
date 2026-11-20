@@ -808,6 +808,59 @@ const FichaEndereco = (function () {
 
     Bora.api('/admin-bora/config/outbox').then(pintar).catch(erro);
 
+    // ------------------------------------------------------------------------------------------
+    // AS INTEGRACOES MORTAS, NUM LUGAR SO (item 3.11 da varredura de 18/11/2026)
+    //
+    // O rebaixamento de CONECTADO para ERRO depois de tres falhas seguidas ja funcionava. O que
+    // faltava era ALGUEM OLHAR: o ERRO so aparecia abrindo a tela de Integracoes de cada loja, uma
+    // por uma, e a plataforma tem 8 lojas. Foi assim que o iFood da Pizzaria passou 18 DIAS dizendo
+    // CONECTADO com token vencido, sem buscar um unico pedido -- cliente pagante, pedido perdido
+    // todo dia, e ninguem sabia.
+    //
+    // Lista vazia e a resposta saudavel, e esta tela DIZ isso com palavra. Bloco vazio nao informa:
+    // nao da para distinguir "nenhuma morta" de "nao consegui olhar".
+    (function integracoesMortas() {
+      const caixa = document.createElement('div');
+      caixa.style.cssText = 'margin-top:14px';
+      caixa.innerHTML = '<div style="font-size:13px;color:#64748b">Procurando integracao parada…</div>';
+      med.insertAdjacentElement('afterend', caixa);
+
+      // Escape PROPRIO, e nao o `esc` da linha ~949: aquele e um `const` declarado DEPOIS deste
+      // bloco. Funcionaria por acidente (so e usado dentro do `.then`, que roda depois), e
+      // "funciona por acidente" num escape de HTML e exatamente como nasceu o XSS do cardapio.
+      const esc = v => String(v == null ? '' : v)
+        .replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+      const quando = (iso) => {
+        if (!iso) return 'nunca buscou pedido';
+        const h = Math.round((Date.now() - new Date(iso).getTime()) / 3600000);
+        if (h < 1) return 'ultima busca ha menos de 1 h';
+        if (h < 48) return 'ultima busca ha ' + h + ' h';
+        return 'ultima busca ha ' + Math.round(h / 24) + ' dia(s)';
+      };
+
+      Bora.api('/admin-bora/config/integracoes-mortas').then(r => {
+        const lista = r.integracoes || [];
+        if (!lista.length) {
+          caixa.innerHTML = '<div style="font-size:13px;color:#166534">'
+            + '&#10003; Nenhuma integracao parada em nenhuma loja.</div>';
+          return;
+        }
+        caixa.innerHTML = '<div style="background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px">'
+          + '<b>' + lista.length + ' integracao(oes) parada(s).</b> Enquanto estiverem assim, pedido '
+          + 'desse canal NAO entra — e a tela do lojista pode continuar dizendo que esta conectada.'
+          + '<ul style="margin:8px 0 0;padding-left:20px">'
+          + lista.map(i => '<li>loja <b>' + i.lojaId + '</b> &middot; ' + esc(String(i.canal || '?'))
+              + ' &middot; ' + i.falhasSeguidas + ' falha(s) seguidas &middot; ' + quando(i.ultimoPollingEm)
+              + (i.ultimoErro ? '<br><span style="font-size:12px;opacity:.85">' + esc(String(i.ultimoErro)) + '</span>' : '')
+              + '</li>').join('')
+          + '</ul></div>';
+      }).catch(e => {
+        caixa.innerHTML = '<div style="font-size:13px;color:#64748b">'
+          + 'Nao consegui procurar integracao parada agora' + ((e && e.message) ? ': ' + e.message : '') + '.</div>';
+      });
+    })();
+
     t.onchange = async () => {
       const alvo = t.checked;
       const pergunta = alvo

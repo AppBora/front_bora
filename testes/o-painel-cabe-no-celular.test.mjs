@@ -75,9 +75,13 @@ test('celular: a regra tem !important — sem ele ela nao vence estilo em linha 
   const bloco = blocoDoCelular();
   const regra = bloco.match(/\[style\*=["']grid-template-columns["']\]\s*\{[^}]*\}/);
   assert.ok(regra, 'nao achei a regra');
-  assert.match(regra[0], /grid-template-columns:\s*1fr\s*!important/,
+  assert.match(regra[0], /grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important/,
     'estilo em linha so perde para !important. Sem ele a regra existe, nao aplica, e o painel '
-    + 'continua quebrado parecendo consertado');
+    + 'continua quebrado parecendo consertado. '
+    + 'E tem de ser minmax(0,1fr), nao 1fr: `1fr` e `minmax(auto,1fr)`, e o minimo `auto` e o '
+    + 'min-content -- a coluna nao encolhe abaixo do item mais teimoso. Medido no navegador em '
+    + '375x812 em 19/11/2026: com `1fr` a coluna resolvia para 520px dentro de um formulario de '
+    + '319px, e o botao "Adicionar ao pedido" ficava fora da tela COM A REGRA ATIVA.');
 });
 
 test('celular: tabela larga rola DENTRO do cartao, em vez de empurrar a pagina', () => {

@@ -303,7 +303,28 @@
   const reais = (v) => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
   const $ = (id) => document.getElementById(id);
 
-  const lojaId = Number(new URLSearchParams(location.search).get('loja')) || 18;
+  // SEM `?loja=` NAO CAI NA ZIRA, E ESTA FOLHA SO SERVE A LOJA PARA A QUAL FOI DESENHADA.
+  //
+  // Dois defeitos achados na varredura de 18/11/2026 e consertados em 19/11.
+  //
+  // 1) Era `... .get('loja')) || 18`. A loja 18 e a Zira. Abrir esta pagina sem `?loja=` -- link
+  //    direto, favorito antigo, parametro cortado -- imprimia a folha da Zira para quem abrisse.
+  //
+  // 2) Mais serio: `cardapio-qr.html` abria esta folha para QUALQUER loja, e **esta folha e um
+  //    desenho feito a mao para a Zira**. Os blocos, os nomes de produto ("Ziraninho", "Ziracoca",
+  //    "Ziratella"), os cabecalhos ("os tres da Zira", "Zira Tradicional") e a paleta estao escritos
+  //    aqui dentro. A Pizzaria Bella Napoli clicando em "folha impressa" recebia um papel de
+  //    acaiteria, quase vazio, com o nome de OUTRO CLIENTE.
+  //
+  // O conserto e recusar, nao adivinhar. Folha generica -- montada a partir das categorias reais de
+  // cada loja -- e recurso novo, nao conserto de defeito, e esta anotada como pendencia. Ate ela
+  // existir, e melhor dizer "ainda nao tem" do que entregar o papel errado.
+  const lojaCrua = new URLSearchParams(location.search).get('loja');
+  const lojaId = /^[1-9][0-9]*$/.test(String(lojaCrua || '').trim()) ? Number(lojaCrua) : null;
+
+  // A rede da Zira (empresa 3), que e para quem este desenho foi feito. Lista explicita de
+  // proposito: quem entrar aqui amanha ve na hora que a folha NAO e generica.
+  const LOJAS_DESENHADAS = [18, 19, 20, 21, 22];
 
   // ----------------------------------------------------------------- O ARRANJO
   // Isto é desenho de cardápio, não é dado: diz em que bloco cada produto entra e em que ordem.
@@ -592,6 +613,22 @@
   async function tocar() {
     const estado = $('estado');
     const avisos = $('avisos');
+
+    // As duas guardas, antes de desenhar qualquer coisa. Ver o comentario do `lojaId`.
+    if (!lojaId) {
+      estado.innerHTML = '<b>Este link esta incompleto.</b><br>Falta dizer de qual loja e a folha. '
+        + 'Volte em <b>Cardapio por QR</b>, escolha a loja e clique em "folha impressa".';
+      return;
+    }
+    if (!LOJAS_DESENHADAS.includes(lojaId)) {
+      estado.innerHTML = '<b>A folha impressa ainda nao esta pronta para esta loja.</b><br>'
+        + 'O desenho desta folha (os blocos, os destaques e as especialidades) foi feito a mao para '
+        + 'uma loja especifica, e imprimi-la aqui sairia com os nomes dela, nao os seus.<br><br>'
+        + 'O <b>cardapio por QR Code</b> funciona normalmente para a sua loja, e a folha generica '
+        + 'esta na lista de pendencias.';
+      return;
+    }
+
     try {
       const link = linkPublico();
 

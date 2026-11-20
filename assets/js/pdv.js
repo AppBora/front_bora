@@ -113,6 +113,28 @@
     $('linhaCashback').textContent = '- ' + money(desconto);
     $('total').textContent = money(Math.max(0, subtotal - desconto));
     $('finish').disabled = !cart.length;
+    pintarBarraDoCelular(qtd, Math.max(0, subtotal - desconto));
+  }
+
+  /**
+   * A barra do celular: o total sempre a vista, e um toque para chegar na comanda.
+   *
+   * Existe porque no celular a comanda empilha DEPOIS da lista de produtos (o
+   * `@media(max-width:1000px)` tira o `position:sticky` dela). Medido em 375x812 na varredura de
+   * 18/11/2026: pagina de 3317 px, "Finalizar venda" em y=3164 -- 3,9 telas abaixo da dobra. O
+   * operador tocava no produto e NADA mudava no que ele via.
+   *
+   * Le os MESMOS numeros que a comanda, calculados uma vez no `renderCart` -- dois lugares
+   * calculando o mesmo total e dois lugares para divergir.
+   */
+  function pintarBarraDoCelular(qtd, total) {
+    const barra = document.getElementById('pdvBar');
+    if (!barra) return;                 // tela antiga em cache: nada quebra
+    barra.hidden = qtd === 0;           // carrinho vazio nao precisa de barra
+    const q = document.getElementById('pdvBarQtd');
+    const tt = document.getElementById('pdvBarTotal');
+    if (q) q.textContent = qtd === 1 ? '1 item' : qtd + ' itens';
+    if (tt) tt.textContent = money(total);
   }
 
   /** Produto sem complemento entra direto; com complemento abre a escolha antes. */
@@ -276,6 +298,12 @@
     $('pays').addEventListener('click', e => { const b = e.target.closest('.pay-btn'); if (!b) return;
       pagamento = b.dataset.p; document.querySelectorAll('.pay-btn').forEach(x => x.classList.remove('sel')); b.classList.add('sel'); });
     $('finish').addEventListener('click', finalizar);
+    // O toque que resolve o bloqueio do celular: leva a comanda para a tela.
+    const irParaComanda = document.getElementById('pdvBarIr');
+    if (irParaComanda) irParaComanda.addEventListener('click', () => {
+      const comanda = document.querySelector('.cart');
+      if (comanda) comanda.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
     $('cliente').addEventListener('change', atualizarCashback);
     // Sem este ouvinte, marcar o visto nao mexia no total: a tela seguia no preco cheio.
     $('usarCashback').addEventListener('change', renderCart);

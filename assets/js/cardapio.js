@@ -3,7 +3,17 @@
   const money = v => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const params = new URLSearchParams(location.search);
-  const lojaId = params.get('loja') || '1';
+  // SEM `?loja=`, O PEDIDO NAO VAI PARA A LOJA 1 (conserto de 19/11/2026).
+  //
+  // Era `params.get('loja') || '1'`. Um link malformado -- QR impresso errado, mensagem de WhatsApp
+  // com a URL cortada, alguem digitando `borahapp.com.br/cardapio.html` na mao -- abria o cardapio da
+  // **loja 1**, que e a loja de TESTE. O cliente montava o pedido, finalizava, e o pedido caia numa
+  // loja onde ninguem olha o painel. Ninguem prepara, ninguem avisa, e o cliente fica esperando.
+  //
+  // Agora: sem loja valida, a pagina DIZ isso e nao deixa pedir. Errar explicito e melhor que errar
+  // em silencio -- e silencio aqui e um pedido perdido com o cliente achando que deu certo.
+  const lojaCrua = params.get('loja');
+  const lojaId = /^[1-9][0-9]*$/.test(String(lojaCrua || '').trim()) ? String(lojaCrua).trim() : null;
   const wa = (params.get('wa') || '').replace(/\D/g, '');
 
   let produtos = [], cart = []; // cart = linhas {produtoId, quantidade, complementos:[ids], rotulo, unit}
@@ -638,6 +648,22 @@
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
+    // A guarda do link sem loja: antes de ligar qualquer botao. Ver o comentario do `lojaId`.
+    if (!lojaId) {
+      document.getElementById('menu').innerHTML =
+        '<div style="text-align:center;padding:40px 20px;color:#374151">'
+        + '<p style="font-size:42px;margin:0">&#128279;</p>'
+        + '<h2 style="margin:12px 0 8px">Este link est&aacute; incompleto</h2>'
+        + '<p style="color:#6b7280;margin:0 0 6px">Falta saber de qual loja &eacute; este card&aacute;pio, '
+        + 'ent&atilde;o eu n&atilde;o consigo abrir o menu certo.</p>'
+        + '<p style="color:#6b7280;margin:0">Pe&ccedil;a o link novamente &agrave; loja, ou use o QR Code '
+        + 'que est&aacute; no balc&atilde;o.</p></div>';
+      const b = document.getElementById('send');
+      if (b) { b.disabled = true; b.style.display = 'none'; }
+      const barra = document.getElementById('bar');
+      if (barra) barra.style.display = 'none';
+      return;   // nada mais e ligado: sem loja nao ha pedido a montar
+    }
     $('send').addEventListener('click', abrirCheckout);
     // Delegacao: a lista e redesenhada a cada mudanca, entao o ouvinte fica no container.
     document.getElementById('carrinhoItens').addEventListener('click', (ev) => {

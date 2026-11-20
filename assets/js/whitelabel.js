@@ -4,7 +4,10 @@
  * Guarda a marca da loja para quem nao pode esperar a API.
  *
  * Dois consumidores, e os dois estavam quebrados porque NINGUEM gravava esta chave -- ela era lida
- * em quatro lugares e escrita em nenhum (so apagada no logout):
+ * em quatro lugares e escrita em nenhum (apagada no logout -- `Bora.logout` em api.js -- , no
+ * seletor de loja e na tela de configuracoes; ate 19/11/2026 esta frase dizia so "apagada no
+ * logout" e era FALSA: o logout nao apagava, e a marca de uma loja aparecia para o proximo que
+ * entrasse no mesmo navegador, inclusive no papel impresso):
  *
  *  1. O PAPEL. A comanda da cozinha (app.js:145), o fechamento do caixa (caixa.js:22) e o recibo do
  *     motoboy (acerto-entregadores.js:144) abrem numa janela nova, sem API, e leem daqui. Saiam

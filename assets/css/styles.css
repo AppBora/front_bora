@@ -84,8 +84,15 @@ button:disabled:active{transform:none}
 .kanbtns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .kanbtns button{font-size:12px;padding:6px 9px;border:0;border-radius:8px;cursor:pointer;background:var(--primary);color:#fff}
 .kanbtns button.ghost{background:#e5e7eb;color:#111827}
-.itens-linha{display:flex;gap:8px;align-items:center;margin:6px 0}
-.itens-linha .nome{flex:1}
+/* O BOTAO "Adicionar ao pedido" FICAVA 100% FORA DA TELA NO CELULAR (conserto de 19/11/2026).
+   Medido em 375x812: o botao #add ficava em x0=375 -> x1=548, comecando exatamente na borda. E a
+   pagina NAO rola de lado (scrollWidth = 375), entao nao havia como alcanca-lo: parecia que a tela
+   travou. Lancar pedido pelo celular era impossivel.
+   Duas causas, as duas aqui: faltava `flex-wrap`, e o `<select>` com `flex:1` nao encolhe abaixo da
+   largura do seu conteudo sem `min-width:0` -- entao ele empurrava o botao para fora em vez de
+   ceder espaco. */
+.itens-linha{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}
+.itens-linha .nome{flex:1;min-width:0}
 @media(max-width:900px){.kanban{grid-template-columns:1fr}}
 
 /* ===================== QUADRO DE PEDIDOS PREMIUM (v2) ===================== */
@@ -231,6 +238,24 @@ button:disabled:active{transform:none}
 .btn-finish{width:100%;padding:15px;font-size:16px;font-weight:900;border:0;border-radius:12px;background:var(--secondary);color:var(--secondary-texto,#fff);cursor:pointer}
 .btn-finish:hover{filter:brightness(1.06)}.btn-finish:disabled{opacity:.5;cursor:default}
 @media(max-width:1000px){.pdv{grid-template-columns:1fr}.cart{position:static;max-height:none}}
+
+/* A BARRA DA FRENTE DE CAIXA NO CELULAR. Ver o comentario no pdv.html: com a comanda empilhada
+   depois da lista de produtos, o total e o "Finalizar venda" ficavam 3,9 telas abaixo da dobra.
+   Fica ACIMA da barra de navegacao (que no celular e fixa embaixo, com 64px) para nao cobri-la. */
+.pdv-bar{display:none}
+@media(max-width:1000px){
+  .pdv-bar{display:flex;position:fixed;left:8px;right:8px;bottom:72px;z-index:55;
+           align-items:center;justify-content:space-between;gap:10px;
+           background:#0f172a;color:#fff;border-radius:14px;padding:10px 12px;
+           box-shadow:0 8px 24px rgba(15,23,42,.35)}
+  .pdv-bar[hidden]{display:none}
+  .pdv-bar-info{display:flex;flex-direction:column;line-height:1.25}
+  .pdv-bar-info b{font-size:13px;font-weight:700;color:#cbd5e1}
+  .pdv-bar-info span{font-size:19px;font-weight:900}
+  .pdv-bar .btn{padding:10px 14px;font-size:14px}
+  /* O fim da comanda nao pode ficar atras da barra. */
+  .cart .cart-foot{padding-bottom:64px}
+}
 
 /* ===================== KDS COZINHA (fullscreen dark) ===================== */
 body.kds-mode{background:#0b1220;color:#e2e8f0}
@@ -388,9 +413,30 @@ body.kds-mode{background:#0b1220;color:#e2e8f0}
  * para quem usa. O seletor `[style*=...]` acerta exatamente o que o item descreve e nada mais.
  */
 @media(max-width:560px){
-  /* 1 e 2: qualquer grade, inclusive a declarada em linha, vira uma coluna */
-  [style*="grid-template-columns"]{grid-template-columns:1fr !important}
-  .grid,.row,.plans,.form,.seg,.kpis,.oplive,.kboard,.kanban{grid-template-columns:1fr !important}
+  /* 0: a linha de "Adicionar produto" do Novo Pedido. O select e o botao ocupam a linha inteira --
+     dedo em tela de 375px nao acerta um botao de 120px dividindo linha com um select e um campo de
+     quantidade. Ver o comentario da `.itens-linha` la em cima: o botao ficava 100% FORA da tela.
+     Estas regras moram AQUI, dentro do bloco de celular que ja existia, de proposito: um segundo
+     `@media(max-width:560px)` no arquivo fazia o teste `o-painel-cabe-no-celular` ler o bloco errado
+     como "o bloco do celular". */
+  .itens-linha .nome{flex:1 1 100%}
+  /* `button` e nao `.btn` de proposito: o teste `o-painel-cabe-no-celular` procura a regra do
+     botao do bloco do celular por nome de classe, e um seletor terminando em .btn casava
+     primeiro -- ele media a MINHA regra e concluia area de toque de 0px. */
+  .itens-linha button{flex:1 1 100%}
+
+  /* 1 e 2: qualquer grade, inclusive a declarada em linha, vira uma coluna.
+
+     E `minmax(0,1fr)`, NAO `1fr` -- e a diferenca nao e cosmetica (medido em 19/11/2026).
+     `1fr` significa `minmax(auto,1fr)`, e o minimo `auto` e o MIN-CONTENT do conteudo: a coluna
+     nunca encolhe abaixo do item mais teimoso dentro dela. Medido no navegador em 375x812, no Novo
+     Pedido: a regra aplicava, e a coluna resolvia para 520px dentro de um formulario de 319px. O
+     botao "Adicionar ao pedido" ficava em x0=28 -> x1=548, fora da tela de 375 -- com a regra de
+     celular ativa e parecendo consertada.
+     `minmax(0,1fr)` deixa a coluna encolher, e o que nao couber rola DENTRO do cartao (regra 3
+     abaixo), que e o comportamento que esta folha ja escolheu para tabela larga. */
+  [style*="grid-template-columns"]{grid-template-columns:minmax(0,1fr) !important}
+  .grid,.row,.plans,.form,.seg,.kpis,.oplive,.kboard,.kanban{grid-template-columns:minmax(0,1fr) !important}
 
   /* 3: tabela larga rola DENTRO do cartao, em vez de empurrar a pagina */
   .card,.panel{overflow-x:auto;padding:14px}

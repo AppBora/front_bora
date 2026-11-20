@@ -43,6 +43,19 @@
         </div>
       </div>
     </div>
+
+    <!-- A COMANDA FICAVA 3,9 TELAS ABAIXO DA DOBRA NO CELULAR (conserto de 19/11/2026).
+         Medido em 375x812: a pagina tinha 3317 px, "Comanda" em y=2787 e "Finalizar venda" em
+         y=3164. A causa esta no CSS: `@media(max-width:1000px)` transforma o `.pdv` em uma coluna e
+         tira o `position:sticky` da comanda, entao ela empilha DEPOIS da lista inteira de produtos.
+         O operador tocava no produto, nada mudava no que ele via, e o total estava a quatro
+         rolagens. Para quem vende no balcao com fila, e vender as cegas.
+         Esta barra e o mesmo padrao que o cardapio publico ja usa (o `#bar`): o total sempre a
+         vista, e um toque para chegar na comanda. Ela SO aparece no celular. -->
+    <div id="pdvBar" class="pdv-bar" hidden>
+      <div class="pdv-bar-info"><b id="pdvBarQtd">0 itens</b><span id="pdvBarTotal">R$ 0,00</span></div>
+      <button type="button" class="btn" id="pdvBarIr">Comanda &#9656;</button>
+    </div>
   </main>
 
   <!-- Escolha de complementos: no balcão precisa caber num toque, então é modal e não outra tela. -->
