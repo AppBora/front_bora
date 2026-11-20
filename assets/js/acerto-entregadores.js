@@ -106,6 +106,11 @@
     el('mConfirmar').disabled = true;
     try {
       await Bora.fazerAcerto({
+        // O ID VAI JUNTO quando a linha tem um (item 3 da secao 4): e ele que define quais entregas
+        // entram no acerto. O nome continua indo porque e o que o servidor grava no recibo -- e para
+        // a linha LEGADA (entrega de antes da V80, ou nome que nao casou com um cadastro unico),
+        // onde o nome e a unica chave que existe.
+        entregadorId: selecionado.entregadorId || null,
         entregador: selecionado.entregador,
         inicio: periodo.inicio,
         fim: periodo.fim,

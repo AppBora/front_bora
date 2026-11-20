@@ -109,10 +109,54 @@ function boraEsperandoPix(p) {
   return !!(p && p.status !== 'CANCELADO' && p.aguardandoPagamento);
 }
 
-// SLA de preparo (minutos prometidos) por canal — base do alerta de atraso.
+// SLA de preparo (minutos prometidos) por canal - o PADRAO, usado enquanto a loja nao escolhe.
 const BORA_SLA = { 'Balcão':12, 'WhatsApp':25, 'Instagram':25, 'Telefone':25, 'Site':30, 'Delivery':35,
   'iFood':40, '99Food':40, 'Rappi':40, 'Uber Eats':40, 'aiqfome':40, 'Goomer':35 };
-function boraSla(origem){ return BORA_SLA[boraCanal(origem).key] || 30; }
+
+/**
+ * O tempo prometido de UM pedido, em minutos. Base do alerta de atraso da cozinha e do quadro.
+ *
+ * ITEM 5 DA SECAO 4 DA VARREDURA. Esta tabela acima era TUDO o que existia, e nenhuma loja escolhia
+ * nada dela: a pizzaria cujo forno leva 45 minutos via TODO pedido marcado "Atrasado" -- o cartao
+ * ficava vermelho sempre, e um alerta que acende sempre deixa de ser alerta. O acai que sai em 5
+ * minutos nunca acendia nada.
+ *
+ * Agora, quando a loja preencheu o tempo de preparo em Configuracoes, a conta e:
+ *
+ *     preparo  +  entrega (so se o pedido for para a rua)
+ *
+ * Os dois tempos chegam pelo `boraTheme`, que o `whitelabel.js` grava a cada carregamento de pagina
+ * a partir de /api/configuracao. Guardados ali de proposito: e a chave que o logout, o seletor de
+ * loja e a tela de configuracoes JA apagam -- ou seja, os tempos de uma loja nao sobram para a
+ * proxima que entrar no mesmo navegador. Esse exato defeito ja aconteceu aqui com o NOME da loja,
+ * que saia impresso na comanda de outra.
+ *
+ * SEM O PEDIDO (chamada com um argumento so), assume-se que ha rua. E a escolha conservadora: um SLA
+ * maior do que o real atrasa o alerta; um menor acende alerta em pedido que esta no prazo, que e o
+ * defeito que se esta consertando.
+ */
+function boraTempos(){
+  try { return JSON.parse(localStorage.getItem('boraTheme') || '{}') || {}; } catch(e){ return {}; }
+}
+/** Este pedido vai para a rua? `null` = nao da para saber (pedido antigo, sem a coluna). */
+function boraVaiParaARua(p){
+  if (!p) return null;
+  if (p.tipoEntrega) return String(p.tipoEntrega).toUpperCase() !== 'RETIRADA';
+  if (p.observacao) return !/RETIRADA NO BALC/i.test(p.observacao);
+  return null;
+}
+function boraSla(origem, pedido){
+  const t = boraTempos();
+  const preparo = Number(t.preparo);
+  // Sem preparo escolhido, nada muda: cai na tabela de sempre. E o estado das 23 lojas no dia
+  // em que isto subiu.
+  if (!Number.isFinite(preparo) || preparo <= 0) return BORA_SLA[boraCanal(origem).key] || 30;
+  const entrega = Number(t.entrega);
+  // Balcao nunca tem rua, qualquer que seja o pedido. Nos outros canais, so o pedido de RETIRADA
+  // fica sem ela -- somar a rua na retirada era o motivo de o campo ser DOIS campos e nao um.
+  const temRua = boraCanal(origem).key === 'Balcão' ? false : (boraVaiParaARua(pedido) !== false);
+  return preparo + (temRua && Number.isFinite(entrega) && entrega > 0 ? entrega : 0);
+}
 
 // Quem ve o que.
 //

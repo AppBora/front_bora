@@ -60,7 +60,7 @@
 
   function card(p) {
     const m = mins(p.atualizadoEm || p.criadoEm);
-    const sla = boraSla(p.origem);
+    const sla = boraSla(p.origem, p);   // o pedido vai junto: retirada nao soma o tempo de rua
     const cls = m >= sla ? 'late' : m >= sla * 0.7 ? 'warn' : '';
     const itens = (p.itens && p.itens.length)
       ? p.itens.map(i => `<li><b>${i.quantidade || 1}×</b>${esc(i.descricao)}</li>`).join('')

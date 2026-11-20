@@ -9,12 +9,33 @@
   const mins = iso => iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 60000) : 0;
 
   let entregadores = [];
-  const optsEntregador = sel => '<option value="">— motoboy —</option>' +
-    entregadores.filter(e => e.ativo !== false).map(e => `<option ${e.nome === sel ? 'selected' : ''}>${esc(e.nome)}</option>`).join('');
+  /**
+   * A lista de motoboys do <select>. O VALUE e o id do cadastro, nao o nome (item 3 da secao 4).
+   *
+   * O que muda: o pedido passa a apontar para o cadastro. Antes ia o nome, e o acerto agrupava por
+   * ele -- renomear o motoboy no meio do periodo dividia as corridas dele em duas linhas na tela de
+   * acerto, e quem fechava pagava uma e nao a outra.
+   *
+   * A MARCACAO E PELO ID, e cai no nome so quando o pedido nao tem id (gravado antes da V80). Casar
+   * por nome num motoboy JA RENOMEADO nao acha ninguem: o pedido antigo apareceria como "sem
+   * motoboy" e o risco era o lojista escolher outro em cima -- movendo a taxa de um para o outro.
+   */
+  const optsEntregador = (p) => '<option value="">— motoboy —</option>' +
+    entregadores.filter(e => e.ativo !== false || e.id === p.entregadorId)
+      .map(e => {
+        const marcado = p.entregadorId ? e.id === p.entregadorId : e.nome === p.entregador;
+        return `<option value="${e.id}" ${marcado ? 'selected' : ''}>${esc(e.nome)}</option>`;
+      }).join('');
 
   window.__despachar = async (id) => { try { await Bora.mudarStatus(id, 'SAIU_PARA_ENTREGA'); carregar(); } catch (e) { alert(e.message); } };
   window.__entregue = async (id) => { try { await Bora.mudarStatus(id, 'ENTREGUE'); carregar(); } catch (e) { alert(e.message); } };
-  window.__setEntregador = async (id, nome) => { try { await Bora.definirEntregador(id, nome); } catch (e) { alert(e.message); } };
+  // `this.value` agora e o ID do cadastro (ver optsEntregador). Recarrega ao fim: sem isso, o
+  // <select> fica mostrando a escolha nova mesmo quando o servidor recusou (pedido ja acertado,
+  // papel sem permissao) -- a tela mentia sobre quem vai receber a taxa.
+  window.__setEntregador = async (id, entregadorId) => {
+    try { await Bora.definirEntregador(id, entregadorId); } catch (e) { alert(e.message); }
+    carregar();
+  };
   window.__despacharBairro = async (ids) => {
     // Item 7.4: despachava o bairro inteiro sem perguntar, e um catch VAZIO engolia TODA
     // falha -- o lojista achava que os cinco pedidos sairam e um deles nao tinha saido. Cada
@@ -45,7 +66,7 @@
       <td>${esc(p.clienteNome) || '—'}<br><small style="color:#6b7280">${esc(p.enderecoEntrega || p.clienteEndereco || '')}</small></td>
       <td>${money(p.valorTotal)}</td>
       <td><select style="width:140px;padding:7px;border:1px solid #e5e7eb;border-radius:8px"
-            onchange="__setEntregador(${p.id}, this.value)">${optsEntregador(p.entregador)}</select></td>
+            onchange="__setEntregador(${p.id}, this.value)">${optsEntregador(p)}</select></td>
       <td>${tempo} min</td>
       <td style="text-align:right">${acao}</td>
     </tr>`;

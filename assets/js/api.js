@@ -98,7 +98,19 @@ const Bora = {
     });
   },
   mudarStatus(id, status, motivo) { let u = `/api/pedidos/${id}/status?status=${status}`; if (motivo) u += '&motivo=' + encodeURIComponent(motivo); return this.api(u, { method: 'PATCH' }); },
-  definirEntregador(id, nome) { return this.api(`/api/pedidos/${id}/entregador${nome ? '?nome=' + encodeURIComponent(nome) : ''}`, { method: 'PATCH' }); },
+  /**
+   * Escolhe o motoboy do pedido. Manda o ID do cadastro (item 3 da secao 4), nao o nome.
+   *
+   * O nome era a chave de tudo: o acerto agrupa por entregador, e renomear o motoboy no meio do
+   * periodo dividia as corridas dele em duas linhas -- quem fechava pagava uma e nao a outra. Com o
+   * id, trocar o nome nao mexe na conta. O servidor continua aceitando `nome` para chamada antiga.
+   *
+   * Vazio apaga o motoboy do pedido (o PATCH sem parametro nenhum).
+   */
+  definirEntregador(id, entregadorId) {
+    const q = entregadorId ? '?entregadorId=' + encodeURIComponent(entregadorId) : '';
+    return this.api(`/api/pedidos/${id}/entregador${q}`, { method: 'PATCH' });
+  },
   cardapioPublico(lojaId) { return this.api('/public/loja/' + lojaId + '/cardapio'); },
   termos() { return this.api('/api/termos'); },
   aceitarTermos() { return this.api('/api/termos/aceitar', { method: 'POST' }); },

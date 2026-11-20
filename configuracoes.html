@@ -104,7 +104,7 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
     <header class="top"><div class="title"><h1>Configurações da Loja</h1><p data-store>Sua loja</p></div>
       <a class="btn" href="#" onclick="Bora.logout();return false" style="background:#64748b">Sair</a></header>
     <details class="bloco raiz" id="blocoIdentidade" open>
-      <summary>🎨 Identidade da loja <span class="pista">· nome, cores, logo, cashback e custos</span></summary>
+      <summary>🎨 Identidade da loja <span class="pista">· nome, cores, logo, cashback, custos e tempo de preparo</span></summary>
       <div class="conteudo">
       <p style="color:var(--muted);font-size:13px;margin-top:0" id="planoInfo"></p>
       <form class="form" id="form">
@@ -122,6 +122,16 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
         <div class="field"><label>Custo fixo mensal (R$)
           <span style="font-weight:400;color:var(--muted);font-size:12px">· aluguel, folha, energia</span></label>
           <input type="number" id="custoFixoMensal" min="0" step="10" placeholder="ex.: 8000"></div>
+        <!-- Tempo de preparo (item 5 da secao 4). Ficava cravado no JavaScript, numa tabela por canal
+             que nenhuma loja escolhia: a pizzaria de forno de 45 min via TODO pedido "Atrasado". O
+             zero existe para voltar ao automatico -- sem ele, o lojista que preenchesse uma vez nao
+             tinha como desfazer. -->
+        <div class="field"><label>Tempo de preparo (min)
+          <span style="font-weight:400;color:var(--muted);font-size:12px">· o que a cozinha leva · 0 = automático</span></label>
+          <input type="number" id="tempoPreparoMin" min="0" max="240" step="5" placeholder="automático"></div>
+        <div class="field"><label>Tempo de entrega (min)
+          <span style="font-weight:400;color:var(--muted);font-size:12px">· só na entrega, somado ao preparo</span></label>
+          <input type="number" id="tempoEntregaMin" min="0" max="180" step="5" placeholder="0"></div>
         <div class="field full"><button class="btn" type="submit">Salvar identidade</button> <span id="msg" style="margin-left:10px"></span></div>
       </form>
       <div class="theme-preview" id="preview"></div>
@@ -247,6 +257,27 @@ details.bloco.raiz > summary { font-size: 16.5px; background: #eef2f9; min-heigh
       </p>
       <div id="outboxMedicao" style="font-size:14px;margin-top:10px">Carregando…</div>
       <span id="outboxMsg" style="font-size:13px"></span>
+
+      <!-- A RETENCAO (item 8 da secao 4 da varredura, 20/11/2026).
+           A fila nasceu sem retencao nenhuma: sao ate 6 eventos por pedido e NINGUEM apaga nada,
+           porque nao ha consumidor ainda. O pior disso nao era a falta do DELETE -- era que o
+           tamanho da fila nao aparecia em lugar nenhum, e a primeira a notar seria o disco.
+           As duas caixas sao SEPARADAS de proposito: "apagar o que ja foi entregue" e "jogar fora
+           o que ninguem leu" nao sao a mesma decisao, e hoje nada publica. -->
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0">
+      <h3 style="margin:0 0 6px;font-size:15px">🧹 Retencao da fila</h3>
+      <div id="outboxFila" style="font-size:14px;margin-bottom:10px">Carregando…</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+        <div class="field" style="margin:0"><label style="font-size:13px">Apagar eventos JA PUBLICADOS depois de (dias)
+          <span style="font-weight:400;color:var(--muted);font-size:12px">· vazio = nunca apaga</span></label>
+          <input type="number" id="retDias" min="0" step="1" placeholder="nunca" style="max-width:140px"></div>
+        <div class="field" style="margin:0"><label style="font-size:13px">Apagar eventos NAO publicados depois de (dias)
+          <span style="font-weight:400;color:var(--muted);font-size:12px">· isto joga fora o que ninguem leu</span></label>
+          <input type="number" id="retDiasPend" min="0" step="1" placeholder="nunca" style="max-width:140px"></div>
+        <button class="btn" id="retSalvar" type="button" style="padding:9px 14px">Salvar retencao</button>
+        <button class="btn" id="retLimpar" type="button" style="padding:9px 14px;background:#64748b">Limpar agora</button>
+      </div>
+      <span id="retMsg" style="font-size:13px"></span>
         </div>
       </details>
 
@@ -806,7 +837,78 @@ const FichaEndereco = (function () {
         + 'Nao consegui ler o estado da fila: ' + ((e && e.message) || 'erro') + '</div>';
     }
 
-    Bora.api('/admin-bora/config/outbox').then(pintar).catch(erro);
+    // ---------------------------------------------------------------- a retencao (item 8)
+    //
+    // A fila enche a cada venda e NINGUEM consome: sem numero na tela, 'a fila esta crescendo'
+    // seria descoberto pelo disco. As duas caixas sao separadas porque 'apagar o que ja foi
+    // entregue' e 'jogar fora o que ninguem leu' nao sao a mesma decisao.
+    const fila = document.getElementById('outboxFila');
+    const retMsg = document.getElementById('retMsg');
+    const num = (id, v) => { const e = document.getElementById(id); if (e) e.value = (v === null || v === undefined) ? '' : v; };
+
+    function pintarFila(r) {
+      const d = (r && r.retencao) || null;
+      if (!fila) return;
+      if (!d) { fila.textContent = 'Nao consegui ler o tamanho da fila.'; return; }
+      num('retDias', d.retencaoDias);
+      num('retDiasPend', d.retencaoDiasPendentes);
+      // `null` NAO e zero: a API devolve nulo quando nao conseguiu medir, e dizer '0 eventos'
+      // ali seria inventar uma boa noticia. Mesmo cuidado do contador de eventos sem empresa.
+      if (d.naFila === null || d.naFila === undefined) {
+        fila.innerHTML = '<div style="font-size:13px;color:#64748b">Nao consegui contar os eventos da fila agora.</div>';
+        return;
+      }
+      const idade = (d.maisAntigoDias === null || d.maisAntigoDias === undefined)
+        ? '' : ' · o mais antigo tem <b>' + d.maisAntigoDias + '</b> dia(s)';
+      const semRetencao = !d.retencaoDias && !d.retencaoDiasPendentes;
+      const acimaDoTeto = Number(d.naFila) > Number(d.tetoDeAvisoLinhas || 0);
+      const cor = acimaDoTeto ? 'background:#fee2e2;color:#991b1b'
+                              : semRetencao ? 'background:#fef9c3;color:#854d0e'
+                                            : 'background:#dcfce7;color:#166534';
+      fila.innerHTML = '<div style="' + cor + ';padding:10px;border-radius:8px">'
+        + '<b>' + d.naFila + '</b> evento(s) na fila, <b>' + d.pendentes + '</b> ainda sem publicar' + idade + '.'
+        + '<br><span style="font-size:13px">'
+        + (semRetencao
+            ? 'Nenhuma retencao definida: <b>nada e apagado</b>. Ninguem consome a fila ainda, '
+              + 'entao ela so cresce. O log avisa acima de ' + d.tetoDeAvisoLinhas + ' linhas.'
+            : 'A limpeza roda sozinha as 4h20 (Brasilia), no maximo ' + d.maximoPorExecucao
+              + ' por execucao para nao travar o banco das lojas.')
+        + (d.ultimaLimpeza ? ' Ultima limpeza: ' + new Date(d.ultimaLimpeza).toLocaleString('pt-BR')
+            + ' (' + d.apagadosNaUltimaLimpeza + ' apagado(s)).' : '')
+        + '</span></div>';
+    }
+
+    const vazio = (id) => { const e = document.getElementById(id); return !e || e.value === ''; };
+    const salvarRet = document.getElementById('retSalvar');
+    if (salvarRet) salvarRet.addEventListener('click', async () => {
+      retMsg.textContent = 'Salvando...'; retMsg.style.color = 'var(--muted)';
+      try {
+        const r = await Bora.api('/admin-bora/config/outbox/retencao', { method: 'PUT',
+          body: JSON.stringify({
+            dias: vazio('retDias') ? null : Number(document.getElementById('retDias').value),
+            diasPendentes: vazio('retDiasPend') ? null : Number(document.getElementById('retDiasPend').value),
+          }) });
+        pintarFila({ retencao: r });
+        retMsg.style.color = '#16a34a'; retMsg.textContent = 'Retencao salva.';
+      } catch (e) { retMsg.style.color = 'var(--danger)'; retMsg.textContent = e.message; }
+    });
+
+    const limparAgora = document.getElementById('retLimpar');
+    if (limparAgora) limparAgora.addEventListener('click', async () => {
+      // Pergunta antes: e um DELETE em dado de producao que ninguem leu ainda.
+      if (!confirm('Rodar a limpeza da fila agora? Apaga o que as duas caixas autorizarem; '
+        + 'sem nenhuma preenchida, nao apaga nada.')) return;
+      retMsg.textContent = 'Limpando...'; retMsg.style.color = 'var(--muted)';
+      try {
+        const r = await Bora.api('/admin-bora/config/outbox/retencao/limpar', { method: 'POST' });
+        retMsg.style.color = '#16a34a';
+        retMsg.textContent = 'Apagados: ' + r.publicadosApagados + ' publicado(s), '
+          + r.pendentesApagados + ' pendente(s). Sobraram ' + r.naFila + ' na fila.';
+        Bora.api('/admin-bora/config/outbox').then(pintarFila).catch(() => {});
+      } catch (e) { retMsg.style.color = 'var(--danger)'; retMsg.textContent = e.message; }
+    });
+
+    Bora.api('/admin-bora/config/outbox').then(r => { pintar(r); pintarFila(r); }).catch(erro);
 
     // ------------------------------------------------------------------------------------------
     // AS INTEGRACOES MORTAS, NUM LUGAR SO (item 3.11 da varredura de 18/11/2026)
@@ -886,7 +988,7 @@ const FichaEndereco = (function () {
     const bloco = document.getElementById('secOutbox');
     setInterval(() => {
       if (!bloco || !bloco.open) return;
-      Bora.api('/admin-bora/config/outbox').then(pintar).catch(() => {});
+      Bora.api('/admin-bora/config/outbox').then(r => { pintar(r); pintarFila(r); }).catch(() => {});
     }, 15000);
   })();
 

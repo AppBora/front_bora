@@ -21,6 +21,10 @@
       const num = (id, v) => { const e = $(id); if (e) e.value = (v === null || v === undefined) ? '' : v; };
       num('aliquotaImposto', atual.aliquotaImposto);
       num('custoFixoMensal', atual.custoFixoMensal);
+      // Nulo aparece como campo VAZIO, nao como zero: vazio aqui quer dizer "automatico por
+      // canal", que e o estado de quem nunca abriu esta tela.
+      num('tempoPreparoMin', atual.tempoPreparoMin);
+      num('tempoEntregaMin', atual.tempoEntregaMin);
       $('planoInfo').textContent = 'Alguns recursos (cor secundária, banner, subdomínio) dependem do seu plano — o que não estiver liberado é ignorado ao salvar.';
     } catch (e) { $('planoInfo').textContent = e.message; }
   }
@@ -45,6 +49,13 @@
           ? Number($('aliquotaImposto').value) : null,
         custoFixoMensal: $('custoFixoMensal') && $('custoFixoMensal').value !== ''
           ? Number($('custoFixoMensal').value) : null,
+        // Tempo de preparo e de entrega (item 5 da secao 4). O ZERO no preparo e o que volta ao
+        // automatico: o PUT ignora campo nulo (e isso e proposital, para a tela nao apagar o que
+        // nao mandou), entao sem um valor que signifique "limpa" nao haveria como desfazer.
+        tempoPreparoMin: $('tempoPreparoMin') && $('tempoPreparoMin').value !== ''
+          ? Number($('tempoPreparoMin').value) : null,
+        tempoEntregaMin: $('tempoEntregaMin') && $('tempoEntregaMin').value !== ''
+          ? Number($('tempoEntregaMin').value) : null,
         logoUrl
       };
       atual = await Bora.api('/api/configuracao', { method: 'PUT', body: JSON.stringify(body) });

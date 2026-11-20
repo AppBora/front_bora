@@ -31,6 +31,15 @@ function guardarTema(c, nomeResolvido) {
     if (c.corPrimaria) tema.primary = c.corPrimaria;
     if (c.corSecundaria) tema.secondary = c.corSecundaria;
     if (c.logoUrl) tema.logo = c.logoUrl;
+    // ITEM 5 DA SECAO 4: os tempos de preparo e de entrega escolhidos pela loja, que o `boraSla`
+    // (app.js) le para decidir quando um pedido esta atrasado.
+    //
+    // DIFERENTE DO NOME E DAS CORES, aqui o campo VAZIO tem significado: ele quer dizer "volta ao
+    // padrao por canal". Por isso a chave e APAGADA quando o valor nao vem, em vez de mantida --
+    // se fosse mantida, o lojista que limpasse o campo continuaria com o tempo antigo valendo na
+    // tela da cozinha, e a unica saida seria limpar o navegador.
+    if (Number.isFinite(c.tempoPreparoMin)) tema.preparo = c.tempoPreparoMin; else delete tema.preparo;
+    if (Number.isFinite(c.tempoEntregaMin)) tema.entrega = c.tempoEntregaMin; else delete tema.entrega;
     localStorage.setItem('boraTheme', JSON.stringify(tema));
   } catch (e) { /* navegador sem localStorage: a tela continua certa, so o papel sai generico */ }
 }

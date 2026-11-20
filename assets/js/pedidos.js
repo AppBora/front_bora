@@ -174,7 +174,7 @@
 
   function card(p, col) {
     const mins = minutosDesde(p.atualizadoEm || p.criadoEm);
-    const sla = (typeof boraSla === 'function') ? boraSla(p.origem) : 30;
+    const sla = (typeof boraSla === 'function') ? boraSla(p.origem, p) : 30;
     const atrasado = ['COZINHA', 'AGUARDANDO'].includes(col.key) && mins >= sla;
     const avanca = PROXIMO[p.status];
     const itensTxt = (p.itens && p.itens.length)

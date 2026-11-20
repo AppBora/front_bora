@@ -35,15 +35,20 @@ function elemento() {
  * abaixo cobrem `head`, `body` e `documentElement` -- sem isso a avaliacao estoura. Medido: sem o
  * `head`, quebra em app.js:214.
  */
-export function helpersDoApp(raiz = 'C:/Users/user/OneDrive/Desktop/Bora/bora-fase-2-frontend/') {
+export function helpersDoApp(raiz = 'C:/Users/user/OneDrive/Desktop/Bora/bora-fase-2-frontend/',
+                             { tema = null } = {}) {
   const nada = () => null;
+  // `tema` e o que o whitelabel.js grava em localStorage['boraTheme'] -- hoje nome, cores, logo e
+  // os tempos de preparo/entrega da loja (item 5 da secao 4). Sem ele, getItem devolve null e o
+  // app.js cai nos padroes, que e o comportamento de quem nunca configurou nada.
+  const guardado = tema == null ? null : JSON.stringify(tema);
   const ctx = vm.createContext({
     document: { querySelector: nada, querySelectorAll: () => [], getElementById: nada,
       createElement: () => ({ style: {}, classList: { add() {}, remove() {} }, appendChild() {} }),
       body: { appendChild() {} }, head: { appendChild() {} },
       documentElement: { style: { setProperty() {} } },
       addEventListener() {} },
-    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    localStorage: { getItem: (k) => (k === 'boraTheme' ? guardado : null), setItem() {}, removeItem() {} },
     // O app.js registra o service worker na carga; sem o navegador o `in` estoura.
     navigator: { serviceWorker: { register: () => Promise.resolve() } },
     window: { open: () => ({ document: { write() {}, close() {} }, focus() {} }), location: { origin: 'http://t' } },
